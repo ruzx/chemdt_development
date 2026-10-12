@@ -1,5 +1,6 @@
 // ElnDashboard.ts
-import { ItemView, WorkspaceLeaf, TFile, debounce } from 'obsidian';
+
+import { ItemView, WorkspaceLeaf, TFile } from 'obsidian';
 import type ChemEditPlugin from './main';
 import { CreateExperimentModal, createNewElnExperiment } from './SharedEln';
 import { renderLimsNav } from './SharedBase';
@@ -15,7 +16,6 @@ interface ElnEntry {
     yieldStr: string;
     rxnSmiles: string;
     timestamp: number;
-    // For CSS-based filtering
     rowEl?: HTMLElement;
     searchText: string;
 }
@@ -36,7 +36,6 @@ export class ElnDashboardView extends ItemView {
         super(leaf);
         this.plugin = plugin;
         
-        // Lazy-loader for Reaction Schemes to keep the dashboard lightning fast
         this.observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -49,11 +48,10 @@ export class ElnDashboardView extends ItemView {
                         this.plugin.api.renderStructure(smiles, 280, 110).then(renderEl => {
                             el.empty();
                             if (renderEl) {
-                                renderEl.style.maxWidth = '100%';
-                                renderEl.style.maxHeight = '100%';
+                                renderEl.setCssStyles({ maxWidth: '100%', maxHeight: '100%' });
                                 el.appendChild(renderEl);
                             } else {
-                                el.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">Invalid Structure</span>`;
+                                el.createSpan({ text: "Invalid Structure", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
                             }
                         });
                     }
@@ -67,68 +65,78 @@ export class ElnDashboardView extends ItemView {
     getIcon() { return "book-open"; }
 
     async onOpen() {
-        const container = this.containerEl.children[1];
+        const container = this.containerEl.children[1] as HTMLElement;
         container.empty();
         container.addClass('chem-eln-dashboard-view');
         
-        Object.assign(container.style, {
-            display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)"
-        });
+        container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
 
         // --- HEADER ---
-        const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" }});
-        const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" }});
+        const header = container.createDiv();
+        header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
+        const titleArea = header.createDiv();
+        titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
         
-        // --- UNIVERSAL NAV SWITCHER ---
         renderLimsNav(titleArea, "eln", this.plugin);
 
-        titleArea.createEl("h2", { text: "Laboratory Notebook", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" }});
-        titleArea.createEl("span", { text: "Manage and track all your chemical experiments", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" }});
+        titleArea.createEl("h2", { text: "Laboratory Notebook" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
+        titleArea.createEl("span", { text: "Manage and track all your chemical experiments" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
 
-        const newBtn = header.createEl("button", { text: "+ New Experiment", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" }});
+        const newBtn = header.createEl("button", { text: "+ New Experiment", cls: "mod-cta" });
+        newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
         newBtn.onclick = () => {
             const currentDir = window.localStorage.getItem('chem-eln-dir') ?? (this.plugin.settings.elnDirectory || "/");
             new CreateExperimentModal(this.app, this.plugin, this.plugin.settings.elnPrefix, currentDir, async (expCode: string) => {
                 await createNewElnExperiment(this.app, expCode, currentDir, this.plugin.settings.elnSections);
-                this.loadExperiments();
+                void this.loadExperiments();
             }).open();
         };
 
         // --- TOOLBAR ---
-        this.toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" }});
+        this.toolbarEl = container.createDiv();
+        this.toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
         
-        const leftTools = this.toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center;" }});
-        const filterTabs = leftTools.createDiv({ attr: { style: "display: flex; gap: 8px;" }});
+        const leftTools = this.toolbarEl.createDiv();
+        leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center" });
+        const filterTabs = leftTools.createDiv();
+        filterTabs.setCssStyles({ display: "flex", gap: "8px" });
         const tabs = ['All', 'Planned', 'Running', 'Completed', 'Failed'];
         
         tabs.forEach(t => {
-            const btn = filterTabs.createEl("button", { text: t, attr: { style: `border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 600; border: 1px solid ${this.currentFilter === t ? 'var(--interactive-accent)' : 'var(--background-modifier-border)'}; background: ${this.currentFilter === t ? 'var(--interactive-accent)' : 'var(--background-primary)'}; color: ${this.currentFilter === t ? 'var(--text-on-accent)' : 'var(--text-muted)'}; box-shadow: none;` }});
+            const btn = filterTabs.createEl("button", { text: t });
+            btn.setCssStyles({ borderRadius: "20px", padding: "4px 16px", fontSize: "12px", fontWeight: "600", border: `1px solid ${this.currentFilter === t ? 'var(--interactive-accent)' : 'var(--background-modifier-border)'}`, background: this.currentFilter === t ? 'var(--interactive-accent)' : 'var(--background-primary)', color: this.currentFilter === t ? 'var(--text-on-accent)' : 'var(--text-muted)', boxShadow: "none" });
             btn.onclick = () => {
                 this.currentFilter = t;
                 this.renderToolbar();
-                this.applyFilters(); // FAST CSS FILTER
+                this.applyFilters();
             };
         });
 
-        // Quick Folder Setting (Supports Subfolders)
-        const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px; margin-left: 10px;" }});
-        dirWrap.createEl("span", { text: "📁 Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" }});
-        const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem('chem-eln-dir') ?? (this.plugin.settings.elnDirectory || ""), attr: { placeholder: "e.g. ELN/2026", style: "width: 140px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" }});
+        const dirWrap = leftTools.createDiv();
+        dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" });
+        dirWrap.createEl("span", { text: "📁 Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
+        const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem('chem-eln-dir') ?? (this.plugin.settings.elnDirectory || "") });
+        dirInp.placeholder = "e.g. ELN/2026";
+        dirInp.setCssStyles({ width: "140px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
         dirInp.onchange = (e: any) => {
             window.localStorage.setItem('chem-eln-dir', e.target.value.trim());
-            this.loadExperiments();
+            void this.loadExperiments();
         };
 
-        const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search reference, project...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" }});
+        const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search reference, project..." });
+        searchInp.setCssStyles({ width: "280px", fontSize: "13px", borderRadius: "6px" });
         searchInp.oninput = (e: any) => {
             this.searchQuery = e.target.value.toLowerCase();
-            this.applyFilters(); // FAST CSS FILTER
+            this.applyFilters();
         };
 
         // --- TABLE CONTAINER ---
-        const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" }});
-        const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px;" }});
-        const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" }});
+        const tableContainer = container.createDiv();
+        tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
+        const table = tableContainer.createEl("table");
+        table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "left", fontSize: "13px" });
+        const thead = table.createEl("thead");
+        thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
         
         const tr = thead.createEl("tr");
         const cols = [
@@ -141,18 +149,18 @@ export class ElnDashboardView extends ItemView {
         ];
 
         cols.forEach(c => {
-            tr.createEl("th", { text: c.name, attr: { style: `padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; width: ${c.width};` }});
+            tr.createEl("th", { text: c.name }).setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", width: c.width });
         });
 
         this.tableBodyEl = table.createEl("tbody");
 
         await this.loadExperiments();
 
-        // BATTERY-EFFICIENT AUTO-REFRESH
-        // Waits 2 seconds after vault activity stops before rebuilding the table
-        const requestRefresh = debounce(() => {
-            this.loadExperiments();
-        }, 2000, true); 
+        let refreshTimeout: number;
+        const requestRefresh = () => {
+            window.clearTimeout(refreshTimeout);
+            refreshTimeout = window.setTimeout(() => void this.loadExperiments(), 2000);
+        };
 
         this.registerEvent(this.app.vault.on('modify', requestRefresh));
         this.registerEvent(this.app.vault.on('create', requestRefresh));
@@ -161,11 +169,13 @@ export class ElnDashboardView extends ItemView {
 
     private renderToolbar() {
         const btns = this.toolbarEl.querySelectorAll('button');
-        btns.forEach(btn => {
+        btns.forEach((btn: HTMLElement) => {
             const isMatch = btn.innerText === this.currentFilter;
-            btn.style.background = isMatch ? 'var(--interactive-accent)' : 'var(--background-primary)';
-            btn.style.color = isMatch ? 'var(--text-on-accent)' : 'var(--text-muted)';
-            btn.style.borderColor = isMatch ? 'var(--interactive-accent)' : 'var(--background-modifier-border)';
+            btn.setCssStyles({
+                background: isMatch ? 'var(--interactive-accent)' : 'var(--background-primary)',
+                color: isMatch ? 'var(--text-on-accent)' : 'var(--text-muted)',
+                borderColor: isMatch ? 'var(--interactive-accent)' : 'var(--background-modifier-border)'
+            });
         });
     }
 
@@ -177,8 +187,6 @@ export class ElnDashboardView extends ItemView {
         const targetDir = window.localStorage.getItem('chem-eln-dir') ?? (this.plugin.settings.elnDirectory || "");
 
         for (const file of files) {
-            // 1. FAST RAM-ONLY PRE-FILTER
-            // Using startsWith naturally includes all nested subfolders!
             const inFolder = !targetDir || file.path.startsWith(targetDir);
             const cache = this.app.metadataCache.getFileCache(file);
             const fmTags = cache?.frontmatter?.tags || [];
@@ -186,17 +194,15 @@ export class ElnDashboardView extends ItemView {
             
             if (!inFolder && !isTagged) continue;
 
-            // 2. CHECK FOR CODEBLOCK WITHOUT READING DISK
             const hasCodeBlock = cache?.sections?.some(s => s.type === 'code');
             if (!hasCodeBlock) continue;
 
-            // 3. READ DISK ONLY WHEN NECESSARY
             const content = await this.app.vault.cachedRead(file);
             const elnMatch = content.match(/```eln\s*\n([\s\S]*?)\n```/);
             
             if (elnMatch) {
                 try {
-                    const safeSource = elnMatch[1].replace(/smiles:\s*(.*)$/gm, (m, p1) => {
+                    const safeSource = elnMatch[1].replace(/smiles:\s*(.*)$/gm, (m: any, p1: string) => {
                         let s = p1.trim(); if (!s) return m;
                         const cMatch = s.match(/(\s+#.*)$/); if (cMatch) s = s.substring(0, s.length - cMatch[1].length).trim();
                         if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.substring(1, s.length - 1);
@@ -227,64 +233,76 @@ export class ElnDashboardView extends ItemView {
             }
         }
 
-        // Sort by newest first
         this.allEntries = entries.sort((a, b) => b.timestamp - a.timestamp);
-        
-        // Build DOM exactly once using a DocumentFragment to completely eliminate blinking
         this.buildTableDOM();
-        
-        // Hide non-matching rows instantly
         this.applyFilters();
     }
 
     private buildTableDOM() {
-        // DocumentFragment allows us to build the entire table offline
-        // and inject it into the DOM in a single synchronous frame!
         const fragment = document.createDocumentFragment();
         this.observer.disconnect();
 
         if (this.allEntries.length === 0) {
             const emptyTr = document.createElement("tr");
-            emptyTr.innerHTML = `<td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No experiments found. Create notes tagged with [experiment].</td>`;
+            const emptyTd = document.createElement("td");
+            emptyTd.setAttribute("colspan", "6");
+            emptyTd.textContent = "No experiments found. Create notes tagged with [experiment].";
+            emptyTd.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
+            emptyTr.appendChild(emptyTd);
             fragment.appendChild(emptyTr);
         } else {
             this.allEntries.forEach(e => {
                 const tr = document.createElement("tr");
-                tr.style.cursor = "pointer";
-                tr.style.transition = "background 0.2s";
-                e.rowEl = tr; // Store reference for CSS filtering
+                tr.setCssStyles({ cursor: "pointer", transition: "background 0.2s" });
+                e.rowEl = tr; 
 
-                tr.onmouseover = () => tr.style.backgroundColor = "var(--background-secondary-alt)";
-                tr.onmouseout = () => tr.style.backgroundColor = "transparent";
+                tr.onmouseover = () => tr.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
+                tr.onmouseout = () => tr.setCssStyles({ backgroundColor: "transparent" });
                 tr.onclick = () => this.app.workspace.getLeaf(false).openFile(e.file);
 
-                // Ref Code
-                const tdCode = tr.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" }});
-                tdCode.createDiv({ text: e.code, attr: { style: "font-weight: 700; color: var(--text-accent);" }});
+                const tdCode = document.createElement("td");
+                tdCode.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+                const codeDiv = document.createElement("div");
+                codeDiv.textContent = e.code;
+                codeDiv.setCssStyles({ fontWeight: "700", color: "var(--text-accent)" });
+                tdCode.appendChild(codeDiv);
+                tr.appendChild(tdCode);
 
-                // Reaction Scheme (Lazy Loaded)
-                const tdScheme = tr.createEl("td", { attr: { style: "padding: 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" }});
-                const schemeWrap = tdScheme.createDiv({ attr: { 'data-smiles': e.rxnSmiles, style: "width: 280px; height: 90px; display: flex; align-items: center; justify-content: center; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 6px;" }});
+                const tdScheme = document.createElement("td");
+                tdScheme.setCssStyles({ padding: "10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+                const schemeWrap = document.createElement("div");
+                schemeWrap.setAttribute("data-smiles", e.rxnSmiles);
+                schemeWrap.setCssStyles({ width: "280px", height: "90px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px" });
                 
                 if (e.rxnSmiles) {
-                    schemeWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">⏳ Loading...</span>`;
+                    const s = document.createElement("span"); s.textContent = "⏳ Loading..."; s.setCssStyles({ color: "var(--text-muted)", fontSize: "11px" });
+                    schemeWrap.appendChild(s);
                     this.observer.observe(schemeWrap);
                 } else {
-                    schemeWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">No Structure</span>`;
+                    const s = document.createElement("span"); s.textContent = "No Structure"; s.setCssStyles({ color: "var(--text-muted)", fontSize: "11px" });
+                    schemeWrap.appendChild(s);
                 }
+                tdScheme.appendChild(schemeWrap);
+                tr.appendChild(tdScheme);
 
-                // Project
-                tr.createEl("td", { text: e.project, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); color: var(--text-normal);" }});
+                const tdProj = document.createElement("td");
+                tdProj.textContent = e.project;
+                tdProj.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", color: "var(--text-normal)" });
+                tr.appendChild(tdProj);
 
-                // Yield
                 const yColor = e.yieldStr !== '-' ? (parseFloat(e.yieldStr) >= 80 ? 'var(--text-success)' : 'var(--text-normal)') : 'var(--text-muted)';
-                tr.createEl("td", { text: e.yieldStr, attr: { style: `padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); font-weight: 600; color: ${yColor};` }});
+                const tdYield = document.createElement("td");
+                tdYield.textContent = e.yieldStr;
+                tdYield.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", fontWeight: "600", color: yColor });
+                tr.appendChild(tdYield);
 
-                // Date
-                tr.createEl("td", { text: e.date, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); color: var(--text-muted);" }});
+                const tdDate = document.createElement("td");
+                tdDate.textContent = e.date;
+                tdDate.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", color: "var(--text-muted)" });
+                tr.appendChild(tdDate);
 
-                // Status Badge
-                const tdStatus = tr.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" }});
+                const tdStatus = document.createElement("td");
+                tdStatus.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
                 
                 let bg = 'var(--background-primary)', color = 'var(--text-muted)', border = 'var(--background-modifier-border)';
                 if (e.status === 'Completed') { color = 'var(--text-success)'; border = 'var(--text-success)'; }
@@ -292,30 +310,26 @@ export class ElnDashboardView extends ItemView {
                 else if (e.status === 'Failed') { color = 'var(--text-error)'; border = 'var(--text-error)'; }
                 else if (e.status === 'Planned') { color = 'var(--text-accent)'; border = 'var(--text-accent)'; }
 
-                tdStatus.createDiv({ text: e.status.toUpperCase(), attr: { style: `display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; color: ${color}; border: 1px solid ${border}; background: ${bg};` }});
+                const statDiv = document.createElement("div");
+                statDiv.textContent = e.status.toUpperCase();
+                statDiv.setCssStyles({ display: "inline-block", padding: "4px 10px", borderRadius: "12px", fontSize: "10px", fontWeight: "700", color: color, border: `1px solid ${border}`, background: bg });
+                tdStatus.appendChild(statDiv);
+                tr.appendChild(tdStatus);
 
                 fragment.appendChild(tr);
             });
         }
 
-        // Swap the entire body at once to completely stop blinking
         this.tableBodyEl.empty();
         this.tableBodyEl.appendChild(fragment);
     }
 
-    // CPU-Free Filtering: Toggles display:none directly on the DOM rows
     private applyFilters() {
         this.allEntries.forEach(e => {
             if (!e.rowEl) return;
-            
             const matchFilter = this.currentFilter === 'All' || e.status === this.currentFilter;
             const matchSearch = !this.searchQuery || e.searchText.includes(this.searchQuery);
-            
-            if (matchFilter && matchSearch) {
-                e.rowEl.style.display = ""; // Show row instantly
-            } else {
-                e.rowEl.style.display = "none"; // Hide row instantly
-            }
+            e.rowEl.setCssStyles({ display: (matchFilter && matchSearch) ? "" : "none" }); 
         });
     }
 

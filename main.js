@@ -14778,7 +14778,7 @@ var require_lodash = __commonJS({
           result2.placeholder = curryRight.placeholder;
           return result2;
         }
-        function debounce13(func, wait, options3) {
+        function debounce10(func, wait, options3) {
           var lastArgs, lastThis, maxWait, result2, timerId, lastCallTime, lastInvokeTime = 0, leading = false, maxing = false, trailing = true;
           if (typeof func != "function") {
             throw new TypeError2(FUNC_ERROR_TEXT);
@@ -14958,7 +14958,7 @@ var require_lodash = __commonJS({
             leading = "leading" in options3 ? !!options3.leading : leading;
             trailing = "trailing" in options3 ? !!options3.trailing : trailing;
           }
-          return debounce13(func, wait, {
+          return debounce10(func, wait, {
             "leading": leading,
             "maxWait": wait,
             "trailing": trailing
@@ -15977,7 +15977,7 @@ var require_lodash = __commonJS({
         lodash.create = create3;
         lodash.curry = curry;
         lodash.curryRight = curryRight;
-        lodash.debounce = debounce13;
+        lodash.debounce = debounce10;
         lodash.defaults = defaults2;
         lodash.defaultsDeep = defaultsDeep;
         lodash.defer = defer;
@@ -573223,11 +573223,10 @@ var ElnDashboardView = class extends import_obsidian14.ItemView {
             this.plugin.api.renderStructure(smiles, 280, 110).then((renderEl) => {
               el2.empty();
               if (renderEl) {
-                renderEl.style.maxWidth = "100%";
-                renderEl.style.maxHeight = "100%";
+                renderEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
                 el2.appendChild(renderEl);
               } else {
-                el2.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">Invalid Structure</span>`;
+                el2.createSpan({ text: "Invalid Structure", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
               }
             });
           }
@@ -573249,53 +573248,62 @@ var ElnDashboardView = class extends import_obsidian14.ItemView {
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass("chem-eln-dashboard-view");
-    Object.assign(container.style, {
-      display: "flex",
-      flexDirection: "column",
-      padding: "0",
-      background: "var(--background-primary)"
-    });
-    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
+    const header = container.createDiv();
+    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
+    const titleArea = header.createDiv();
+    titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
     renderLimsNav(titleArea, "eln", this.plugin);
-    titleArea.createEl("h2", { text: "Laboratory Notebook", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
-    titleArea.createEl("span", { text: "Manage and track all your chemical experiments", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
-    const newBtn = header.createEl("button", { text: "+ New Experiment", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" } });
+    titleArea.createEl("h2", { text: "Laboratory Notebook" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
+    titleArea.createEl("span", { text: "Manage and track all your chemical experiments" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
+    const newBtn = header.createEl("button", { text: "+ New Experiment", cls: "mod-cta" });
+    newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
     newBtn.onclick = () => {
       var _a2;
       const currentDir = (_a2 = window.localStorage.getItem("chem-eln-dir")) != null ? _a2 : this.plugin.settings.elnDirectory || "/";
       new CreateExperimentModal(this.app, this.plugin, this.plugin.settings.elnPrefix, currentDir, async (expCode) => {
         await createNewElnExperiment(this.app, expCode, currentDir, this.plugin.settings.elnSections);
-        this.loadExperiments();
+        void this.loadExperiments();
       }).open();
     };
-    this.toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const leftTools = this.toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center;" } });
-    const filterTabs = leftTools.createDiv({ attr: { style: "display: flex; gap: 8px;" } });
+    this.toolbarEl = container.createDiv();
+    this.toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
+    const leftTools = this.toolbarEl.createDiv();
+    leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center" });
+    const filterTabs = leftTools.createDiv();
+    filterTabs.setCssStyles({ display: "flex", gap: "8px" });
     const tabs = ["All", "Planned", "Running", "Completed", "Failed"];
     tabs.forEach((t8) => {
-      const btn = filterTabs.createEl("button", { text: t8, attr: { style: `border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 600; border: 1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}; background: ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)"}; color: ${this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)"}; box-shadow: none;` } });
+      const btn = filterTabs.createEl("button", { text: t8 });
+      btn.setCssStyles({ borderRadius: "20px", padding: "4px 16px", fontSize: "12px", fontWeight: "600", border: `1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}`, background: this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)", color: this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)", boxShadow: "none" });
       btn.onclick = () => {
         this.currentFilter = t8;
         this.renderToolbar();
         this.applyFilters();
       };
     });
-    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px; margin-left: 10px;" } });
-    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
-    const dirInp = dirWrap.createEl("input", { type: "text", value: (_a = window.localStorage.getItem("chem-eln-dir")) != null ? _a : this.plugin.settings.elnDirectory || "", attr: { placeholder: "e.g. ELN/2026", style: "width: 140px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    const dirWrap = leftTools.createDiv();
+    dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" });
+    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
+    const dirInp = dirWrap.createEl("input", { type: "text", value: (_a = window.localStorage.getItem("chem-eln-dir")) != null ? _a : this.plugin.settings.elnDirectory || "" });
+    dirInp.placeholder = "e.g. ELN/2026";
+    dirInp.setCssStyles({ width: "140px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
     dirInp.onchange = (e6) => {
       window.localStorage.setItem("chem-eln-dir", e6.target.value.trim());
-      this.loadExperiments();
+      void this.loadExperiments();
     };
-    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search reference, project...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" } });
+    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search reference, project..." });
+    searchInp.setCssStyles({ width: "280px", fontSize: "13px", borderRadius: "6px" });
     searchInp.oninput = (e6) => {
       this.searchQuery = e6.target.value.toLowerCase();
       this.applyFilters();
     };
-    const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" } });
-    const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px;" } });
-    const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" } });
+    const tableContainer = container.createDiv();
+    tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
+    const table = tableContainer.createEl("table");
+    table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "left", fontSize: "13px" });
+    const thead = table.createEl("thead");
+    thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
     const tr2 = thead.createEl("tr");
     const cols = [
       { name: "Reference", width: "120px" },
@@ -573306,13 +573314,15 @@ var ElnDashboardView = class extends import_obsidian14.ItemView {
       { name: "Status", width: "120px" }
     ];
     cols.forEach((c10) => {
-      tr2.createEl("th", { text: c10.name, attr: { style: `padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; width: ${c10.width};` } });
+      tr2.createEl("th", { text: c10.name }).setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", width: c10.width });
     });
     this.tableBodyEl = table.createEl("tbody");
     await this.loadExperiments();
-    const requestRefresh = (0, import_obsidian14.debounce)(() => {
-      this.loadExperiments();
-    }, 2e3, true);
+    let refreshTimeout;
+    const requestRefresh = () => {
+      window.clearTimeout(refreshTimeout);
+      refreshTimeout = window.setTimeout(() => void this.loadExperiments(), 2e3);
+    };
     this.registerEvent(this.app.vault.on("modify", requestRefresh));
     this.registerEvent(this.app.vault.on("create", requestRefresh));
     this.registerEvent(this.app.vault.on("delete", requestRefresh));
@@ -573321,9 +573331,11 @@ var ElnDashboardView = class extends import_obsidian14.ItemView {
     const btns = this.toolbarEl.querySelectorAll("button");
     btns.forEach((btn) => {
       const isMatch = btn.innerText === this.currentFilter;
-      btn.style.background = isMatch ? "var(--interactive-accent)" : "var(--background-primary)";
-      btn.style.color = isMatch ? "var(--text-on-accent)" : "var(--text-muted)";
-      btn.style.borderColor = isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)";
+      btn.setCssStyles({
+        background: isMatch ? "var(--interactive-accent)" : "var(--background-primary)",
+        color: isMatch ? "var(--text-on-accent)" : "var(--text-muted)",
+        borderColor: isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)"
+      });
     });
   }
   async loadExperiments() {
@@ -573382,32 +573394,61 @@ var ElnDashboardView = class extends import_obsidian14.ItemView {
     this.observer.disconnect();
     if (this.allEntries.length === 0) {
       const emptyTr = document.createElement("tr");
-      emptyTr.innerHTML = `<td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No experiments found. Create notes tagged with [experiment].</td>`;
+      const emptyTd = document.createElement("td");
+      emptyTd.setAttribute("colspan", "6");
+      emptyTd.textContent = "No experiments found. Create notes tagged with [experiment].";
+      emptyTd.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
+      emptyTr.appendChild(emptyTd);
       fragment2.appendChild(emptyTr);
     } else {
       this.allEntries.forEach((e6) => {
         const tr2 = document.createElement("tr");
-        tr2.style.cursor = "pointer";
-        tr2.style.transition = "background 0.2s";
+        tr2.setCssStyles({ cursor: "pointer", transition: "background 0.2s" });
         e6.rowEl = tr2;
-        tr2.onmouseover = () => tr2.style.backgroundColor = "var(--background-secondary-alt)";
-        tr2.onmouseout = () => tr2.style.backgroundColor = "transparent";
+        tr2.onmouseover = () => tr2.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
+        tr2.onmouseout = () => tr2.setCssStyles({ backgroundColor: "transparent" });
         tr2.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-        const tdCode = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-        tdCode.createDiv({ text: e6.code, attr: { style: "font-weight: 700; color: var(--text-accent);" } });
-        const tdScheme = tr2.createEl("td", { attr: { style: "padding: 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-        const schemeWrap = tdScheme.createDiv({ attr: { "data-smiles": e6.rxnSmiles, style: "width: 280px; height: 90px; display: flex; align-items: center; justify-content: center; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 6px;" } });
+        const tdCode = document.createElement("td");
+        tdCode.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+        const codeDiv = document.createElement("div");
+        codeDiv.textContent = e6.code;
+        codeDiv.setCssStyles({ fontWeight: "700", color: "var(--text-accent)" });
+        tdCode.appendChild(codeDiv);
+        tr2.appendChild(tdCode);
+        const tdScheme = document.createElement("td");
+        tdScheme.setCssStyles({ padding: "10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+        const schemeWrap = document.createElement("div");
+        schemeWrap.setAttribute("data-smiles", e6.rxnSmiles);
+        schemeWrap.setCssStyles({ width: "280px", height: "90px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px" });
         if (e6.rxnSmiles) {
-          schemeWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">\u23F3 Loading...</span>`;
+          const s8 = document.createElement("span");
+          s8.textContent = "\u23F3 Loading...";
+          s8.setCssStyles({ color: "var(--text-muted)", fontSize: "11px" });
+          schemeWrap.appendChild(s8);
           this.observer.observe(schemeWrap);
         } else {
-          schemeWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">No Structure</span>`;
+          const s8 = document.createElement("span");
+          s8.textContent = "No Structure";
+          s8.setCssStyles({ color: "var(--text-muted)", fontSize: "11px" });
+          schemeWrap.appendChild(s8);
         }
-        tr2.createEl("td", { text: e6.project, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); color: var(--text-normal);" } });
+        tdScheme.appendChild(schemeWrap);
+        tr2.appendChild(tdScheme);
+        const tdProj = document.createElement("td");
+        tdProj.textContent = e6.project;
+        tdProj.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", color: "var(--text-normal)" });
+        tr2.appendChild(tdProj);
         const yColor = e6.yieldStr !== "-" ? parseFloat(e6.yieldStr) >= 80 ? "var(--text-success)" : "var(--text-normal)" : "var(--text-muted)";
-        tr2.createEl("td", { text: e6.yieldStr, attr: { style: `padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); font-weight: 600; color: ${yColor};` } });
-        tr2.createEl("td", { text: e6.date, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); color: var(--text-muted);" } });
-        const tdStatus = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+        const tdYield = document.createElement("td");
+        tdYield.textContent = e6.yieldStr;
+        tdYield.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", fontWeight: "600", color: yColor });
+        tr2.appendChild(tdYield);
+        const tdDate = document.createElement("td");
+        tdDate.textContent = e6.date;
+        tdDate.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", color: "var(--text-muted)" });
+        tr2.appendChild(tdDate);
+        const tdStatus = document.createElement("td");
+        tdStatus.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
         let bg = "var(--background-primary)", color5 = "var(--text-muted)", border3 = "var(--background-modifier-border)";
         if (e6.status === "Completed") {
           color5 = "var(--text-success)";
@@ -573422,24 +573463,23 @@ var ElnDashboardView = class extends import_obsidian14.ItemView {
           color5 = "var(--text-accent)";
           border3 = "var(--text-accent)";
         }
-        tdStatus.createDiv({ text: e6.status.toUpperCase(), attr: { style: `display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; color: ${color5}; border: 1px solid ${border3}; background: ${bg};` } });
+        const statDiv = document.createElement("div");
+        statDiv.textContent = e6.status.toUpperCase();
+        statDiv.setCssStyles({ display: "inline-block", padding: "4px 10px", borderRadius: "12px", fontSize: "10px", fontWeight: "700", color: color5, border: `1px solid ${border3}`, background: bg });
+        tdStatus.appendChild(statDiv);
+        tr2.appendChild(tdStatus);
         fragment2.appendChild(tr2);
       });
     }
     this.tableBodyEl.empty();
     this.tableBodyEl.appendChild(fragment2);
   }
-  // CPU-Free Filtering: Toggles display:none directly on the DOM rows
   applyFilters() {
     this.allEntries.forEach((e6) => {
       if (!e6.rowEl) return;
       const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
       const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
-      if (matchFilter && matchSearch) {
-        e6.rowEl.style.display = "";
-      } else {
-        e6.rowEl.style.display = "none";
-      }
+      e6.rowEl.setCssStyles({ display: matchFilter && matchSearch ? "" : "none" });
     });
   }
   async onClose() {
@@ -573468,11 +573508,10 @@ var InventoryDashboardView = class extends import_obsidian15.ItemView {
             this.plugin.api.renderStructure(smiles, 120, 100).then((renderEl) => {
               el2.empty();
               if (renderEl) {
-                renderEl.style.maxWidth = "100%";
-                renderEl.style.maxHeight = "100%";
+                renderEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
                 el2.appendChild(renderEl);
               } else {
-                el2.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">Invalid</span>`;
+                el2.createSpan({ text: "Invalid", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
               }
             });
           }
@@ -573493,51 +573532,59 @@ var InventoryDashboardView = class extends import_obsidian15.ItemView {
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass("chem-inventory-dashboard-view");
-    Object.assign(container.style, {
-      display: "flex",
-      flexDirection: "column",
-      padding: "0",
-      background: "var(--background-primary)"
-    });
-    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
+    const header = container.createDiv();
+    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
+    const titleArea = header.createDiv();
+    titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
     renderLimsNav(titleArea, "inventory", this.plugin);
-    titleArea.createEl("h2", { text: "Chemical Inventory", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
-    titleArea.createEl("span", { text: "Track reagents, locations, and stock levels", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
-    const newBtn = header.createEl("button", { text: "+ Add Item", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" } });
+    titleArea.createEl("h2", { text: "Chemical Inventory" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
+    titleArea.createEl("span", { text: "Track reagents, locations, and stock levels" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
+    const newBtn = header.createEl("button", { text: "+ Add Item", cls: "mod-cta" });
+    newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
     newBtn.onclick = () => {
       const folder = window.localStorage.getItem("chem-inv-dir") || "Inventory";
       new AddInventoryModal(this.app, this.plugin, folder, () => {
-        this.loadInventory();
+        void this.loadInventory();
       }).open();
     };
-    this.toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const leftTools = this.toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center;" } });
-    const filterTabs = leftTools.createDiv({ attr: { style: "display: flex; gap: 8px;" } });
+    this.toolbarEl = container.createDiv();
+    this.toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
+    const leftTools = this.toolbarEl.createDiv();
+    leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center" });
+    const filterTabs = leftTools.createDiv();
+    filterTabs.setCssStyles({ display: "flex", gap: "8px" });
     const tabs = ["All", "Available", "Checked Out"];
     tabs.forEach((t8) => {
-      const btn = filterTabs.createEl("button", { text: t8, attr: { style: `border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 600; border: 1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}; background: ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)"}; color: ${this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)"}; box-shadow: none;` } });
+      const btn = filterTabs.createEl("button", { text: t8 });
+      btn.setCssStyles({ borderRadius: "20px", padding: "4px 16px", fontSize: "12px", fontWeight: "600", border: `1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}`, background: this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)", color: this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)", boxShadow: "none" });
       btn.onclick = () => {
         this.currentFilter = t8;
         this.renderToolbar();
         this.applyFilters();
       };
     });
-    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px; margin-left: 10px;" } });
-    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
-    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-inv-dir") || "Inventory", attr: { style: "width: 120px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    const dirWrap = leftTools.createDiv();
+    dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" });
+    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
+    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-inv-dir") || "Inventory" });
+    dirInp.setCssStyles({ width: "120px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
     dirInp.onchange = (e6) => {
       window.localStorage.setItem("chem-inv-dir", e6.target.value.trim());
-      this.loadInventory();
+      void this.loadInventory();
     };
-    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search name, CAS, location...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" } });
+    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search name, CAS, location..." });
+    searchInp.setCssStyles({ width: "280px", fontSize: "13px", borderRadius: "6px" });
     searchInp.oninput = (e6) => {
       this.searchQuery = e6.target.value.toLowerCase();
       this.applyFilters();
     };
-    const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" } });
-    const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px;" } });
-    const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" } });
+    const tableContainer = container.createDiv();
+    tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
+    const table = tableContainer.createEl("table");
+    table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "left", fontSize: "13px" });
+    const thead = table.createEl("thead");
+    thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
     const tr2 = thead.createEl("tr");
     const cols = [
       { name: "Structure", width: "140px" },
@@ -573547,13 +573594,16 @@ var InventoryDashboardView = class extends import_obsidian15.ItemView {
       { name: "Actions", width: "120px" }
     ];
     cols.forEach((c10) => {
-      tr2.createEl("th", { text: c10.name, attr: { style: `padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; width: ${c10.width};` } });
+      const th = tr2.createEl("th", { text: c10.name });
+      th.setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", width: c10.width });
     });
     this.tableBodyEl = table.createEl("tbody");
     await this.loadInventory();
-    const requestRefresh = (0, import_obsidian15.debounce)(() => {
-      this.loadInventory();
-    }, 2e3, true);
+    let refreshTimeout;
+    const requestRefresh = () => {
+      window.clearTimeout(refreshTimeout);
+      refreshTimeout = window.setTimeout(() => void this.loadInventory(), 2e3);
+    };
     this.registerEvent(this.app.vault.on("modify", requestRefresh));
     this.registerEvent(this.app.vault.on("create", requestRefresh));
     this.registerEvent(this.app.vault.on("delete", requestRefresh));
@@ -573562,9 +573612,7 @@ var InventoryDashboardView = class extends import_obsidian15.ItemView {
     const btns = this.toolbarEl.querySelectorAll("button");
     btns.forEach((btn) => {
       const isMatch = btn.innerText === this.currentFilter;
-      btn.style.background = isMatch ? "var(--interactive-accent)" : "var(--background-primary)";
-      btn.style.color = isMatch ? "var(--text-on-accent)" : "var(--text-muted)";
-      btn.style.borderColor = isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)";
+      btn.setCssStyles({ background: isMatch ? "var(--interactive-accent)" : "var(--background-primary)", color: isMatch ? "var(--text-on-accent)" : "var(--text-muted)", borderColor: isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)" });
     });
   }
   async loadInventory() {
@@ -573615,42 +573663,57 @@ var InventoryDashboardView = class extends import_obsidian15.ItemView {
     this.tableBodyEl.empty();
     this.observer.disconnect();
     if (this.allEntries.length === 0) {
-      this.tableBodyEl.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No inventory items found. Add items to an Inventory folder or use tags: [inventory].</td></tr>`;
+      const tr2 = this.tableBodyEl.createEl("tr");
+      const td = tr2.createEl("td", { text: "No inventory items found. Add items to an Inventory folder or use tags: [inventory]." });
+      td.setAttribute("colspan", "5");
+      td.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
       return;
     }
     this.allEntries.forEach((e6) => {
-      const tr2 = this.tableBodyEl.createEl("tr", { attr: { style: "transition: background 0.2s;" } });
+      const tr2 = this.tableBodyEl.createEl("tr");
+      tr2.setCssStyles({ transition: "background 0.2s" });
       e6.rowEl = tr2;
-      tr2.onmouseover = () => tr2.style.backgroundColor = "var(--background-secondary-alt)";
-      tr2.onmouseout = () => tr2.style.backgroundColor = "transparent";
-      const tdStruct = tr2.createEl("td", { attr: { style: "padding: 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-      const structWrap = tdStruct.createDiv({ attr: { "data-smiles": e6.smiles, style: "width: 120px; height: 100px; display: flex; align-items: center; justify-content: center; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 6px; cursor: pointer;" } });
+      tr2.onmouseover = () => tr2.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
+      tr2.onmouseout = () => tr2.setCssStyles({ backgroundColor: "transparent" });
+      const tdStruct = tr2.createEl("td");
+      tdStruct.setCssStyles({ padding: "10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+      const structWrap = tdStruct.createDiv();
+      structWrap.setAttribute("data-smiles", e6.smiles);
+      structWrap.setCssStyles({ width: "120px", height: "100px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px", cursor: "pointer" });
       structWrap.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
       if (e6.smiles) {
-        structWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">\u23F3 Loading...</span>`;
+        structWrap.createSpan({ text: "\u23F3 Loading...", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
         this.observer.observe(structWrap);
       } else {
-        structWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">No Structure</span>`;
+        structWrap.createSpan({ text: "No Structure", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
       }
-      const tdDetails = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-      const nameEl = tdDetails.createDiv({ text: e6.name, attr: { style: "font-weight: 700; color: var(--text-accent); font-size: 14px; margin-bottom: 6px; cursor: pointer;" } });
+      const tdDetails = tr2.createEl("td");
+      tdDetails.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+      const nameEl = tdDetails.createDiv({ text: e6.name });
+      nameEl.setCssStyles({ fontWeight: "700", color: "var(--text-accent)", fontSize: "14px", marginBottom: "6px", cursor: "pointer" });
       nameEl.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-      if (e6.cas) tdDetails.createDiv({ text: `CAS: ${e6.cas}`, attr: { style: "font-size: 11px; color: var(--text-muted); margin-bottom: 2px;" } });
-      tdDetails.createDiv({ text: `Supplier: ${e6.supplier}`, attr: { style: "font-size: 11px; color: var(--text-muted);" } });
-      const tdLoc = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-      tdLoc.createDiv({ text: `\u{1F4CD} ${e6.location}`, attr: { style: "font-size: 13px; color: var(--text-normal); font-weight: 500; margin-bottom: 4px;" } });
-      tdLoc.createDiv({ text: `\u2696\uFE0F ${e6.amount}`, attr: { style: "font-size: 12px; color: var(--text-muted);" } });
-      const tdStatus = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      if (e6.cas) tdDetails.createDiv({ text: `CAS: ${e6.cas}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", marginBottom: "2px" });
+      tdDetails.createDiv({ text: `Supplier: ${e6.supplier}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)" });
+      const tdLoc = tr2.createEl("td");
+      tdLoc.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+      tdLoc.createDiv({ text: `\u{1F4CD} ${e6.location}` }).setCssStyles({ fontSize: "13px", color: "var(--text-normal)", fontWeight: "500", marginBottom: "4px" });
+      tdLoc.createDiv({ text: `\u2696\uFE0F ${e6.amount}` }).setCssStyles({ fontSize: "12px", color: "var(--text-muted)" });
+      const tdStatus = tr2.createEl("td");
+      tdStatus.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
       const isAvail = e6.status === "Available";
       const color5 = isAvail ? "var(--text-success)" : "var(--text-warning)";
       const border3 = isAvail ? "var(--text-success)" : "var(--text-warning)";
-      tdStatus.createDiv({ text: e6.status.toUpperCase(), attr: { style: `display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; color: ${color5}; border: 1px solid ${border3}; background: var(--background-primary); margin-bottom: 4px;` } });
+      const statSpan = tdStatus.createDiv({ text: e6.status.toUpperCase() });
+      statSpan.setCssStyles({ display: "inline-block", padding: "4px 10px", borderRadius: "12px", fontSize: "10px", fontWeight: "700", color: color5, border: `1px solid ${border3}`, background: "var(--background-primary)", marginBottom: "4px" });
       if (!isAvail && e6.checkedOutBy) {
-        tdStatus.createDiv({ text: `\u{1F464} ${e6.checkedOutBy}`, attr: { style: "font-size: 11px; color: var(--text-muted); margin-top: 4px;" } });
+        tdStatus.createDiv({ text: `\u{1F464} ${e6.checkedOutBy}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" });
       }
-      const tdActions = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-      const actContainer = tdActions.createDiv({ attr: { style: "display: flex; flex-direction: column; gap: 6px;" } });
-      const toggleBtn = actContainer.createEl("button", { text: isAvail ? "\u{1F4E4} Check Out" : "\u{1F4E5} Return", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
+      const tdActions = tr2.createEl("td");
+      tdActions.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+      const actContainer = tdActions.createDiv();
+      actContainer.setCssStyles({ display: "flex", flexDirection: "column", gap: "6px" });
+      const toggleBtn = actContainer.createEl("button", { text: isAvail ? "\u{1F4E4} Check Out" : "\u{1F4E5} Return" });
+      toggleBtn.setCssStyles({ fontSize: "11px", padding: "4px", height: "26px", width: "100%" });
       toggleBtn.onclick = async () => {
         const newStatus = isAvail ? "Checked Out" : "Available";
         const user = newStatus === "Checked Out" ? "Current User" : "";
@@ -573661,23 +573724,19 @@ var InventoryDashboardView = class extends import_obsidian15.ItemView {
         });
         new import_obsidian15.Notice(`${e6.name} is now ${newStatus}`);
       };
-      const qrBtn = actContainer.createEl("button", { text: "\u{1F5A8}\uFE0F Label", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
+      const qrBtn = actContainer.createEl("button", { text: "\u{1F5A8}\uFE0F Label" });
+      qrBtn.setCssStyles({ fontSize: "11px", padding: "4px", height: "26px", width: "100%" });
       qrBtn.onclick = () => {
         new QrCodeModal(this.app, e6.file).open();
       };
     });
   }
-  // CPU-Free Filtering: Toggles display:none directly on the DOM rows
   applyFilters() {
     this.allEntries.forEach((e6) => {
       if (!e6.rowEl) return;
       const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
       const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
-      if (matchFilter && matchSearch) {
-        e6.rowEl.style.display = "";
-      } else {
-        e6.rowEl.style.display = "none";
-      }
+      e6.rowEl.setCssStyles({ display: matchFilter && matchSearch ? "" : "none" });
     });
   }
   async onClose() {
@@ -573710,53 +573769,65 @@ var EquipmentDashboardView = class extends import_obsidian16.ItemView {
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass("chem-equipment-dashboard-view");
-    Object.assign(container.style, {
-      display: "flex",
-      flexDirection: "column",
-      padding: "0",
-      background: "var(--background-primary)"
-    });
-    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
+    const header = container.createDiv();
+    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
+    const titleArea = header.createDiv();
+    titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
     renderLimsNav(titleArea, "equipment", this.plugin);
-    titleArea.createEl("h2", { text: "Lab Equipment", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
-    titleArea.createEl("span", { text: "Track instrument bookings, manuals, and maintenance logs", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
-    const newBtn = header.createEl("button", { text: "+ Add Instrument", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" } });
-    newBtn.onclick = () => this.createNewEquipment();
-    this.toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const leftTools = this.toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center;" } });
-    const filterTabs = leftTools.createDiv({ attr: { style: "display: flex; gap: 8px;" } });
+    titleArea.createEl("h2", { text: "Lab Equipment" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
+    titleArea.createEl("span", { text: "Track instrument bookings, manuals, and maintenance logs" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
+    const newBtn = header.createEl("button", { text: "+ Add Instrument", cls: "mod-cta" });
+    newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
+    newBtn.onclick = () => void this.createNewEquipment();
+    this.toolbarEl = container.createDiv();
+    this.toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
+    const leftTools = this.toolbarEl.createDiv();
+    leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center" });
+    const filterTabs = leftTools.createDiv();
+    filterTabs.setCssStyles({ display: "flex", gap: "8px" });
     const tabs = ["All", "Available", "In Use", "Maintenance"];
     tabs.forEach((t8) => {
-      const btn = filterTabs.createEl("button", { text: t8, attr: { style: `border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 600; border: 1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}; background: ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)"}; color: ${this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)"}; box-shadow: none;` } });
+      const btn = filterTabs.createEl("button", { text: t8 });
+      btn.setCssStyles({ borderRadius: "20px", padding: "4px 16px", fontSize: "12px", fontWeight: "600", border: `1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}`, background: this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)", color: this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)", boxShadow: "none" });
       btn.onclick = () => {
         this.currentFilter = t8;
         this.renderToolbar();
         this.applyFilters();
       };
     });
-    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px; margin-left: 10px;" } });
-    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
-    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-equip-dir") || "Equipment", attr: { style: "width: 120px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    const dirWrap = leftTools.createDiv();
+    dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" });
+    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
+    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-equip-dir") || "Equipment" });
+    dirInp.setCssStyles({ width: "120px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
     dirInp.onchange = (e6) => {
       window.localStorage.setItem("chem-equip-dir", e6.target.value.trim());
-      this.loadEquipment();
+      void this.loadEquipment();
     };
-    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search instrument or location...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" } });
+    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search instrument or location..." });
+    searchInp.setCssStyles({ width: "280px", fontSize: "13px", borderRadius: "6px" });
     searchInp.oninput = (e6) => {
       this.searchQuery = e6.target.value.toLowerCase();
       this.applyFilters();
     };
-    const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" } });
-    const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px;" } });
-    const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" } });
+    const tableContainer = container.createDiv();
+    tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
+    const table = tableContainer.createEl("table");
+    table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "left", fontSize: "13px" });
+    const thead = table.createEl("thead");
+    thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
     const tr2 = thead.createEl("tr");
     ["Instrument", "Location", "Status", "Maintenance", "Actions"].forEach((c10) => {
-      tr2.createEl("th", { text: c10, attr: { style: "padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;" } });
+      tr2.createEl("th", { text: c10 }).setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px" });
     });
     this.tableBodyEl = table.createEl("tbody");
     await this.loadEquipment();
-    const requestRefresh = (0, import_obsidian16.debounce)(() => this.loadEquipment(), 2e3, true);
+    let refreshTimeout;
+    const requestRefresh = () => {
+      window.clearTimeout(refreshTimeout);
+      refreshTimeout = window.setTimeout(() => void this.loadEquipment(), 2e3);
+    };
     this.registerEvent(this.app.vault.on("modify", requestRefresh));
     this.registerEvent(this.app.vault.on("create", requestRefresh));
     this.registerEvent(this.app.vault.on("delete", requestRefresh));
@@ -573765,9 +573836,7 @@ var EquipmentDashboardView = class extends import_obsidian16.ItemView {
     const btns = this.toolbarEl.querySelectorAll("button");
     btns.forEach((btn) => {
       const isMatch = btn.innerText === this.currentFilter;
-      btn.style.background = isMatch ? "var(--interactive-accent)" : "var(--background-primary)";
-      btn.style.color = isMatch ? "var(--text-on-accent)" : "var(--text-muted)";
-      btn.style.borderColor = isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)";
+      btn.setCssStyles({ background: isMatch ? "var(--interactive-accent)" : "var(--background-primary)", color: isMatch ? "var(--text-on-accent)" : "var(--text-muted)", borderColor: isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)" });
     });
   }
   async createNewEquipment() {
@@ -573833,28 +573902,41 @@ contact: ""
   buildTableDOM() {
     this.tableBodyEl.empty();
     if (this.allEntries.length === 0) {
-      this.tableBodyEl.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No equipment found. Create notes in an 'Equipment' folder or use tags: [equipment].</td></tr>`;
+      const tr2 = this.tableBodyEl.createEl("tr");
+      const td = tr2.createEl("td", { text: "No equipment found. Create notes in an 'Equipment' folder or use tags: [equipment]." });
+      td.setAttribute("colspan", "5");
+      td.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
       return;
     }
     this.allEntries.forEach((e6) => {
-      const tr2 = this.tableBodyEl.createEl("tr", { attr: { style: "cursor: default; transition: background 0.2s;" } });
+      const tr2 = this.tableBodyEl.createEl("tr");
+      tr2.setCssStyles({ cursor: "default", transition: "background 0.2s" });
       e6.rowEl = tr2;
-      tr2.onmouseover = () => tr2.style.backgroundColor = "var(--background-secondary-alt)";
-      tr2.onmouseout = () => tr2.style.backgroundColor = "transparent";
-      const tdName = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-      const nameLink = tdName.createDiv({ text: `\u{1F52C} ${e6.name}`, attr: { style: "font-weight: 700; color: var(--text-accent); font-size: 14px; cursor: pointer; margin-bottom: 4px;" } });
+      tr2.onmouseover = () => tr2.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
+      tr2.onmouseout = () => tr2.setCssStyles({ backgroundColor: "transparent" });
+      const tdName = tr2.createEl("td");
+      tdName.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+      const nameLink = tdName.createDiv({ text: `\u{1F52C} ${e6.name}` });
+      nameLink.setCssStyles({ fontWeight: "700", color: "var(--text-accent)", fontSize: "14px", cursor: "pointer", marginBottom: "4px" });
       nameLink.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-      if (e6.contact) tdName.createDiv({ text: `Contact: ${e6.contact}`, attr: { style: "font-size: 11px; color: var(--text-muted);" } });
-      tr2.createEl("td", { text: `\u{1F4CD} ${e6.location}`, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); font-weight: 500;" } });
-      const tdStatus = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      if (e6.contact) tdName.createDiv({ text: `Contact: ${e6.contact}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)" });
+      const tdLoc = tr2.createEl("td", { text: `\u{1F4CD} ${e6.location}` });
+      tdLoc.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", fontWeight: "500" });
+      const tdStatus = tr2.createEl("td");
+      tdStatus.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
       const isAvail = e6.status === "Available";
       const color5 = isAvail ? "var(--text-success)" : e6.status === "Maintenance" ? "var(--text-error)" : "var(--text-warning)";
-      tdStatus.createDiv({ text: e6.status.toUpperCase(), attr: { style: `display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; color: ${color5}; border: 1px solid ${color5}; background: var(--background-primary); margin-bottom: 4px;` } });
-      if (e6.bookedBy) tdStatus.createDiv({ text: `\u{1F464} ${e6.bookedBy}`, attr: { style: "font-size: 11px; color: var(--text-muted); margin-top: 4px;" } });
-      tr2.createEl("td", { text: e6.nextMaintenance, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); color: var(--text-muted);" } });
-      const tdAct = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-      const actContainer = tdAct.createDiv({ attr: { style: "display: flex; flex-direction: column; gap: 6px;" } });
-      const btn = actContainer.createEl("button", { text: isAvail ? "\u{1F4C5} Book" : "\u2705 Release", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
+      const statDiv = tdStatus.createDiv({ text: e6.status.toUpperCase() });
+      statDiv.setCssStyles({ display: "inline-block", padding: "4px 10px", borderRadius: "12px", fontSize: "10px", fontWeight: "700", color: color5, border: `1px solid ${color5}`, background: "var(--background-primary)", marginBottom: "4px" });
+      if (e6.bookedBy) tdStatus.createDiv({ text: `\u{1F464} ${e6.bookedBy}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" });
+      const tdMaint = tr2.createEl("td", { text: e6.nextMaintenance });
+      tdMaint.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", color: "var(--text-muted)" });
+      const tdAct = tr2.createEl("td");
+      tdAct.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+      const actContainer = tdAct.createDiv();
+      actContainer.setCssStyles({ display: "flex", flexDirection: "column", gap: "6px" });
+      const btn = actContainer.createEl("button", { text: isAvail ? "\u{1F4C5} Book" : "\u2705 Release" });
+      btn.setCssStyles({ fontSize: "11px", padding: "4px", height: "26px", width: "100%" });
       btn.onclick = async () => {
         const newStatus = isAvail ? "In Use" : "Available";
         const user = isAvail ? "Current User" : "";
@@ -573865,7 +573947,8 @@ contact: ""
         new import_obsidian16.Notice(`${e6.name} is now ${newStatus}.`);
       };
       if (e6.status !== "Maintenance") {
-        const maintBtn = actContainer.createEl("button", { text: "\u{1F527} Maint.", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
+        const maintBtn = actContainer.createEl("button", { text: "\u{1F527} Maint." });
+        maintBtn.setCssStyles({ fontSize: "11px", padding: "4px", height: "26px", width: "100%" });
         maintBtn.onclick = async () => {
           await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
             fm.status = "Maintenance";
@@ -573881,7 +573964,7 @@ contact: ""
       if (!e6.rowEl) return;
       const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
       const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
-      e6.rowEl.style.display = matchFilter && matchSearch ? "" : "none";
+      e6.rowEl.setCssStyles({ display: matchFilter && matchSearch ? "" : "none" });
     });
   }
   async onClose() {
@@ -573913,48 +573996,66 @@ var ProtocolsDashboardView = class extends import_obsidian17.ItemView {
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass("chem-protocols-dashboard-view");
-    Object.assign(container.style, { display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
-    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
+    const header = container.createDiv();
+    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
+    const titleArea = header.createDiv();
+    titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
     renderLimsNav(titleArea, "protocols", this.plugin);
-    titleArea.createEl("h2", { text: "Standard Operating Procedures", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
-    titleArea.createEl("span", { text: "Manage lab methodologies, reaction protocols, and safety rules", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
-    const newBtn = header.createEl("button", { text: "+ New Protocol", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" } });
-    newBtn.onclick = () => this.createNewProtocol();
-    this.toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const leftTools = this.toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center;" } });
-    const filterTabs = leftTools.createDiv({ attr: { style: "display: flex; gap: 8px;" } });
+    titleArea.createEl("h2", { text: "Standard Operating Procedures" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
+    titleArea.createEl("span", { text: "Manage lab methodologies, reaction protocols, and safety rules" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
+    const newBtn = header.createEl("button", { text: "+ New Protocol", cls: "mod-cta" });
+    newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
+    newBtn.onclick = () => void this.createNewProtocol();
+    this.toolbarEl = container.createDiv();
+    this.toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
+    const leftTools = this.toolbarEl.createDiv();
+    leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center" });
+    const filterTabs = leftTools.createDiv();
+    filterTabs.setCssStyles({ display: "flex", gap: "8px" });
     const tabs = ["All", "Draft", "Approved", "Obsolete"];
     tabs.forEach((t8) => {
-      const btn = filterTabs.createEl("button", { text: t8, attr: { style: `border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 600; border: 1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}; background: ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)"}; color: ${this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)"}; box-shadow: none;` } });
+      const btn = filterTabs.createEl("button", { text: t8 });
+      btn.setCssStyles({ borderRadius: "20px", padding: "4px 16px", fontSize: "12px", fontWeight: "600", border: `1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}`, background: this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)", color: this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)", boxShadow: "none" });
       btn.onclick = () => {
         this.currentFilter = t8;
         this.renderToolbar();
         this.applyFilters();
       };
     });
-    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px; margin-left: 10px;" } });
-    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
-    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-protocols-dir") || "Protocols", attr: { style: "width: 120px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    const dirWrap = leftTools.createDiv();
+    dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" });
+    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
+    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-protocols-dir") || "Protocols" });
+    dirInp.setCssStyles({ width: "120px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
     dirInp.onchange = (e6) => {
       window.localStorage.setItem("chem-protocols-dir", e6.target.value.trim());
-      this.loadProtocols();
+      void this.loadProtocols();
     };
-    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search protocol titles, authors...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" } });
+    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search protocol titles, authors..." });
+    searchInp.setCssStyles({ width: "280px", fontSize: "13px", borderRadius: "6px" });
     searchInp.oninput = (e6) => {
       this.searchQuery = e6.target.value.toLowerCase();
       this.applyFilters();
     };
-    const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" } });
-    const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px;" } });
-    const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" } });
+    const tableContainer = container.createDiv();
+    tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
+    const table = tableContainer.createEl("table");
+    table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "left", fontSize: "13px" });
+    const thead = table.createEl("thead");
+    thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
     const tr2 = thead.createEl("tr");
     ["Protocol Title", "Author", "Status", "Last Reviewed", "Actions"].forEach((c10) => {
-      tr2.createEl("th", { text: c10, attr: { style: "padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;" } });
+      const th = tr2.createEl("th", { text: c10 });
+      th.setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px" });
     });
     this.tableBodyEl = table.createEl("tbody");
     await this.loadProtocols();
-    const requestRefresh = (0, import_obsidian17.debounce)(() => this.loadProtocols(), 2e3, true);
+    let refreshTimeout;
+    const requestRefresh = () => {
+      window.clearTimeout(refreshTimeout);
+      refreshTimeout = window.setTimeout(() => void this.loadProtocols(), 2e3);
+    };
     this.registerEvent(this.app.vault.on("modify", requestRefresh));
     this.registerEvent(this.app.vault.on("create", requestRefresh));
     this.registerEvent(this.app.vault.on("delete", requestRefresh));
@@ -573963,9 +574064,7 @@ var ProtocolsDashboardView = class extends import_obsidian17.ItemView {
     const btns = this.toolbarEl.querySelectorAll("button");
     btns.forEach((btn) => {
       const isMatch = btn.innerText === this.currentFilter;
-      btn.style.background = isMatch ? "var(--interactive-accent)" : "var(--background-primary)";
-      btn.style.color = isMatch ? "var(--text-on-accent)" : "var(--text-muted)";
-      btn.style.borderColor = isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)";
+      btn.setCssStyles({ background: isMatch ? "var(--interactive-accent)" : "var(--background-primary)", color: isMatch ? "var(--text-on-accent)" : "var(--text-muted)", borderColor: isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)" });
     });
   }
   async createNewProtocol() {
@@ -574025,26 +574124,38 @@ last_reviewed: "${window.moment().format("YYYY-MM-DD")}"
   buildTableDOM() {
     this.tableBodyEl.empty();
     if (this.allEntries.length === 0) {
-      this.tableBodyEl.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No protocols found. Create a note in a 'Protocols' folder or use tags: [protocol].</td></tr>`;
+      const tr2 = this.tableBodyEl.createEl("tr");
+      const td = tr2.createEl("td", { text: "No protocols found. Create a note in a 'Protocols' folder or use tags: [protocol]." });
+      td.setAttribute("colspan", "5");
+      td.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
       return;
     }
     this.allEntries.forEach((e6) => {
-      const tr2 = this.tableBodyEl.createEl("tr", { attr: { style: "cursor: default; transition: background 0.2s;" } });
+      const tr2 = this.tableBodyEl.createEl("tr");
+      tr2.setCssStyles({ cursor: "default", transition: "background 0.2s" });
       e6.rowEl = tr2;
-      tr2.onmouseover = () => tr2.style.backgroundColor = "var(--background-secondary-alt)";
-      tr2.onmouseout = () => tr2.style.backgroundColor = "transparent";
-      const tdName = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-      const nameLink = tdName.createDiv({ text: `\u{1F4C4} ${e6.title}`, attr: { style: "font-weight: 700; color: var(--text-accent); font-size: 14px; cursor: pointer;" } });
+      tr2.onmouseover = () => tr2.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
+      tr2.onmouseout = () => tr2.setCssStyles({ backgroundColor: "transparent" });
+      const tdName = tr2.createEl("td");
+      tdName.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+      const nameLink = tdName.createDiv({ text: `\u{1F4C4} ${e6.title}` });
+      nameLink.setCssStyles({ fontWeight: "700", color: "var(--text-accent)", fontSize: "14px", cursor: "pointer" });
       nameLink.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-      tr2.createEl("td", { text: e6.author, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); font-weight: 500;" } });
-      const tdStatus = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      const tdAuthor = tr2.createEl("td", { text: e6.author });
+      tdAuthor.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", fontWeight: "500" });
+      const tdStatus = tr2.createEl("td");
+      tdStatus.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
       let color5 = "var(--text-warning)", bg = "var(--background-primary)";
       if (e6.status === "Approved") color5 = "var(--text-success)";
       else if (e6.status === "Obsolete") color5 = "var(--text-error)";
-      tdStatus.createDiv({ text: e6.status.toUpperCase(), attr: { style: `display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; color: ${color5}; border: 1px solid ${color5}; background: ${bg};` } });
-      tr2.createEl("td", { text: e6.lastReviewed, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); color: var(--text-muted);" } });
-      const tdAct = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-      const btn = tdAct.createEl("button", { text: "\u270D\uFE0F Mark Reviewed", attr: { style: "font-size: 11px; padding: 4px 12px; width: 100%;" } });
+      const statSpan = tdStatus.createDiv({ text: e6.status.toUpperCase() });
+      statSpan.setCssStyles({ display: "inline-block", padding: "4px 10px", borderRadius: "12px", fontSize: "10px", fontWeight: "700", color: color5, border: `1px solid ${color5}`, background: bg });
+      const tdRev = tr2.createEl("td", { text: e6.lastReviewed });
+      tdRev.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", color: "var(--text-muted)" });
+      const tdAct = tr2.createEl("td");
+      tdAct.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+      const btn = tdAct.createEl("button", { text: "\u270D\uFE0F Mark Reviewed" });
+      btn.setCssStyles({ fontSize: "11px", padding: "4px 12px", width: "100%" });
       btn.onclick = async () => {
         await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
           fm.last_reviewed = window.moment().format("YYYY-MM-DD");
@@ -574054,17 +574165,12 @@ last_reviewed: "${window.moment().format("YYYY-MM-DD")}"
       };
     });
   }
-  // CPU-Free Filtering: Toggles display:none directly on the DOM rows
   applyFilters() {
     this.allEntries.forEach((e6) => {
       if (!e6.rowEl) return;
       const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
       const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
-      if (matchFilter && matchSearch) {
-        e6.rowEl.style.display = "";
-      } else {
-        e6.rowEl.style.display = "none";
-      }
+      e6.rowEl.setCssStyles({ display: matchFilter && matchSearch ? "" : "none" });
     });
   }
   async onClose() {
@@ -574768,49 +574874,57 @@ var OrdersDashboardView = class extends import_obsidian21.ItemView {
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass("chem-orders-dashboard-view");
-    Object.assign(container.style, {
-      display: "flex",
-      flexDirection: "column",
-      padding: "0",
-      background: "var(--background-primary)"
-    });
-    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
+    const header = container.createDiv();
+    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
+    const titleArea = header.createDiv();
+    titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
     renderLimsNav(titleArea, "orders", this.plugin);
-    titleArea.createEl("h2", { text: "Orders & Requests", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
-    titleArea.createEl("span", { text: "Track chemicals, consumables, and equipment purchases", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
-    const newBtn = header.createEl("button", { text: "+ New Request", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" } });
+    titleArea.createEl("h2", { text: "Orders & Requests" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
+    titleArea.createEl("span", { text: "Track chemicals, consumables, and equipment purchases" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
+    const newBtn = header.createEl("button", { text: "+ New Request", cls: "mod-cta" });
+    newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
     newBtn.onclick = () => {
       const folder = window.localStorage.getItem("chem-orders-dir") || "Orders";
       new CreateOrderModal(this.app, folder).open();
     };
-    this.toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const leftTools = this.toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center;" } });
-    const filterTabs = leftTools.createDiv({ attr: { style: "display: flex; gap: 8px;" } });
+    this.toolbarEl = container.createDiv();
+    this.toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
+    const leftTools = this.toolbarEl.createDiv();
+    leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center" });
+    const filterTabs = leftTools.createDiv();
+    filterTabs.setCssStyles({ display: "flex", gap: "8px" });
     const tabs = ["All", "Planned", "Ordered", "Received"];
     tabs.forEach((t8) => {
-      const btn = filterTabs.createEl("button", { text: t8, attr: { style: `border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 600; border: 1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}; background: ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)"}; color: ${this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)"}; box-shadow: none;` } });
+      const btn = filterTabs.createEl("button", { text: t8 });
+      btn.setCssStyles({ borderRadius: "20px", padding: "4px 16px", fontSize: "12px", fontWeight: "600", border: `1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}`, background: this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)", color: this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)", boxShadow: "none" });
       btn.onclick = () => {
         this.currentFilter = t8;
         this.renderToolbar();
         this.applyFilters();
       };
     });
-    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px; margin-left: 10px;" } });
-    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
-    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-orders-dir") || "Orders", attr: { style: "width: 120px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    const dirWrap = leftTools.createDiv();
+    dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" });
+    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
+    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-orders-dir") || "Orders" });
+    dirInp.setCssStyles({ width: "120px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
     dirInp.onchange = (e6) => {
       window.localStorage.setItem("chem-orders-dir", e6.target.value.trim());
-      this.loadOrders();
+      void this.loadOrders();
     };
-    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search item, supplier, catalog...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" } });
+    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search item, supplier, catalog..." });
+    searchInp.setCssStyles({ width: "280px", fontSize: "13px", borderRadius: "6px" });
     searchInp.oninput = (e6) => {
       this.searchQuery = e6.target.value.toLowerCase();
       this.applyFilters();
     };
-    const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" } });
-    const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px;" } });
-    const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" } });
+    const tableContainer = container.createDiv();
+    tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
+    const table = tableContainer.createEl("table");
+    table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "left", fontSize: "13px" });
+    const thead = table.createEl("thead");
+    thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
     const tr2 = thead.createEl("tr");
     const cols = [
       { name: "Item", width: "200px" },
@@ -574821,11 +574935,16 @@ var OrdersDashboardView = class extends import_obsidian21.ItemView {
       { name: "Actions", width: "120px" }
     ];
     cols.forEach((c10) => {
-      tr2.createEl("th", { text: c10.name, attr: { style: `padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; width: ${c10.width};` } });
+      const th = tr2.createEl("th", { text: c10.name });
+      th.setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", width: c10.width });
     });
     this.tableBodyEl = table.createEl("tbody");
     await this.loadOrders();
-    const requestRefresh = (0, import_obsidian21.debounce)(() => this.loadOrders(), 2e3, true);
+    let refreshTimeout;
+    const requestRefresh = () => {
+      window.clearTimeout(refreshTimeout);
+      refreshTimeout = window.setTimeout(() => void this.loadOrders(), 2e3);
+    };
     this.registerEvent(this.app.vault.on("modify", requestRefresh));
     this.registerEvent(this.app.vault.on("create", requestRefresh));
     this.registerEvent(this.app.vault.on("delete", requestRefresh));
@@ -574834,9 +574953,7 @@ var OrdersDashboardView = class extends import_obsidian21.ItemView {
     const btns = this.toolbarEl.querySelectorAll("button");
     btns.forEach((btn) => {
       const isMatch = btn.innerText === this.currentFilter;
-      btn.style.background = isMatch ? "var(--interactive-accent)" : "var(--background-primary)";
-      btn.style.color = isMatch ? "var(--text-on-accent)" : "var(--text-muted)";
-      btn.style.borderColor = isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)";
+      btn.setCssStyles({ background: isMatch ? "var(--interactive-accent)" : "var(--background-primary)", color: isMatch ? "var(--text-on-accent)" : "var(--text-muted)", borderColor: isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)" });
     });
   }
   async loadOrders() {
@@ -574885,38 +575002,51 @@ var OrdersDashboardView = class extends import_obsidian21.ItemView {
   buildTableDOM() {
     this.tableBodyEl.empty();
     if (this.allEntries.length === 0) {
-      this.tableBodyEl.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No orders found. Add requests to an Orders folder or use tags: [order].</td></tr>`;
+      const tr2 = this.tableBodyEl.createEl("tr");
+      const td = tr2.createEl("td", { text: "No orders found. Add requests to an Orders folder or use tags: [order]." });
+      td.setAttribute("colspan", "6");
+      td.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
       return;
     }
     this.allEntries.forEach((e6) => {
-      const tr2 = this.tableBodyEl.createEl("tr", { attr: { style: "cursor: default; transition: background 0.2s;" } });
+      const tr2 = this.tableBodyEl.createEl("tr");
+      tr2.setCssStyles({ cursor: "default", transition: "background 0.2s" });
       e6.rowEl = tr2;
-      tr2.onmouseover = () => tr2.style.backgroundColor = "var(--background-secondary-alt)";
-      tr2.onmouseout = () => tr2.style.backgroundColor = "transparent";
-      const tdItem = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-      const nameEl = tdItem.createDiv({ text: e6.name, attr: { style: "font-weight: 700; color: var(--text-accent); font-size: 14px; margin-bottom: 4px; cursor: pointer;" } });
+      tr2.onmouseover = () => tr2.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
+      tr2.onmouseout = () => tr2.setCssStyles({ backgroundColor: "transparent" });
+      const tdItem = tr2.createEl("td");
+      tdItem.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+      const nameEl = tdItem.createDiv({ text: e6.name });
+      nameEl.setCssStyles({ fontWeight: "700", color: "var(--text-accent)", fontSize: "14px", marginBottom: "4px", cursor: "pointer" });
       nameEl.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
       const typeIcon = e6.type === "Chemical" ? "\u{1F9EA}" : e6.type === "Consumable" ? "\u{1F9E4}" : "\u{1F52C}";
-      tdItem.createDiv({ text: `${typeIcon} ${e6.type}`, attr: { style: "font-size: 11px; color: var(--text-muted); font-weight: 600;" } });
-      const tdSup = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-      tdSup.createDiv({ text: e6.supplier, attr: { style: "font-size: 13px; color: var(--text-normal); font-weight: 600; margin-bottom: 4px;" } });
-      tdSup.createDiv({ text: `Cat: ${e6.catalog}`, attr: { style: "font-size: 11px; color: var(--text-muted); font-family: monospace;" } });
-      const tdAmt = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-      tdAmt.createDiv({ text: e6.amount, attr: { style: "font-size: 13px; color: var(--text-normal); font-weight: 600; margin-bottom: 4px;" } });
-      tdAmt.createDiv({ text: e6.price, attr: { style: "font-size: 12px; color: var(--text-success); font-weight: 600;" } });
-      const tdReq = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
-      tdReq.createDiv({ text: `\u{1F464} ${e6.requester}`, attr: { style: "font-size: 12px; color: var(--text-normal); margin-bottom: 4px;" } });
-      if (e6.orderDate && e6.orderDate !== "-") tdReq.createDiv({ text: `Ordered: ${e6.orderDate}`, attr: { style: "font-size: 10px; color: var(--text-muted);" } });
-      if (e6.receiveDate && e6.receiveDate !== "-") tdReq.createDiv({ text: `Rcvd: ${e6.receiveDate}`, attr: { style: "font-size: 10px; color: var(--text-muted);" } });
-      const tdStatus = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      tdItem.createDiv({ text: `${typeIcon} ${e6.type}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", fontWeight: "600" });
+      const tdSup = tr2.createEl("td");
+      tdSup.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+      tdSup.createDiv({ text: e6.supplier }).setCssStyles({ fontSize: "13px", color: "var(--text-normal)", fontWeight: "600", marginBottom: "4px" });
+      tdSup.createDiv({ text: `Cat: ${e6.catalog}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", fontFamily: "monospace" });
+      const tdAmt = tr2.createEl("td");
+      tdAmt.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+      tdAmt.createDiv({ text: e6.amount }).setCssStyles({ fontSize: "13px", color: "var(--text-normal)", fontWeight: "600", marginBottom: "4px" });
+      tdAmt.createDiv({ text: e6.price }).setCssStyles({ fontSize: "12px", color: "var(--text-success)", fontWeight: "600" });
+      const tdReq = tr2.createEl("td");
+      tdReq.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
+      tdReq.createDiv({ text: `\u{1F464} ${e6.requester}` }).setCssStyles({ fontSize: "12px", color: "var(--text-normal)", marginBottom: "4px" });
+      if (e6.orderDate && e6.orderDate !== "-") tdReq.createDiv({ text: `Ordered: ${e6.orderDate}` }).setCssStyles({ fontSize: "10px", color: "var(--text-muted)" });
+      if (e6.receiveDate && e6.receiveDate !== "-") tdReq.createDiv({ text: `Rcvd: ${e6.receiveDate}` }).setCssStyles({ fontSize: "10px", color: "var(--text-muted)" });
+      const tdStatus = tr2.createEl("td");
+      tdStatus.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
       let color5 = "var(--text-muted)", bg = "var(--background-primary)";
       if (e6.status === "Planned") color5 = "var(--text-accent)";
       else if (e6.status === "Ordered") color5 = "var(--text-warning)";
       else if (e6.status === "Received") color5 = "var(--text-success)";
-      tdStatus.createDiv({ text: e6.status.toUpperCase(), attr: { style: `display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; color: ${color5}; border: 1px solid ${color5}; background: ${bg};` } });
-      const tdActions = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      const statSpan = tdStatus.createDiv({ text: e6.status.toUpperCase() });
+      statSpan.setCssStyles({ display: "inline-block", padding: "4px 10px", borderRadius: "12px", fontSize: "10px", fontWeight: "700", color: color5, border: `1px solid ${color5}`, background: bg });
+      const tdActions = tr2.createEl("td");
+      tdActions.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
       if (e6.status === "Planned") {
-        const btn = tdActions.createEl("button", { text: "\u{1F6D2} Mark Ordered", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
+        const btn = tdActions.createEl("button", { text: "\u{1F6D2} Mark Ordered" });
+        btn.setCssStyles({ fontSize: "11px", padding: "4px", height: "26px", width: "100%" });
         btn.onclick = async () => {
           await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
             fm.status = "Ordered";
@@ -574924,7 +575054,8 @@ var OrdersDashboardView = class extends import_obsidian21.ItemView {
           });
         };
       } else if (e6.status === "Ordered") {
-        const btn = tdActions.createEl("button", { text: "\u{1F4E6} Mark Received", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
+        const btn = tdActions.createEl("button", { text: "\u{1F4E6} Mark Received" });
+        btn.setCssStyles({ fontSize: "11px", padding: "4px", height: "26px", width: "100%" });
         btn.onclick = async () => {
           await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
             fm.status = "Received";
@@ -574939,7 +575070,7 @@ var OrdersDashboardView = class extends import_obsidian21.ItemView {
       if (!e6.rowEl) return;
       const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
       const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
-      e6.rowEl.style.display = matchFilter && matchSearch ? "" : "none";
+      e6.rowEl.setCssStyles({ display: matchFilter && matchSearch ? "" : "none" });
     });
   }
 };
@@ -575100,7 +575231,7 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
         this.cameraRibbonEl.setCssStyles({ display: "" });
       }
       if (!this.tlcRibbonEl) {
-        this.tlcRibbonEl = this.addRibbonIcon("image-file", "Add TLC Plate1", () => {
+        this.tlcRibbonEl = this.addRibbonIcon("image-file", "Add TLC Plate", () => {
           const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
           if (!view) {
             new import_obsidian22.Notice("Place cursor in a Markdown file first.");
@@ -575167,13 +575298,12 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
   }
   async onload() {
     this.app.workspace.onLayoutReady(() => {
-      const { addIcon: addIcon2 } = require("obsidian");
-      addIcon2("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
+      (0, import_obsidian22.addIcon)("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
       const compassIcon = `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,82 36,50" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,50" fill="currentColor"/><polygon points="50,82 36,50 50,50" fill="currentColor"/>`;
-      addIcon2("chem-navigator", compassIcon);
-      addIcon2("flask-conical", compassIcon);
+      (0, import_obsidian22.addIcon)("chem-navigator", compassIcon);
+      (0, import_obsidian22.addIcon)("flask-conical", compassIcon);
       const dashboardIcon = `<path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 20 85 A 10 10 0 0 1 30 75 L 85 75" /><path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 30 15 L 85 15 L 85 85 L 30 85 A 10 10 0 0 1 20 75 L 20 25 A 10 10 0 0 1 30 15 Z" /><polygon fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" points="57,32 72,40 72,58 57,66 42,58 42,40" />`;
-      addIcon2("chem-dashboard", dashboardIcon);
+      (0, import_obsidian22.addIcon)("chem-dashboard", dashboardIcon);
     });
     await this.loadSettings();
     this.api = buildChemEditAPI(this);
@@ -575662,7 +575792,6 @@ ${newData}
       this.hiddenKetcherContainer.remove();
     }
   }
-  // --- ACTIVATION HELPERS ---
   async activateNavigator() {
     const { workspace } = this.app;
     let leaf = workspace.getLeavesOfType(CHEM_NAVIGATOR_VIEW_TYPE)[0];
@@ -575887,7 +576016,7 @@ ${newData}
           } catch (e6) {
           }
         }
-        window.setTimeout(() => this.processHeadlessQueue(), 500);
+        window.setTimeout(() => void this.processHeadlessQueue(), 500);
       },
       onChange: () => {
       }

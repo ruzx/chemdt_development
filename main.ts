@@ -1,12 +1,10 @@
-// main.ts 
-
+// main.ts
 import { Plugin, MarkdownView, Editor, Notice, TFile, addIcon } from 'obsidian';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import SmiDrawer from 'smiles-drawer';
 import KetcherReact from './KetcherReact';
 
-// Modular Imports 
 import { ChemEditSettings, DEFAULT_SETTINGS, ChemEditSettingTab } from './Settings';
 import { ChemEditAPI, buildChemEditAPI } from './ChemEditAPI';
 import { CHEM_NAVIGATOR_VIEW_TYPE, ChemNavigatorView } from './ChemNavigator';
@@ -18,14 +16,12 @@ import { ChemDatabaseRenderer, addCompoundToLibrary as addCompoundToDatabase } f
 import { ChemDataEngine } from './ChemDataEngine';
 import { showChemicalContextMenu, populateChemicalMenu } from './SharedContextMenu';
 
-// Extractions & Engines
 import { extractDataFromSvg } from './ChemUtils';
 import { KetcherModal } from './KetcherModals';
 import { CHEM_FILE_VIEW_TYPE, ChemFileView } from './ChemFileView';
 import { buildLivePreviewPlugin } from './LivePreview';
 import { ChemScriptEngine } from './ScriptEngine';
 
-// Dashboards
 import { ELN_DASHBOARD_VIEW_TYPE, ElnDashboardView } from './ElnDashboard';
 import { INVENTORY_DASHBOARD_VIEW_TYPE, InventoryDashboardView } from './InventoryDashboard';
 import { EQUIPMENT_DASHBOARD_VIEW_TYPE, EquipmentDashboardView } from './EquipmentDashboard';
@@ -121,7 +117,7 @@ export default class ChemEditPlugin extends Plugin {
             } else { this.cameraRibbonEl.setCssStyles({ display: '' }); }
             
             if (!this.tlcRibbonEl) {
-                this.tlcRibbonEl = this.addRibbonIcon('image-file', 'Add TLC Plate1', () => {
+                this.tlcRibbonEl = this.addRibbonIcon('image-file', 'Add TLC Plate', () => {
                     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
                     if (!view) { new Notice("Place cursor in a Markdown file first."); return; }
                     new TlcModal(this.app, async (pngData, rfData) => {
@@ -170,8 +166,6 @@ export default class ChemEditPlugin extends Plugin {
 
     async onload() {
         this.app.workspace.onLayoutReady(() => {
-            // @ts-ignore
-            const { addIcon } = require('obsidian');
             addIcon('flask-round', `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
             const compassIcon = `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,82 36,50" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,50" fill="currentColor"/><polygon points="50,82 36,50 50,50" fill="currentColor"/>`;
             addIcon('chem-navigator', compassIcon);
@@ -205,8 +199,6 @@ export default class ChemEditPlugin extends Plugin {
         this.addRibbonIcon('hexagon', 'Draw New Molecule', () => { this.openNewDrawingModal(); });
 
         this.refreshRibbonIcons();
-
-        // --- OPTIONAL MODULES ---
 
         if (this.settings.enableNavigator) {
             this.registerView(CHEM_NAVIGATOR_VIEW_TYPE, (leaf) => new ChemNavigatorView(leaf, this));
@@ -341,7 +333,6 @@ export default class ChemEditPlugin extends Plugin {
             this.registerMarkdownCodeBlockProcessor("synthesis-plan", async (source, el, ctx) => { const r = new SynthesisMapRenderer(this); await r.renderPlan(source, el, ctx); });
         }
 
-        // --- CORE COMMANDS ---
         this.addCommand({
             id: 'insert-new-molecule', name: 'Draw new SMILES molecule',
             editorCallback: (editor: Editor) => {
@@ -389,7 +380,6 @@ export default class ChemEditPlugin extends Plugin {
             }
         });
 
-        // --- CORE PROCESSORS ---
         this.registerMarkdownPostProcessor((el, ctx) => {
             const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null); const nodes: Text[] = []; let node;
             while ((node = walker.nextNode())) nodes.push(node as Text);
@@ -504,7 +494,6 @@ export default class ChemEditPlugin extends Plugin {
         }
     }
 
-    // --- ACTIVATION HELPERS ---
     async activateNavigator() {
         const { workspace } = this.app;
         let leaf = workspace.getLeavesOfType(CHEM_NAVIGATOR_VIEW_TYPE)[0];
@@ -598,7 +587,7 @@ export default class ChemEditPlugin extends Plugin {
                     const rxnContainer = document.createElement("span"); rxnContainer.setCssStyles({ display: "inline-flex", alignItems: "center" }); wrapper.appendChild(rxnContainer);
                     Smi.parseReaction(smiles, (tree: any) => {
                         if (this.settings.useSvgSmiles) { new Smi.ReactionDrawer({width: w, height: h}, {width: w, height: h}).draw(tree, rxnContainer, theme); } 
-                        else { new Smi.ReactionDrawer(drawerOptions, drawerOptions).draw(tree, rxnContainer, theme); const canvases = rxnContainer.querySelectorAll('canvas'); canvases.forEach(c => { c.setCssStyles({ width: `${c.width / 2}px`, height: `${c.height / 2}px` }); }); }
+                        else { new Smi.ReactionDrawer(drawerOptions, drawerOptions).draw(tree, rxnContainer, theme); const canvases = rxnContainer.querySelectorAll('canvas'); canvases.forEach(c => { c.setCssStyles({ width: `${(c as HTMLCanvasElement).width / 2}px`, height: `${(c as HTMLCanvasElement).height / 2}px` }); }); }
                     });
                 } else {
                     if (this.settings.useSvgSmiles) {
@@ -652,7 +641,7 @@ export default class ChemEditPlugin extends Plugin {
     bootHeadlessKetcher() {
         if (this.headlessKetcher || this.headlessRoot) return;
         const element = React.createElement(KetcherReact, {
-            data: "", onInit: async (ketcher: any) => { this.headlessKetcher = ketcher; if (this.settings.useAcsSettings) { try { await ketcher.setSettings({ bondThickness: 1.2, bondLength: 20, stereoBondWidth: 3, fontsz: 10, fontszsub: 7, hashSpacing: 1.5 }); } catch (e) {} } window.setTimeout(() => this.processHeadlessQueue(), 500); }, onChange: () => {}
+            data: "", onInit: async (ketcher: any) => { this.headlessKetcher = ketcher; if (this.settings.useAcsSettings) { try { await ketcher.setSettings({ bondThickness: 1.2, bondLength: 20, stereoBondWidth: 3, fontsz: 10, fontszsub: 7, hashSpacing: 1.5 }); } catch (e) {} } window.setTimeout(() => void this.processHeadlessQueue(), 500); }, onChange: () => {}
         });
         if (createRoot) { this.headlessRoot = createRoot(this.hiddenKetcherContainer); this.headlessRoot.render(element); } else { ReactDOM.render(element, this.hiddenKetcherContainer); }
     }
@@ -694,7 +683,7 @@ export default class ChemEditPlugin extends Plugin {
                         const rxnContainer = document.createElement("span"); rxnContainer.setCssStyles({ display: "inline-flex", alignItems: "center" }); wrapper.appendChild(rxnContainer);
                         Smi.parseReaction(rawData, (tree: any) => {
                             if (this.settings.useSvgSmiles) { new Smi.ReactionDrawer({width: cssW, height: cssH}, {width: cssW, height: cssH}).draw(tree, rxnContainer, theme); } 
-                            else { new Smi.ReactionDrawer(drawerOptions, drawerOptions).draw(tree, rxnContainer, theme); const canvases = rxnContainer.querySelectorAll('canvas'); canvases.forEach(c => { c.setCssStyles({ width: `${c.width / 2}px`, height: `${c.height / 2}px` }); }); }
+                            else { new Smi.ReactionDrawer(drawerOptions, drawerOptions).draw(tree, rxnContainer, theme); const canvases = rxnContainer.querySelectorAll('canvas'); canvases.forEach(c => { c.setCssStyles({ width: `${(c as HTMLCanvasElement).width / 2}px`, height: `${(c as HTMLCanvasElement).height / 2}px` }); }); }
                         });
                     } else {
                         if (this.settings.useSvgSmiles) {
@@ -783,7 +772,7 @@ export default class ChemEditPlugin extends Plugin {
                     const rxnContainer = document.createElement("div"); rxnContainer.setCssStyles({ display: "flex", alignItems: "center", justifyContent: "center" });
                     Smi.parseReaction(cleanData, (tree: any) => {
                         if (this.settings.useSvgSmiles) { const rxnDrawer = new Smi.ReactionDrawer({width: w, height: h}, {width: w, height: h}); rxnDrawer.draw(tree, rxnContainer, theme); } 
-                        else { const rxnDrawer = new Smi.ReactionDrawer(drawerOptions, drawerOptions); rxnDrawer.draw(tree, rxnContainer, theme); const canvases = rxnContainer.querySelectorAll('canvas'); canvases.forEach(c => { c.setCssStyles({ width: `${c.width / 2}px`, height: `${c.height / 2}px` }); }); }
+                        else { const rxnDrawer = new Smi.ReactionDrawer(drawerOptions, drawerOptions); rxnDrawer.draw(tree, rxnContainer, theme); const canvases = rxnContainer.querySelectorAll('canvas'); canvases.forEach(c => { c.setCssStyles({ width: `${(c as HTMLCanvasElement).width / 2}px`, height: `${(c as HTMLCanvasElement).height / 2}px` }); }); }
                     }); return rxnContainer;
                 } else {
                     if (this.settings.useSvgSmiles) {
