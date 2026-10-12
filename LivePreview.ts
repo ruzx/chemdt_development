@@ -32,12 +32,12 @@ class ChemInlineWidget extends WidgetType {
                         if (extracted) { 
                             wrapper.textContent = ""; 
                             const svgContainer = document.createElement("span"); 
-                            svgContainer.innerHTML = this.plugin.namespaceSvgIds(fileData); // Allowed for SVG
-                            const svgNode = svgContainer.querySelector('svg'); 
-                            if (svgNode) {  
-                                svgNode.style.width = `${this.plugin.settings.inlineWidth}px`;  
-                                svgNode.style.height = `${this.plugin.settings.inlineHeight}px`;  
-                            } 
+                            const doc = new DOMParser().parseFromString(this.plugin.namespaceSvgIds(fileData), "image/svg+xml");
+                            const svgNode = doc.documentElement;
+                            if (svgNode && svgNode.tagName.toLowerCase() === 'svg') {
+                                svgNode.setCssStyles({ width: `${this.plugin.settings.inlineWidth}px`, height: `${this.plugin.settings.inlineHeight}px` });
+                                svgContainer.appendChild(svgNode);
+                            }
                             wrapper.appendChild(svgContainer); 
                             return; 
                         } else { 

@@ -1,6 +1,4 @@
 // SharedMedia.ts
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-floating-promises */
-
 import { App, Modal, Platform } from 'obsidian';
 
 export async function saveMediaFile(app: App, arrayBuffer: ArrayBuffer, savePath: string, filename: string): Promise<string> {
@@ -63,7 +61,6 @@ export class TlcModal extends Modal {
         
         const fileInput = controls.createEl("input", { type: "file", attr: { accept: "image/*", capture: "environment" }});
         fileInput.setCssStyles({ display: "none" });
-
         const uploadBtn = controls.createEl("button", { text: "📷 Upload", cls: "mod-cta" });
         uploadBtn.setCssStyles({ padding: "4px 12px" });
         uploadBtn.onclick = () => fileInput.click();
@@ -79,13 +76,11 @@ export class TlcModal extends Modal {
         const instructions = contentEl.createDiv({ cls: "color-text-muted" });
         instructions.setCssStyles({ fontSize: "12px", marginBottom: "10px", lineHeight: "1.3" });
         
-        const b1 = document.createElement("b"); b1.setCssStyles({ color: "#4488ff" }); b1.textContent = "Baseline";
-        const b2 = document.createElement("b"); b2.setCssStyles({ color: "#ff4444" }); b2.textContent = "Solvent Front";
-        instructions.appendChild(document.createTextNode("Upload an image. Drag the "));
-        instructions.appendChild(b1);
-        instructions.appendChild(document.createTextNode(" and "));
-        instructions.appendChild(b2);
-        instructions.appendChild(document.createTextNode(". Click anywhere to add a spot."));
+        instructions.appendText("Upload an image. Drag the ");
+        instructions.createEl("b", { text: "Baseline" }).setCssStyles({ color: "#4488ff" });
+        instructions.appendText(" and ");
+        instructions.createEl("b", { text: "Solvent Front" }).setCssStyles({ color: "#ff4444" });
+        instructions.appendText(". Click anywhere to add a spot.");
 
         const canvasWrapper = contentEl.createDiv();
         canvasWrapper.setCssStyles({ width: "100%", height: "65vh", overflow: "hidden", position: "relative", background: "#1e1e1e", borderRadius: "8px" });
@@ -115,7 +110,7 @@ export class TlcModal extends Modal {
                     this.baselineY = this.canvas.height * 0.85; 
                     this.frontY = this.canvas.height * 0.15;
                     this.spots = []; 
-                    saveBtn.setCssStyles({ display: "block" }); 
+                    saveBtn.style.display = "block"; 
                     this.draw();
                 };
                 this.img.src = event.target?.result as string;
@@ -215,7 +210,7 @@ export class TlcModal extends Modal {
             this.ctx.shadowColor = "black"; 
             this.ctx.shadowBlur = 6 * scale;
             this.ctx.fillText(`${i+1} (Rf: ${s.rf.toFixed(2)})`, s.x + spotR + (10 * scale), s.y + (10 * scale));
-            this.ctx.shadowBlur = 0; 
+            this.ctx.shadowBlur = 0;
         });
     }
 

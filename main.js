@@ -559749,17 +559749,11 @@ var init_SharedMedia = __esm({
         saveBtn.onclick = () => this.exportAndSave();
         const instructions = contentEl.createDiv({ cls: "color-text-muted" });
         instructions.setCssStyles({ fontSize: "12px", marginBottom: "10px", lineHeight: "1.3" });
-        const b1 = document.createElement("b");
-        b1.setCssStyles({ color: "#4488ff" });
-        b1.textContent = "Baseline";
-        const b22 = document.createElement("b");
-        b22.setCssStyles({ color: "#ff4444" });
-        b22.textContent = "Solvent Front";
-        instructions.appendChild(document.createTextNode("Upload an image. Drag the "));
-        instructions.appendChild(b1);
-        instructions.appendChild(document.createTextNode(" and "));
-        instructions.appendChild(b22);
-        instructions.appendChild(document.createTextNode(". Click anywhere to add a spot."));
+        instructions.appendText("Upload an image. Drag the ");
+        instructions.createEl("b", { text: "Baseline" }).setCssStyles({ color: "#4488ff" });
+        instructions.appendText(" and ");
+        instructions.createEl("b", { text: "Solvent Front" }).setCssStyles({ color: "#ff4444" });
+        instructions.appendText(". Click anywhere to add a spot.");
         const canvasWrapper = contentEl.createDiv();
         canvasWrapper.setCssStyles({ width: "100%", height: "65vh", overflow: "hidden", position: "relative", background: "#1e1e1e", borderRadius: "8px" });
         this.canvas = canvasWrapper.createEl("canvas");
@@ -559786,7 +559780,7 @@ var init_SharedMedia = __esm({
               this.baselineY = this.canvas.height * 0.85;
               this.frontY = this.canvas.height * 0.15;
               this.spots = [];
-              saveBtn.setCssStyles({ display: "block" });
+              saveBtn.style.display = "block";
               this.draw();
             };
             this.img.src = (_a = event.target) == null ? void 0 : _a.result;
@@ -567482,8 +567476,8 @@ var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
     if (open2) details.setAttribute("open", "");
     const summary = details.createEl("summary");
     summary.setCssStyles({ fontSize: "15px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", padding: "12px", outline: "none", userSelect: "none" });
-    summary.createSpan({ text: icon }).setCssStyles({ fontSize: "18px" });
-    summary.createSpan({ text: " " + title });
+    summary.createSpan({ text: icon, attr: { style: "font-size: 18px;" } });
+    summary.createSpan({ text: title });
     const contentDiv = details.createDiv();
     contentDiv.setCssStyles({ padding: "0 15px 15px 15px", borderTop: "1px solid var(--background-modifier-border)" });
     return contentDiv;
@@ -567491,71 +567485,63 @@ var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "\u{1F9EA} ChemEdit Settings" });
+    new import_obsidian.Setting(containerEl).setName("\u{1F9EA} ChemEdit Settings").setHeading();
     const howtoEl = containerEl.createDiv();
     howtoEl.setCssStyles({ marginBottom: "25px", padding: "15px", background: "var(--background-secondary)", borderRadius: "8px", border: "1px solid var(--interactive-accent)" });
-    howtoEl.createDiv({ text: "Quick How-To:" }).setCssStyles({ fontWeight: "700", marginBottom: "8px", color: "var(--interactive-accent)" });
-    const ul2 = howtoEl.createEl("ul");
-    ul2.setCssStyles({ margin: "0", paddingLeft: "20px", color: "var(--text-normal)", fontSize: "13px" });
+    howtoEl.createDiv({ text: "Quick How-To:", attr: { style: "font-weight: 700; margin-bottom: 8px; color: var(--interactive-accent);" } });
+    const ul2 = howtoEl.createEl("ul", { attr: { style: "margin: 0; padding-left: 20px; color: var(--text-normal); font-size: 13px;" } });
     const li1 = ul2.createEl("li");
-    li1.createEl("b", { text: "Draw: " });
-    li1.appendText("Click the Hexagon icon in the left ribbon to draw a new structure.");
+    li1.createEl("b", { text: "Draw:" });
+    li1.appendText(" Click the Hexagon icon in the left ribbon to draw a new structure.");
     const li2 = ul2.createEl("li");
-    li2.createEl("b", { text: "Embeds: " });
-    li2.appendText("Type ");
-    li2.createEl("code", { text: "![[molecule.mol]]" });
-    li2.appendText(" or ");
-    li2.createEl("code", { text: "![[reaction.rxn]]" });
-    li2.appendText(" directly in any note.");
+    li2.createEl("b", { text: "Embeds:" });
+    li2.appendText(" Type ![[molecule.mol]] directly in any note.");
     const li3 = ul2.createEl("li");
-    li3.createEl("b", { text: "Dashboards: " });
-    li3.appendText("Use the Command Palette (");
-    li3.createEl("code", { text: "Ctrl+P" });
-    li3.appendText(") to open the LIMS Dashboards!");
+    li3.createEl("b", { text: "Dashboards:" });
+    li3.appendText(" Use the Command Palette (Ctrl+P) to open the LIMS Dashboards.");
     const li4 = ul2.createEl("li");
-    li4.createEl("b", { text: "Edit: " });
-    li4.appendText("Double-click any rendered molecule to open Ketcher!");
+    li4.createEl("b", { text: "Edit:" });
+    li4.appendText(" Double-click any rendered molecule to open Ketcher.");
     const genSec = this.createAccordion(containerEl, "General & File Paths", "\u{1F4C2}", true);
     new import_obsidian.Setting(genSec).setName("Default ELN Directory").setDesc("Folder where new ELN experiments will be saved.").addText((text2) => text2.setPlaceholder("Experiments/").setValue(this.plugin.settings.elnDirectory).onChange(async (v8) => {
       this.plugin.settings.elnDirectory = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(genSec).setName("Default Experiment Prefix").setDesc("Prefix for new ELN files (e.g., EXP, JH, CHEM).").addText((text2) => text2.setPlaceholder("EXP").setValue(this.plugin.settings.elnPrefix).onChange(async (v8) => {
+    new import_obsidian.Setting(genSec).setName("Default Experiment Prefix").setDesc("Prefix for new ELN files (e.g., EXP).").addText((text2) => text2.setPlaceholder("EXP").setValue(this.plugin.settings.elnPrefix).onChange(async (v8) => {
       this.plugin.settings.elnPrefix = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(genSec).setName("Analytical Sections").setDesc("Comma-separated list of sections to auto-generate inside new experiments.").addText((text2) => text2.setPlaceholder("TLC, LCMS, NMR").setValue(this.plugin.settings.elnSections).onChange(async (v8) => {
+    new import_obsidian.Setting(genSec).setName("Analytical Sections").setDesc("Comma-separated list of sections to auto-generate.").addText((text2) => text2.setPlaceholder("TLC, LCMS, NMR").setValue(this.plugin.settings.elnSections).onChange(async (v8) => {
       this.plugin.settings.elnSections = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(genSec).setName("Compound Library File Path").setDesc("Point to a .md file (e.g. Meta/Compounds.md) that contains markdown tables or lists of your common chemicals. Used for auto-filling.").addText((text2) => text2.setPlaceholder("Meta/Compounds.md").setValue(this.plugin.settings.libraryFilePath).onChange(async (v8) => {
+    new import_obsidian.Setting(genSec).setName("Compound Library File Path").setDesc("Point to a .md file for your common chemicals.").addText((text2) => text2.setPlaceholder("Meta/Compounds.md").setValue(this.plugin.settings.libraryFilePath).onChange(async (v8) => {
       this.plugin.settings.libraryFilePath = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(genSec).setName("Media Images Save Path").setDesc("Folder where camera/TLC pictures will be stored (e.g. Assets/)").addText((text2) => text2.setPlaceholder("Assets/").setValue(this.plugin.settings.mediaSavePath).onChange(async (v8) => {
+    new import_obsidian.Setting(genSec).setName("Media Images Save Path").setDesc("Folder where camera/TLC pictures will be stored.").addText((text2) => text2.setPlaceholder("Assets/").setValue(this.plugin.settings.mediaSavePath).onChange(async (v8) => {
       this.plugin.settings.mediaSavePath = v8;
       await this.plugin.saveSettings();
     }));
     const modSec = this.createAccordion(containerEl, "Active Modules & Dashboards", "\u{1F9E9}");
-    modSec.createEl("p", { text: "Turn off features you don't use to save memory and declutter the command palette. (Restart Obsidian for changes to take effect).", cls: "setting-item-description" });
-    new import_obsidian.Setting(modSec).setName("Enable Core Dashboards & ELN").setDesc("Allows rendering of ```eln and enables the LIMS Dashboards.").addToggle((t8) => t8.setValue(this.plugin.settings.enableEln).onChange(async (v8) => {
+    modSec.createEl("p", { text: "Turn off features you don't use to save memory. Restart required.", cls: "setting-item-description" });
+    new import_obsidian.Setting(modSec).setName("Enable Core Dashboards & ELN").addToggle((t8) => t8.setValue(this.plugin.settings.enableEln).onChange(async (v8) => {
       this.plugin.settings.enableEln = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(modSec).setName("Enable Chem Navigator").setDesc("Enables the interactive side-panel for contextual chemistry analysis.").addToggle((t8) => t8.setValue(this.plugin.settings.enableNavigator).onChange(async (v8) => {
+    new import_obsidian.Setting(modSec).setName("Enable Chem Navigator").addToggle((t8) => t8.setValue(this.plugin.settings.enableNavigator).onChange(async (v8) => {
       this.plugin.settings.enableNavigator = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(modSec).setName("Enable Synthesis Pathways").setDesc("Allows rendering of interactive ```chem-pathway and ```synthesis-plan blocks.").addToggle((t8) => t8.setValue(this.plugin.settings.enablePathways).onChange(async (v8) => {
+    new import_obsidian.Setting(modSec).setName("Enable Synthesis Pathways").addToggle((t8) => t8.setValue(this.plugin.settings.enablePathways).onChange(async (v8) => {
       this.plugin.settings.enablePathways = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(modSec).setName("Enable Chemistry Context Menu").setDesc("Shows properties and copy options when you right-click a SMILES block.").addToggle((t8) => t8.setValue(this.plugin.settings.enableContextMenu).onChange(async (v8) => {
+    new import_obsidian.Setting(modSec).setName("Enable Context Menu").addToggle((t8) => t8.setValue(this.plugin.settings.enableContextMenu).onChange(async (v8) => {
       this.plugin.settings.enableContextMenu = v8;
       await this.plugin.saveSettings();
     }));
-    const dbH4 = modSec.createEl("h4", { text: "Enable Specific Dashboards" });
-    dbH4.setCssStyles({ marginTop: "20px", marginBottom: "10px", color: "var(--text-normal)", borderBottom: "1px solid var(--background-modifier-border)", paddingBottom: "5px" });
+    new import_obsidian.Setting(modSec).setName("Specific Dashboards").setHeading();
     const makeDbToggle = (name, settingKey) => {
       new import_obsidian.Setting(modSec).setName(name).addToggle((t8) => t8.setValue(this.plugin.settings[settingKey]).onChange(async (v8) => {
         this.plugin.settings[settingKey] = v8;
@@ -567571,7 +567557,6 @@ var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
     makeDbToggle("\u{1F5BC}\uFE0F Drawings Gallery", "enableGalleryDashboard");
     makeDbToggle("\u{1F4CA} Characterization Data", "enableCharacterizationDashboard");
     const linkSec = this.createAccordion(containerEl, "Context Menu Web Links", "\u{1F310}");
-    linkSec.createEl("p", { text: "Customize the web searches available when you right-click a chemical structure. Use {{smiles}} to inject the SMILES string.", cls: "setting-item-description" });
     new import_obsidian.Setting(linkSec).setName("Custom Link 1 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl1Name).onChange(async (v8) => {
       this.plugin.settings.contextUrl1Name = v8;
       await this.plugin.saveSettings();
@@ -567596,49 +567581,24 @@ var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
       this.plugin.settings.contextUrl3 = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(linkSec).setName("Custom Link 4 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4Name).onChange(async (v8) => {
-      this.plugin.settings.contextUrl4Name = v8;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian.Setting(linkSec).setName("Custom Link 4 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4).onChange(async (v8) => {
-      this.plugin.settings.contextUrl4 = v8;
-      await this.plugin.saveSettings();
-    }));
-    const scriptSec = this.createAccordion(containerEl, "Scripting Engine", "\u{1F4DC}");
-    new import_obsidian.Setting(scriptSec).setName("Enable Script Engine").setDesc("Turn off to save memory if you do not use custom JavaScript macros.").addToggle((t8) => t8.setValue(this.plugin.settings.enableScripting).onChange(async (v8) => {
-      this.plugin.settings.enableScripting = v8;
-      await this.plugin.saveSettings();
-      this.display();
-    }));
-    if (this.plugin.settings.enableScripting) {
-      const storeWrap = scriptSec.createDiv();
-      storeWrap.setCssStyles({ padding: "15px", background: "var(--background-secondary-alt)", border: "1px solid var(--background-modifier-border)", borderRadius: "8px", margin: "15px 0", display: "flex", justifyContent: "space-between", alignItems: "center" });
-      const storeText = storeWrap.createDiv();
-      storeText.createDiv({ text: "ChemEdit Script Store" }).setCssStyles({ fontWeight: "600", color: "var(--text-normal)" });
-      storeText.createDiv({ text: "Browse and install community macros (like MathifyChem)." }).setCssStyles({ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" });
-      new import_obsidian.Setting(scriptSec).setName("Scripts Folder").setDesc("Folder containing custom .js scripts.").addText((text2) => text2.setPlaceholder("ChemEdit/Scripts").setValue(this.plugin.settings.scriptsFolder).onChange(async (v8) => {
-        this.plugin.settings.scriptsFolder = v8;
-        await this.plugin.saveSettings();
-      }));
-    }
     const renderSec = this.createAccordion(containerEl, "Rendering & Theming", "\u{1F3A8}");
-    new import_obsidian.Setting(renderSec).setName("Image Size (Block Embeds)").setDesc("Width and Height of the rendered structure blocks (pixels)").addText((text2) => text2.setPlaceholder("Width (300)").setValue(this.plugin.settings.width.toString()).onChange(async (v8) => {
+    new import_obsidian.Setting(renderSec).setName("Image Size (Block Embeds)").addText((text2) => text2.setPlaceholder("Width").setValue(this.plugin.settings.width.toString()).onChange(async (v8) => {
       this.plugin.settings.width = parseInt(v8) || 300;
       await this.plugin.saveSettings();
-    })).addText((text2) => text2.setPlaceholder("Height (300)").setValue(this.plugin.settings.height.toString()).onChange(async (v8) => {
+    })).addText((text2) => text2.setPlaceholder("Height").setValue(this.plugin.settings.height.toString()).onChange(async (v8) => {
       this.plugin.settings.height = parseInt(v8) || 300;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(renderSec).setName("Render SMILES as SVG").setDesc("Uses SVG instead of High-DPI Canvas for SMILES blocks. Looks crisper at extreme zoom levels.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useSvgSmiles).onChange(async (value) => {
+    new import_obsidian.Setting(renderSec).setName("Render SMILES as SVG").addToggle((toggle) => toggle.setValue(this.plugin.settings.useSvgSmiles).onChange(async (value) => {
       this.plugin.settings.useSvgSmiles = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(renderSec).setName("ChemDraw ACS 1996 Style (Ketcher)").setDesc("Applies the classic ACS Document 1996 drawing settings.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useAcsSettings).onChange(async (value) => {
+    new import_obsidian.Setting(renderSec).setName("ChemDraw ACS 1996 Style (Ketcher)").addToggle((toggle) => toggle.setValue(this.plugin.settings.useAcsSettings).onChange(async (value) => {
       this.plugin.settings.useAcsSettings = value;
       await this.plugin.saveSettings();
     }));
-    const themeOptions = { "light": "Light", "dark": "Dark", "oldschool": "Oldschool (B&W)", "solarized": "Solarized Light", "solarized-dark": "Solarized Dark", "matrix": "Matrix", "cyberpunk": "Cyberpunk" };
-    new import_obsidian.Setting(renderSec).setName("Themes").setDesc("Light and Dark mode rendering themes.").addDropdown((dropdown) => dropdown.addOptions(themeOptions).setValue(this.plugin.settings.lightTheme).onChange(async (value) => {
+    const themeOptions = { "light": "Light", "dark": "Dark", "oldschool": "Oldschool (B&W)" };
+    new import_obsidian.Setting(renderSec).setName("Themes").addDropdown((dropdown) => dropdown.addOptions(themeOptions).setValue(this.plugin.settings.lightTheme).onChange(async (value) => {
       this.plugin.settings.lightTheme = value;
       await this.plugin.saveSettings();
     })).addDropdown((dropdown) => dropdown.addOptions(themeOptions).setValue(this.plugin.settings.darkTheme).onChange(async (value) => {
@@ -567654,21 +567614,21 @@ var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
       this.plugin.settings.smartPasteMol = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(pasteSec).setName("Supported File Extensions").setDesc("Comma-separated list of extensions that render automatically via ![[file.ext]]").addText((text2) => text2.setPlaceholder("mol, cdxml, ket...").setValue(this.plugin.settings.supportedEmbedExtensions).onChange(async (v8) => {
+    new import_obsidian.Setting(pasteSec).setName("Supported File Extensions").addText((text2) => text2.setValue(this.plugin.settings.supportedEmbedExtensions).onChange(async (v8) => {
       this.plugin.settings.supportedEmbedExtensions = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(pasteSec).setName("Inline Image Size").setDesc("Max width/height for inline text structures.").addText((text2) => text2.setPlaceholder("Width (150)").setValue(this.plugin.settings.inlineWidth.toString()).onChange(async (v8) => {
+    new import_obsidian.Setting(pasteSec).setName("Inline Image Size").addText((text2) => text2.setValue(this.plugin.settings.inlineWidth.toString()).onChange(async (v8) => {
       this.plugin.settings.inlineWidth = parseInt(v8) || 150;
       await this.plugin.saveSettings();
-    })).addText((text2) => text2.setPlaceholder("Height (150)").setValue(this.plugin.settings.inlineHeight.toString()).onChange(async (v8) => {
+    })).addText((text2) => text2.setValue(this.plugin.settings.inlineHeight.toString()).onChange(async (v8) => {
       this.plugin.settings.inlineHeight = parseInt(v8) || 150;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(pasteSec).setName("Inline Prefixes").setDesc("Text prefixes used to trigger inline rendering.").addText((text2) => text2.setPlaceholder("SMILES ($smiles=)").setValue(this.plugin.settings.inlineSmilesPrefix).onChange(async (v8) => {
+    new import_obsidian.Setting(pasteSec).setName("Inline Prefixes").addText((text2) => text2.setValue(this.plugin.settings.inlineSmilesPrefix).onChange(async (v8) => {
       this.plugin.settings.inlineSmilesPrefix = v8;
       await this.plugin.saveSettings();
-    })).addText((text2) => text2.setPlaceholder("Files ($mol=)").setValue(this.plugin.settings.inlineMolPrefix).onChange(async (v8) => {
+    })).addText((text2) => text2.setValue(this.plugin.settings.inlineMolPrefix).onChange(async (v8) => {
       this.plugin.settings.inlineMolPrefix = v8;
       await this.plugin.saveSettings();
     }));
@@ -567695,14 +567655,14 @@ var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
     }));
     const resetWrap = containerEl.createDiv();
     resetWrap.setCssStyles({ marginTop: "40px", paddingTop: "20px", borderTop: "1px solid var(--background-modifier-border)", display: "flex", justifyContent: "space-between", alignItems: "center" });
-    resetWrap.createDiv({ text: "Danger Zone" }).setCssStyles({ color: "var(--text-error)", fontWeight: "bold" });
+    resetWrap.createDiv({ text: "Danger Zone", attr: { style: "color: var(--text-error); font-weight: bold;" } });
     const resetBtn = resetWrap.createEl("button", { text: "Reset to Default Settings" });
     resetBtn.setCssStyles({ backgroundColor: "transparent", border: "1px solid var(--text-error)", color: "var(--text-error)" });
     resetBtn.onclick = async () => {
-      if (confirm("Are you sure you want to reset all ChemEdit settings to their defaults? This cannot be undone.")) {
+      if (confirm("Are you sure you want to reset all ChemEdit settings to defaults?")) {
         this.plugin.settings = Object.assign({}, DEFAULT_SETTINGS);
         await this.plugin.saveSettings();
-        new import_obsidian.Notice("ChemEdit settings reset to defaults. Please restart Obsidian.");
+        new import_obsidian.Notice("ChemEdit settings reset. Please restart Obsidian.");
         this.display();
       }
     };
@@ -568128,11 +568088,11 @@ var ChemInlineWidget = class extends import_view.WidgetType {
             if (extracted) {
               wrapper2.textContent = "";
               const svgContainer = document.createElement("span");
-              svgContainer.innerHTML = this.plugin.namespaceSvgIds(fileData);
-              const svgNode3 = svgContainer.querySelector("svg");
-              if (svgNode3) {
-                svgNode3.style.width = `${this.plugin.settings.inlineWidth}px`;
-                svgNode3.style.height = `${this.plugin.settings.inlineHeight}px`;
+              const doc = new DOMParser().parseFromString(this.plugin.namespaceSvgIds(fileData), "image/svg+xml");
+              const svgNode3 = doc.documentElement;
+              if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
+                svgNode3.setCssStyles({ width: `${this.plugin.settings.inlineWidth}px`, height: `${this.plugin.settings.inlineHeight}px` });
+                svgContainer.appendChild(svgNode3);
               }
               wrapper2.appendChild(svgContainer);
               return;
@@ -568263,10 +568223,11 @@ var ChemEditPlugin = class extends import_obsidian8.Plugin {
       if ((newFormat || format3) === "svg") {
         wrapper2.empty();
         const svgContainer = (0, import_obsidian8.createDiv)();
-        svgContainer.innerHTML = this.namespaceSvgIds(newData);
-        const svgNode3 = svgContainer.querySelector("svg");
-        if (svgNode3) {
+        const doc = new DOMParser().parseFromString(this.namespaceSvgIds(newData), "image/svg+xml");
+        const svgNode3 = doc.documentElement;
+        if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
           svgNode3.setCssStyles({ width: "100%", height: "100%" });
+          svgContainer.appendChild(svgNode3);
         }
         wrapper2.appendChild(svgContainer);
       } else {
@@ -568451,6 +568412,42 @@ var ChemEditPlugin = class extends import_obsidian8.Plugin {
         }).open();
       }
     });
+    this.addCommand({
+      id: "edit-inline-molecule-at-cursor",
+      name: "Edit inline molecule under cursor",
+      editorCallback: (editor4) => {
+        const cursor2 = editor4.getCursor();
+        const lineText = editor4.getLine(cursor2.line);
+        const prefix2 = this.settings.inlineSmilesPrefix;
+        const startIndex = lineText.lastIndexOf(prefix2, cursor2.ch);
+        if (startIndex !== -1) {
+          const searchArea = lineText.substring(startIndex + prefix2.length);
+          const match2 = searchArea.match(/[\s`'"]/);
+          const endIndex = match2 ? startIndex + prefix2.length + match2.index : lineText.length;
+          if (cursor2.ch >= startIndex && cursor2.ch <= endIndex) {
+            const rawData = lineText.substring(startIndex + prefix2.length, endIndex).trim();
+            new KetcherModal(this, rawData, "smiles", (newData, isFile, newFormat) => {
+              if (isFile) {
+                editor4.replaceRange(`!${newData}`, { line: cursor2.line, ch: startIndex }, { line: cursor2.line, ch: endIndex });
+                return;
+              }
+              if (newFormat === "ket") {
+                new import_obsidian8.Notice("Inline reactions not supported. Replaced with codeblock.");
+                editor4.replaceRange(`
+\`\`\`ket
+${newData}
+\`\`\`
+`, { line: cursor2.line, ch: startIndex }, { line: cursor2.line, ch: endIndex });
+                return;
+              }
+              editor4.replaceRange(newData, { line: cursor2.line, ch: startIndex + prefix2.length }, { line: cursor2.line, ch: endIndex });
+            }).open();
+            return;
+          }
+        }
+        new import_obsidian8.Notice("Place your cursor inside an inline $smiles= string first!");
+      }
+    });
     this.registerMarkdownPostProcessor(async (el2, ctx) => {
       var _a;
       const walker = document.createTreeWalker(el2, NodeFilter.SHOW_TEXT, null);
@@ -568531,10 +568528,11 @@ ${cleanText}
               wrapper2.title = `Double-click to edit ${file.name}`;
               wrapper2.empty();
               const svgContainer = (0, import_obsidian8.createDiv)();
-              svgContainer.innerHTML = this.namespaceSvgIds(fileData);
-              const svgNode3 = svgContainer.querySelector("svg");
-              if (svgNode3) {
+              const doc = new DOMParser().parseFromString(this.namespaceSvgIds(fileData), "image/svg+xml");
+              const svgNode3 = doc.documentElement;
+              if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
                 svgNode3.setCssStyles({ width: "100%", height: "100%" });
+                svgContainer.appendChild(svgNode3);
               }
               wrapper2.appendChild(svgContainer);
             } else {
@@ -568575,10 +568573,11 @@ ${cleanText}
               if ((newFormat || format3) === "svg") {
                 wrapper2.empty();
                 const svgContainer = (0, import_obsidian8.createDiv)();
-                svgContainer.innerHTML = this.namespaceSvgIds(newData);
-                const svgNode3 = svgContainer.querySelector("svg");
-                if (svgNode3) {
+                const doc = new DOMParser().parseFromString(this.namespaceSvgIds(newData), "image/svg+xml");
+                const svgNode3 = doc.documentElement;
+                if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
                   svgNode3.setCssStyles({ width: "100%", height: "100%" });
+                  svgContainer.appendChild(svgNode3);
                 }
                 wrapper2.appendChild(svgContainer);
               } else {
@@ -568924,10 +568923,11 @@ ${newData}
             if (ex) {
               wrapper2.empty();
               const svgContainer = (0, import_obsidian8.createSpan)();
-              svgContainer.innerHTML = this.namespaceSvgIds(fileData);
-              const svgNode3 = svgContainer.querySelector("svg");
-              if (svgNode3) {
+              const doc = new DOMParser().parseFromString(this.namespaceSvgIds(fileData), "image/svg+xml");
+              const svgNode3 = doc.documentElement;
+              if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
                 svgNode3.setCssStyles({ width: `${this.settings.inlineWidth}px`, height: `${this.settings.inlineHeight}px` });
+                svgContainer.appendChild(svgNode3);
               }
               wrapper2.appendChild(svgContainer);
             } else {
@@ -568974,10 +568974,11 @@ ${newData}
             if (format3 === "svg") {
               wrapper2.empty();
               const svgContainer = (0, import_obsidian8.createDiv)();
-              svgContainer.innerHTML = this.namespaceSvgIds(newData);
-              const svgNode3 = svgContainer.querySelector("svg");
-              if (svgNode3) {
+              const doc = new DOMParser().parseFromString(this.namespaceSvgIds(newData), "image/svg+xml");
+              const svgNode3 = doc.documentElement;
+              if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
                 svgNode3.setCssStyles({ width: "100%", height: "100%" });
+                svgContainer.appendChild(svgNode3);
               }
               wrapper2.appendChild(svgContainer);
             } else {
@@ -569174,10 +569175,11 @@ ${newData}
       let previewEl = null;
       if (format3 === "svg") {
         previewEl = (0, import_obsidian8.createDiv)();
-        previewEl.innerHTML = this.namespaceSvgIds(fileData);
-        const svgNode3 = previewEl.querySelector("svg");
-        if (svgNode3) {
+        const doc = new DOMParser().parseFromString(this.namespaceSvgIds(fileData), "image/svg+xml");
+        const svgNode3 = doc.documentElement;
+        if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
           svgNode3.setCssStyles({ width: "100%", height: "100%" });
+          previewEl.appendChild(svgNode3);
         }
       } else {
         previewEl = await this.renderMoleculeToPreview(fileData, format3, false);
@@ -569215,10 +569217,11 @@ ${newData}
         if (format3 === "svg") {
           wrapper2.empty();
           const svgContainer = (0, import_obsidian8.createDiv)();
-          svgContainer.innerHTML = this.namespaceSvgIds(newData);
-          const svgNode3 = svgContainer.querySelector("svg");
-          if (svgNode3) {
+          const doc = new DOMParser().parseFromString(this.namespaceSvgIds(newData), "image/svg+xml");
+          const svgNode3 = doc.documentElement;
+          if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
             svgNode3.setCssStyles({ width: "100%", height: "100%" });
+            svgContainer.appendChild(svgNode3);
           }
           svgContainer.setCssStyles({ border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "10px", backgroundColor: "var(--background-primary)" });
           wrapper2.appendChild(svgContainer);
