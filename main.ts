@@ -1,4 +1,5 @@
 // main.ts
+
 import { Plugin, MarkdownView, Editor, Notice, TFile, addIcon } from 'obsidian';
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -168,12 +169,16 @@ export default class ChemEditPlugin extends Plugin {
     }
 
     async onload() {
-        addIcon('flask-round', `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
-        const compassIcon = `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,82 36,50" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,50" fill="currentColor"/><polygon points="50,82 36,50 50,50" fill="currentColor"/>`;
-        addIcon('chem-navigator', compassIcon);
-        addIcon('flask-conical', compassIcon);
-        const dashboardIcon = `<path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 20 85 A 10 10 0 0 1 30 75 L 85 75" /><path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 30 15 L 85 15 L 85 85 L 30 85 A 10 10 0 0 1 20 75 L 20 25 A 10 10 0 0 1 30 15 Z" /><polygon fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" points="57,32 72,40 72,58 57,66 42,58 42,40" />`;
-        addIcon('chem-dashboard', dashboardIcon);
+        this.app.workspace.onLayoutReady(() => {
+            // @ts-ignore
+            const { addIcon } = require('obsidian');
+            addIcon('flask-round', `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
+            const compassIcon = `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,82 36,50" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,50" fill="currentColor"/><polygon points="50,82 36,50 50,50" fill="currentColor"/>`;
+            addIcon('chem-navigator', compassIcon);
+            addIcon('flask-conical', compassIcon);
+            const dashboardIcon = `<path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 20 85 A 10 10 0 0 1 30 75 L 85 75" /><path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 30 15 L 85 15 L 85 85 L 30 85 A 10 10 0 0 1 20 75 L 20 25 A 10 10 0 0 1 30 15 Z" /><polygon fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" points="57,32 72,40 72,58 57,66 42,58 42,40" />`;
+            addIcon('chem-dashboard', dashboardIcon);
+        });
         
         await this.loadSettings();
         this.api = buildChemEditAPI(this);
@@ -632,7 +637,7 @@ export default class ChemEditPlugin extends Plugin {
         wrapper.setCssStyles({ cursor: "pointer", border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "10px", textAlign: "center", display: "block", margin: "10px 0", backgroundColor: "var(--background-primary)" });
         wrapper.title = titleText; 
         wrapper.createSpan({ cls: "color-text-muted", text: "Loading preview..." }); 
-        return wrapper;
+        return wrapper as HTMLDivElement;
     }
 
     destroyHeadlessKetcher() {
@@ -657,10 +662,10 @@ export default class ChemEditPlugin extends Plugin {
     createErrorCard(msg: string): HTMLElement {
         const div = document.createElement('div'); 
         div.setCssStyles({ padding: '10px', border: '1px dashed var(--text-error)', color: 'var(--text-error)', borderRadius: '5px', textAlign: 'center', display: 'inline-block' });
-        div.createSpan({ text: '🧪 ' });
-        div.createEl('b', { text: msg });
-        div.createEl('br');
-        div.createSpan({ cls: 'color-text-muted', text: 'Double-click to open editor' }).setCssStyles({ fontSize: '0.8em' });
+        const s1 = document.createElement('span'); s1.textContent = '🧪 '; div.appendChild(s1);
+        const b = document.createElement('b'); b.textContent = msg; div.appendChild(b);
+        div.appendChild(document.createElement('br'));
+        const s2 = document.createElement('span'); s2.textContent = 'Double-click to open editor'; s2.className = 'color-text-muted'; s2.style.fontSize = '0.8em'; div.appendChild(s2);
         return div;
     }
 
@@ -673,7 +678,8 @@ export default class ChemEditPlugin extends Plugin {
         const wrapper = document.createElement("span"); wrapper.className = "chem-inline-wrapper"; 
         wrapper.setCssStyles({ display: "inline-block", verticalAlign: "middle", cursor: "pointer", margin: "0 4px" });
         wrapper.title = "Double-click to edit"; 
-        wrapper.createEl("small", { cls: "color-text-muted", text: "⏳" });
+        const small = document.createElement("small"); small.className = "color-text-muted"; small.textContent = "⏳";
+        wrapper.appendChild(small);
         parent.insertBefore(document.createTextNode(beforeText), textNode); parent.insertBefore(wrapper, textNode); parent.insertBefore(document.createTextNode(afterText), textNode); parent.removeChild(textNode);
 
         const theme = document.body.hasClass("theme-dark") ? this.settings.darkTheme : this.settings.lightTheme;
@@ -699,7 +705,7 @@ export default class ChemEditPlugin extends Plugin {
                             Smi.parse(rawData, (tree: any) => { new Smi.Drawer(drawerOptions).draw(tree, canvas, theme); });
                         }
                     }
-                } catch(e) { wrapper.empty(); wrapper.createSpan({ text: '❌' }); }
+                } catch(e) { wrapper.empty(); const s = document.createElement("span"); s.textContent = '❌'; wrapper.appendChild(s); }
             });
 
             wrapper.addEventListener("dblclick", (e) => {
@@ -728,10 +734,10 @@ export default class ChemEditPlugin extends Plugin {
                                 svgContainer.appendChild(svgNode);
                             }
                             wrapper.appendChild(svgContainer);
-                        } else { wrapper.empty(); wrapper.createSpan({ text: `❌` }); }
+                        } else { wrapper.empty(); const s = document.createElement("span"); s.textContent = `❌`; wrapper.appendChild(s); }
                     } else {
                         const previewEl = await this.renderMoleculeToPreview(fileData, format, true); 
-                        if (previewEl) { wrapper.empty(); wrapper.appendChild(previewEl); } else { wrapper.empty(); wrapper.createSpan({ text: `❌` }); } 
+                        if (previewEl) { wrapper.empty(); wrapper.appendChild(previewEl); } else { wrapper.empty(); const s = document.createElement("span"); s.textContent = `❌`; wrapper.appendChild(s); } 
                     }
                 });
                 wrapper.addEventListener("dblclick", async (e) => {
@@ -741,7 +747,7 @@ export default class ChemEditPlugin extends Plugin {
                     new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
                         if (isFile) { new Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`); return; }
                         if (newFormat && newFormat !== format && format !== 'svg') { new Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`); }
-                        await this.app.vault.modify(file, newData); wrapper.empty(); wrapper.createSpan({ text: `⏳` });
+                        await this.app.vault.modify(file, newData); wrapper.empty(); const s = document.createElement("span"); s.textContent = `⏳`; wrapper.appendChild(s);
                         if (format === 'svg') {
                             wrapper.empty(); const svgContainer = document.createElement("div"); 
                             const parser = new DOMParser();
@@ -755,7 +761,7 @@ export default class ChemEditPlugin extends Plugin {
                         } else { const updatedEl = await this.renderMoleculeToPreview(newData, newFormat || format, true); if (updatedEl) { wrapper.empty(); wrapper.appendChild(updatedEl); } }
                     }).open();
                 });
-            } else { wrapper.empty(); wrapper.createSpan({ text: `❌` }); }
+            } else { wrapper.empty(); const s = document.createElement("span"); s.textContent = `❌`; wrapper.appendChild(s); }
         }
     }
 
@@ -828,12 +834,12 @@ export default class ChemEditPlugin extends Plugin {
     finishHeadlessTask() { this.isProcessingHeadless = false; window.setTimeout(() => { void this.processHeadlessQueue(); }, 25); }
     
     async injectNativeEmbed(embed: HTMLElement, src: string, sourcePath: string) {
-        const file = this.app.metadataCache.getFirstLinkpathDest(src, sourcePath); if (!(file instanceof TFile)) { embed.empty(); embed.createDiv({ cls: "chem-native-embed-wrapper color-red", text: `File not found: ${src}` }); return; }
+        const file = this.app.metadataCache.getFirstLinkpathDest(src, sourcePath); if (!(file instanceof TFile)) { embed.empty(); const err = document.createElement("div"); err.className = "chem-native-embed-wrapper color-red"; err.textContent = `File not found: ${src}`; embed.appendChild(err); return; }
         const format = file.extension.toLowerCase(); const fileData = await this.app.vault.read(file);
         let extractedSvgData = null; if (format === 'svg') { extractedSvgData = extractDataFromSvg(fileData); if (!extractedSvgData) return;  }
         embed.classList.add('chem-custom-embed');
         const wrapper = document.createElement("div");  wrapper.className = "chem-native-embed-wrapper"; wrapper.setCssStyles({ cursor: "pointer", display: "flex", justifyContent: "center", margin: "10px 0" }); wrapper.title = `Double-click to edit ${file.name}`;
-        const loadingDiv = document.createElement("div"); loadingDiv.className = "color-text-muted"; loadingDiv.setCssStyles({ padding: "15px", border: "1px solid var(--background-modifier-border)", borderRadius: "8px" }); loadingDiv.setText(`⏳ Loading ${file.extension.toUpperCase()}...`); wrapper.appendChild(loadingDiv);
+        const loadingDiv = document.createElement("div"); loadingDiv.className = "color-text-muted"; loadingDiv.setCssStyles({ padding: "15px", border: "1px solid var(--background-modifier-border)", borderRadius: "8px" }); loadingDiv.textContent = `⏳ Loading ${file.extension.toUpperCase()}...`; wrapper.appendChild(loadingDiv);
         embed.empty(); embed.appendChild(wrapper);
         const observer = new MutationObserver(() => { if (!embed.contains(wrapper)) { embed.empty(); embed.appendChild(wrapper); } }); observer.observe(embed, { childList: true });
 
@@ -860,7 +866,7 @@ export default class ChemEditPlugin extends Plugin {
             new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
                 if (isFile) { new Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`); return; }
                 if (newFormat && newFormat !== format && format !== 'svg') { new Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`); }
-                await this.app.vault.modify(file, newData); wrapper.empty(); wrapper.createDiv({ cls: "color-text-muted", text: "⏳ Updating...", attr: { style: "padding:15px; border:1px solid var(--background-modifier-border); border-radius:8px;" } });
+                await this.app.vault.modify(file, newData); wrapper.empty(); const ld = document.createElement("div"); ld.className = "color-text-muted"; ld.textContent = "⏳ Updating..."; ld.setCssStyles({ padding: "15px", border: "1px solid var(--background-modifier-border)", borderRadius: "8px" }); wrapper.appendChild(ld);
                 if (format === 'svg') { 
                     wrapper.empty(); const svgContainer = document.createElement("div"); 
                     const parser = new DOMParser();

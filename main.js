@@ -575114,12 +575114,15 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
     }
   }
   async onload() {
-    (0, import_obsidian22.addIcon)("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
-    const compassIcon = `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,82 36,50" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,50" fill="currentColor"/><polygon points="50,82 36,50 50,50" fill="currentColor"/>`;
-    (0, import_obsidian22.addIcon)("chem-navigator", compassIcon);
-    (0, import_obsidian22.addIcon)("flask-conical", compassIcon);
-    const dashboardIcon = `<path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 20 85 A 10 10 0 0 1 30 75 L 85 75" /><path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 30 15 L 85 15 L 85 85 L 30 85 A 10 10 0 0 1 20 75 L 20 25 A 10 10 0 0 1 30 15 Z" /><polygon fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" points="57,32 72,40 72,58 57,66 42,58 42,40" />`;
-    (0, import_obsidian22.addIcon)("chem-dashboard", dashboardIcon);
+    this.app.workspace.onLayoutReady(() => {
+      const { addIcon: addIcon2 } = require("obsidian");
+      addIcon2("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
+      const compassIcon = `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,82 36,50" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,50" fill="currentColor"/><polygon points="50,82 36,50 50,50" fill="currentColor"/>`;
+      addIcon2("chem-navigator", compassIcon);
+      addIcon2("flask-conical", compassIcon);
+      const dashboardIcon = `<path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 20 85 A 10 10 0 0 1 30 75 L 85 75" /><path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 30 15 L 85 15 L 85 85 L 30 85 A 10 10 0 0 1 20 75 L 20 25 A 10 10 0 0 1 30 15 Z" /><polygon fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" points="57,32 72,40 72,58 57,66 42,58 42,40" />`;
+      addIcon2("chem-dashboard", dashboardIcon);
+    });
     await this.loadSettings();
     this.api = buildChemEditAPI(this);
     this.addSettingTab(new ChemEditSettingTab(this.app, this));
@@ -575851,10 +575854,18 @@ ${newData}
   createErrorCard(msg) {
     const div = document.createElement("div");
     div.setCssStyles({ padding: "10px", border: "1px dashed var(--text-error)", color: "var(--text-error)", borderRadius: "5px", textAlign: "center", display: "inline-block" });
-    div.createSpan({ text: "\u{1F9EA} " });
-    div.createEl("b", { text: msg });
-    div.createEl("br");
-    div.createSpan({ cls: "color-text-muted", text: "Double-click to open editor" }).setCssStyles({ fontSize: "0.8em" });
+    const s1 = document.createElement("span");
+    s1.textContent = "\u{1F9EA} ";
+    div.appendChild(s1);
+    const b9 = document.createElement("b");
+    b9.textContent = msg;
+    div.appendChild(b9);
+    div.appendChild(document.createElement("br"));
+    const s22 = document.createElement("span");
+    s22.textContent = "Double-click to open editor";
+    s22.className = "color-text-muted";
+    s22.style.fontSize = "0.8em";
+    div.appendChild(s22);
     return div;
   }
   async processInlineString(textNode, fullText, prefix2, type3, sourcePath) {
@@ -575871,7 +575882,10 @@ ${newData}
     wrapper2.className = "chem-inline-wrapper";
     wrapper2.setCssStyles({ display: "inline-block", verticalAlign: "middle", cursor: "pointer", margin: "0 4px" });
     wrapper2.title = "Double-click to edit";
-    wrapper2.createEl("small", { cls: "color-text-muted", text: "\u23F3" });
+    const small = document.createElement("small");
+    small.className = "color-text-muted";
+    small.textContent = "\u23F3";
+    wrapper2.appendChild(small);
     parent.insertBefore(document.createTextNode(beforeText), textNode);
     parent.insertBefore(wrapper2, textNode);
     parent.insertBefore(document.createTextNode(afterText), textNode);
@@ -575919,7 +575933,9 @@ ${newData}
           }
         } catch (e6) {
           wrapper2.empty();
-          wrapper2.createSpan({ text: "\u274C" });
+          const s8 = document.createElement("span");
+          s8.textContent = "\u274C";
+          wrapper2.appendChild(s8);
         }
       });
       wrapper2.addEventListener("dblclick", (e6) => {
@@ -575970,7 +575986,9 @@ ${newData}
               wrapper2.appendChild(svgContainer);
             } else {
               wrapper2.empty();
-              wrapper2.createSpan({ text: `\u274C` });
+              const s8 = document.createElement("span");
+              s8.textContent = `\u274C`;
+              wrapper2.appendChild(s8);
             }
           } else {
             const previewEl = await this.renderMoleculeToPreview(fileData, format3, true);
@@ -575979,7 +575997,9 @@ ${newData}
               wrapper2.appendChild(previewEl);
             } else {
               wrapper2.empty();
-              wrapper2.createSpan({ text: `\u274C` });
+              const s8 = document.createElement("span");
+              s8.textContent = `\u274C`;
+              wrapper2.appendChild(s8);
             }
           }
         });
@@ -576008,7 +576028,9 @@ ${newData}
             }
             await this.app.vault.modify(file, newData);
             wrapper2.empty();
-            wrapper2.createSpan({ text: `\u23F3` });
+            const s8 = document.createElement("span");
+            s8.textContent = `\u23F3`;
+            wrapper2.appendChild(s8);
             if (format3 === "svg") {
               wrapper2.empty();
               const svgContainer = document.createElement("div");
@@ -576031,7 +576053,9 @@ ${newData}
         });
       } else {
         wrapper2.empty();
-        wrapper2.createSpan({ text: `\u274C` });
+        const s8 = document.createElement("span");
+        s8.textContent = `\u274C`;
+        wrapper2.appendChild(s8);
       }
     }
   }
@@ -576186,7 +576210,10 @@ ${newData}
     const file = this.app.metadataCache.getFirstLinkpathDest(src2, sourcePath);
     if (!(file instanceof import_obsidian22.TFile)) {
       embed.empty();
-      embed.createDiv({ cls: "chem-native-embed-wrapper color-red", text: `File not found: ${src2}` });
+      const err = document.createElement("div");
+      err.className = "chem-native-embed-wrapper color-red";
+      err.textContent = `File not found: ${src2}`;
+      embed.appendChild(err);
       return;
     }
     const format3 = file.extension.toLowerCase();
@@ -576204,7 +576231,7 @@ ${newData}
     const loadingDiv = document.createElement("div");
     loadingDiv.className = "color-text-muted";
     loadingDiv.setCssStyles({ padding: "15px", border: "1px solid var(--background-modifier-border)", borderRadius: "8px" });
-    loadingDiv.setText(`\u23F3 Loading ${file.extension.toUpperCase()}...`);
+    loadingDiv.textContent = `\u23F3 Loading ${file.extension.toUpperCase()}...`;
     wrapper2.appendChild(loadingDiv);
     embed.empty();
     embed.appendChild(wrapper2);
@@ -576258,7 +576285,11 @@ ${newData}
         }
         await this.app.vault.modify(file, newData);
         wrapper2.empty();
-        wrapper2.createDiv({ cls: "color-text-muted", text: "\u23F3 Updating...", attr: { style: "padding:15px; border:1px solid var(--background-modifier-border); border-radius:8px;" } });
+        const ld = document.createElement("div");
+        ld.className = "color-text-muted";
+        ld.textContent = "\u23F3 Updating...";
+        ld.setCssStyles({ padding: "15px", border: "1px solid var(--background-modifier-border)", borderRadius: "8px" });
+        wrapper2.appendChild(ld);
         if (format3 === "svg") {
           wrapper2.empty();
           const svgContainer = document.createElement("div");
