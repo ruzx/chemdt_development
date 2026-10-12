@@ -1,7 +1,6 @@
 // SharedContextMenu.ts
 import { Menu, Notice, requestUrl } from 'obsidian';
 import { AddToLibraryModal, addCompoundToLibrary, calculateMwOffline } from './SharedEln';
-import { addCompoundToLibrary as addCompoundToDatabase } from './SharedBase';
 import { ChemDataEngine } from './ChemDataEngine';
 
 export function populateChemicalMenu(menu: Menu, plugin: any, smiles: string) {
@@ -15,11 +14,6 @@ export function populateChemicalMenu(menu: Menu, plugin: any, smiles: string) {
         });
     });
 
-    menu.addItem((item) => {
-        item.setTitle("Add to Compound Database (Card)").setIcon("flask-round").onClick(() => {
-            addCompoundToDatabase(plugin.app, plugin, plugin.settings.elnDirectory || "Library", () => {}, smiles);
-        });
-    });
 
     menu.addSeparator();
 

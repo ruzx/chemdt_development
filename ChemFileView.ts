@@ -1,6 +1,4 @@
 // ChemFileView.ts
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-floating-promises */
-
 import { TextFileView, WorkspaceLeaf, Notice } from 'obsidian';
 import type ChemEditPlugin from './main';
 import { KetcherModal } from './KetcherModals';
@@ -20,7 +18,7 @@ export class ChemFileView extends TextFileView {
     getIcon() { return "hexagon"; } 
     getViewData() { return this.data; }
     
-    async setViewData(data: string, clear: boolean) {
+    async setViewData(data: string, clear: boolean): Promise<void> {
         this.data = data; 
         const container = this.contentEl; 
         container.empty();
@@ -28,7 +26,7 @@ export class ChemFileView extends TextFileView {
         const wrapper = container.createDiv(); 
         wrapper.setCssStyles({ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", cursor: "pointer" });
         wrapper.title = "Double-click to edit"; 
-        wrapper.createDiv({ cls: "color-text-muted", text: "Loading preview..." });
+        wrapper.createDiv({ text: "Loading preview...", cls: "color-text-muted" });
         
         const format = this.file?.extension === 'cdxml' ? 'cdxml' : 'mol';
         

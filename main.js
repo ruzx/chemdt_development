@@ -14778,7 +14778,7 @@ var require_lodash = __commonJS({
           result2.placeholder = curryRight.placeholder;
           return result2;
         }
-        function debounce10(func, wait, options3) {
+        function debounce6(func, wait, options3) {
           var lastArgs, lastThis, maxWait, result2, timerId, lastCallTime, lastInvokeTime = 0, leading = false, maxing = false, trailing = true;
           if (typeof func != "function") {
             throw new TypeError2(FUNC_ERROR_TEXT);
@@ -14958,7 +14958,7 @@ var require_lodash = __commonJS({
             leading = "leading" in options3 ? !!options3.leading : leading;
             trailing = "trailing" in options3 ? !!options3.trailing : trailing;
           }
-          return debounce10(func, wait, {
+          return debounce6(func, wait, {
             "leading": leading,
             "maxWait": wait,
             "trailing": trailing
@@ -15977,7 +15977,7 @@ var require_lodash = __commonJS({
         lodash.create = create3;
         lodash.curry = curry;
         lodash.curryRight = curryRight;
-        lodash.debounce = debounce10;
+        lodash.debounce = debounce6;
         lodash.defaults = defaults2;
         lodash.defaultsDeep = defaultsDeep;
         lodash.defer = defer;
@@ -67631,9 +67631,9 @@ function parametrizeUrl(url2, params) {
   });
 }
 function request(method, url2, data, headers, responseHandler) {
-  var requestUrl7 = url2;
-  if (data && method === "GET") requestUrl7 = parametrizeUrl(url2, data);
-  var response = fetch(requestUrl7, {
+  var requestUrl3 = url2;
+  if (data && method === "GET") requestUrl3 = parametrizeUrl(url2, data);
+  var response = fetch(requestUrl3, {
     method,
     headers: _objectSpread$g({
       Accept: "application/json"
@@ -524338,8 +524338,8 @@ var init_dist4 = __esm({
     highlightTargets = ["atoms", "bonds", "rxnArrows", "rxnPluses", "functionalGroups", "frags", "merge", "rgroups", "rgroupAttachmentPoints", "sgroups", "sgroupData", "enhancedFlags", "simpleObjects", "texts", IMAGE_KEY, MULTITAIL_ARROW_KEY];
     _origin = /* @__PURE__ */ new WeakMap();
     Editor$2 = (function() {
-      function Editor6(ketcherId, clientArea, options3, serverSettings, prevEditor) {
-        _classCallCheck(this, Editor6);
+      function Editor5(ketcherId, clientArea, options3, serverSettings, prevEditor) {
+        _classCallCheck(this, Editor5);
         _classPrivateFieldInitSpec2(this, _origin, {
           writable: true,
           value: void 0
@@ -524403,7 +524403,7 @@ var init_dist4 = __esm({
         domEventSetup(this, clientArea);
         this.render.paper.canvas.setAttribute("data-testid", "canvas");
       }
-      _createClass(Editor6, [{
+      _createClass(Editor5, [{
         key: "isDitrty",
         value: function isDitrty() {
           var position3 = this.historyPtr;
@@ -524746,7 +524746,7 @@ var init_dist4 = __esm({
             return atomsToProcessSet.has(bond2.begin) && !atomsToProcessSet.has(bond2.end) || atomsToProcessSet.has(bond2.end) && !atomsToProcessSet.has(bond2.begin);
           });
           var selectionHasInvalidOutgoingBonds = bondsToOutside.some(function(bond2) {
-            return !Editor6.isBondSuitableForAttachmentPoint(bond2);
+            return !Editor5.isBondSuitableForAttachmentPoint(bond2);
           });
           if (selectionHasInvalidOutgoingBonds) {
             return false;
@@ -524770,7 +524770,7 @@ var init_dist4 = __esm({
             }
             var bondToSelectionAtom = currentStruct.bonds.get(bondIdToSelectionAtom);
             assert_1(bondToSelectionAtom);
-            if (!Editor6.isBondSuitableForAttachmentPoint(bondToSelectionAtom)) {
+            if (!Editor5.isBondSuitableForAttachmentPoint(bondToSelectionAtom)) {
               return;
             }
             potentialLeavingAtomForManualAssignment.push(selectionAtomId);
@@ -525472,7 +525472,7 @@ var init_dist4 = __esm({
           });
           var potentialLeavingAtoms = [];
           bondsToOutside.forEach(function(bond2) {
-            if (!Editor6.isBondSuitableForAttachmentPoint(bond2)) {
+            if (!Editor5.isBondSuitableForAttachmentPoint(bond2)) {
               return;
             }
             var atomIdToUse = attachmentAtomId === bond2.begin ? bond2.end : bond2.begin;
@@ -525829,13 +525829,13 @@ var init_dist4 = __esm({
                         return bond2.begin === atomPair[0] && bond2.end === atomPair[1] || bond2.begin === atomPair[1] && bond2.end === atomPair[0];
                       });
                       if (attachmentPointWithBond) {
-                        if (!Editor6.isBondSuitableForAttachmentPoint(bond2)) {
+                        if (!Editor5.isBondSuitableForAttachmentPoint(bond2)) {
                           _this8.monomerCreationState.problematicAttachmentPoints.add(attachmentPointWithBond[0]);
                         } else {
                           _this8.monomerCreationState.problematicAttachmentPoints["delete"](attachmentPointWithBond[0]);
                         }
                       }
-                      if (!Editor6.isBondSuitableForAttachmentPoint(bond2)) {
+                      if (!Editor5.isBondSuitableForAttachmentPoint(bond2)) {
                         _this8.monomerCreationState.potentialAttachmentPoints.forEach(function(leavingAtomIds, attachmentAtomId) {
                           var updatedLeavingAtomIds = new Set(leavingAtomIds);
                           var bondFromAttachmentAtom = bond2.begin === attachmentAtomId && leavingAtomIds.has(bond2.end);
@@ -525878,7 +525878,7 @@ var init_dist4 = __esm({
                         var _attachmentPointWithB = _slicedToArray(attachmentPointWithBondToLeavingAtom, 1), attachmentPointName = _attachmentPointWithB[0];
                         _this8.monomerCreationState.assignedAttachmentPoints["delete"](attachmentPointName);
                       }
-                      if (Editor6.isBondSuitableForAttachmentPoint(bond2)) {
+                      if (Editor5.isBondSuitableForAttachmentPoint(bond2)) {
                         if (_this8.monomerCreationState.potentialAttachmentPoints.has(bond2.begin)) {
                           var leavingAtomIds = _this8.monomerCreationState.potentialAttachmentPoints.get(bond2.begin);
                           assert_1(leavingAtomIds);
@@ -526284,7 +526284,7 @@ var init_dist4 = __esm({
             return false;
           }
           var suitableBonds = nonLeavingAtomBonds.filter(function(_11, bond2) {
-            return Editor6.isBondSuitableForAttachmentPoint(bond2);
+            return Editor5.isBondSuitableForAttachmentPoint(bond2);
           });
           return suitableBonds.size >= 1;
         }
@@ -526361,7 +526361,7 @@ var init_dist4 = __esm({
           });
         }
       }]);
-      return Editor6;
+      return Editor5;
     })();
     classes$F = { "button-common-styles": "StructEditor-module_button-common-styles__3P7PO", "scrollbar": "StructEditor-module_scrollbar__SUs-o", "spinnerOverlay": "StructEditor-module_spinnerOverlay__5H1IM", "canvas": "StructEditor-module_canvas__LLnzh", "measureLog": "StructEditor-module_measureLog__B2wuy", "visible": "StructEditor-module_visible__3eFNB", "intermediateCanvas": "StructEditor-module_intermediateCanvas__fR3ws", "enableCursor": "StructEditor-module_enableCursor__Qla0A" };
     styles$p = { "button-common-styles": "ContextMenu-module_button-common-styles__pshYr", "scrollbar": "ContextMenu-module_scrollbar__fCla5", "contextMenu": "ContextMenu-module_contextMenu__oqyL-", "icon": "ContextMenu-module_icon__KhXEk", "markAsComponentIcon": "ContextMenu-module_markAsComponentIcon__oBjcI", "contextMenuText": "ContextMenu-module_contextMenuText__j0O2-", "sameGroup": "ContextMenu-module_sameGroup__0DPIX", "devider": "ContextMenu-module_devider__-K9Bc" };
@@ -536702,14 +536702,14 @@ var init_dist4 = __esm({
           ketcherProvider.removeKetcherInstance(ketcherId);
         };
       }, []);
-      var Editor6 = Editor$1;
+      var Editor5 = Editor$1;
       return (0, import_jsx_runtime109.jsx)(ThemeProvider5, {
         theme: muiTheme2,
         children: (0, import_jsx_runtime109.jsxs)("div", {
           className: classes$1.app,
           children: [
             (0, import_jsx_runtime109.jsx)(AppHiddenContainer, {}),
-            (0, import_jsx_runtime109.jsx)(Editor6, {
+            (0, import_jsx_runtime109.jsx)(Editor5, {
               prevKetcherId,
               ketcherId,
               className: classes$1.canvas
@@ -537132,186 +537132,6 @@ var init_dist4 = __esm({
           }))
         })]
       });
-    };
-  }
-});
-
-// ScriptStore.ts
-var ScriptStore_exports = {};
-__export(ScriptStore_exports, {
-  ScriptStoreModal: () => ScriptStoreModal
-});
-var import_obsidian, ScriptStoreModal;
-var init_ScriptStore = __esm({
-  "ScriptStore.ts"() {
-    import_obsidian = require("obsidian");
-    ScriptStoreModal = class extends import_obsidian.Modal {
-      constructor(app, plugin) {
-        super(app);
-        this.plugin = plugin;
-      }
-      async onOpen() {
-        await this.renderStore();
-      }
-      async renderStore() {
-        const { contentEl } = this;
-        contentEl.empty();
-        contentEl.createEl("h2", { text: "\u{1F9EA} ChemEdit Script Store" }).setCssStyles({ marginBottom: "4px" });
-        contentEl.createEl("p", { text: "Download community scripts to automate your chemistry workflows. Once installed, assign them to hotkeys in Obsidian Settings.", cls: "color-text-muted" }).setCssStyles({ fontSize: "13px", marginTop: "0", marginBottom: "20px" });
-        const listContainer = contentEl.createDiv();
-        listContainer.setCssStyles({ maxHeight: "50vh", overflowY: "auto", paddingRight: "10px" });
-        listContainer.createSpan({ text: "Loading available scripts... \u23F3", cls: "color-text-muted" }).setCssStyles({ fontStyle: "italic" });
-        let scripts = [];
-        try {
-          const repoUrl = "https://raw.githubusercontent.com/katananananna/chemedit-scripts/main/manifest.json";
-          const res = await (0, import_obsidian.requestUrl)(repoUrl);
-          if (res.status === 200) scripts = res.json;
-        } catch (e6) {
-          console.log("ChemEdit: Could not fetch remote scripts from GitHub. Using local fallbacks.");
-        }
-        if (scripts.length === 0) {
-          const mathifyCode = [
-            "if (!editor) return;",
-            "const cursor = editor.getCursor();",
-            "const line = editor.getLine(cursor.line);",
-            "const beforeCursor = line.substring(0, cursor.ch);",
-            "const words = beforeCursor.split(/\\s+/);",
-            "const lastWord = words[words.length - 1];",
-            "if (!lastWord || lastWord.length < 2) return;",
-            "let tex = lastWord;",
-            "tex = tex.replace(/(\\d*[+-])$/, '^{$1}');",
-            "tex = tex.replace(/(\\d+)(?![+-])/g, '_{$1}');",
-            "editor.replaceRange('$' + tex + '$ ', { line: cursor.line, ch: cursor.ch - lastWord.length }, { line: cursor.line, ch: cursor.ch });"
-          ].join("\n");
-          const fetchCode = [
-            "if (!editor) return;",
-            "const selection = editor.getSelection().trim();",
-            "if (!selection) { new Notice('Please highlight a chemical name first!'); return; }",
-            "new Notice('Fetching data for ' + selection + '...');",
-            "try {",
-            "    const url = 'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/' + encodeURIComponent(selection) + '/property/IsomericSMILES,CanonicalSMILES,MolecularWeight,MolecularFormula/JSON';",
-            "    const res = await requestUrl(url);",
-            "    if (res.status === 200) {",
-            "        const p = res.json.PropertyTable.Properties[0];",
-            "        const smiles = p.IsomericSMILES || p.CanonicalSMILES || '';",
-            "        const text = '**' + selection + '** (Formula: ' + p.MolecularFormula + ', MW: ' + p.MolecularWeight + ')\\n```smiles\\n' + smiles + '\\n```\\n';",
-            "        editor.replaceSelection(text);",
-            "        new Notice('Data inserted!');",
-            "    } else { new Notice('Compound not found.'); }",
-            "} catch(e) { new Notice('API Error: ' + e.message); }"
-          ].join("\n");
-          const calcPropsCode = [
-            "if (!editor) return;",
-            "const smiles = editor.getSelection().trim();",
-            "if (!smiles) { new Notice('Highlight a SMILES string first!'); return; }",
-            "try {",
-            "    const props = api.data.getProperties(smiles);",
-            "    if (props && props.mw > 0) {",
-            "        const text = `\\n> [!info] Properties\\n> **Formula:** ${props.formula} | **MW:** ${props.mw.toFixed(2)} | **TPSA:** ${props.tpsa ? props.tpsa.toFixed(1) : '-'}`;",
-            "        editor.replaceSelection(smiles + text);",
-            "        new Notice('Calculated offline!');",
-            "    } else {",
-            "        new Notice('Invalid SMILES or cannot calculate.');",
-            "    }",
-            "} catch(e) { new Notice('Error: ' + e.message); }"
-          ].join("\n");
-          const stoichCode = [
-            "if (!editor) return;",
-            "const cursor = editor.getCursor();",
-            "const table = `",
-            "| Reagent | MW | Eq | mmol | mg | mL |",
-            "| :--- | :--- | :--- | :--- | :--- | :--- |",
-            "| SM 1 |  | 1.0 |  |  |  |",
-            "| SM 2 |  |  |  |  |  |",
-            "| Solvent | - | - | - | - |  |",
-            "`;",
-            "editor.replaceRange(table.trim() + '\\n', cursor);",
-            "new Notice('Stoichiometry table inserted!');"
-          ].join("\n");
-          scripts = [
-            {
-              name: "MathifyChem.js",
-              description: "Instantly formats chemical formulas (H2SO4 -> H\u2082SO\u2084) and ion charges. Type a formula, press your hotkey, and get perfect LaTeX.",
-              author: "ChemEdit",
-              code: mathifyCode
-            },
-            {
-              name: "FetchCompoundData.js",
-              description: "Highlight a chemical name in your note (e.g. 'Aspirin') and run this script. It fetches the SMILES, MW, and Formula from PubChem and inserts a structure block.",
-              author: "ChemEdit",
-              code: fetchCode
-            },
-            {
-              name: "CalculateProperties.js",
-              description: "[OFFLINE] Highlight a SMILES string and press your hotkey. Uses ChemEdit's internal engine to calculate the Formula, MW, and TPSA instantly without an internet connection.",
-              author: "ChemEdit",
-              code: calcPropsCode
-            },
-            {
-              name: "InsertStoichTable.js",
-              description: "[OFFLINE] Instantly inserts a clean Markdown stoichiometry table at your cursor.",
-              author: "ChemEdit",
-              code: stoichCode
-            }
-          ];
-        }
-        listContainer.empty();
-        const scriptFolder = this.plugin.settings.scriptsFolder || "ChemEdit/Scripts";
-        for (const script of scripts) {
-          const item = listContainer.createDiv();
-          item.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px", background: "var(--background-secondary)", border: "1px solid var(--background-modifier-border)", borderRadius: "8px", marginBottom: "12px" });
-          const info = item.createDiv();
-          info.setCssStyles({ display: "flex", flexDirection: "column", gap: "4px", maxWidth: "70%" });
-          info.createDiv({ text: script.name }).setCssStyles({ fontWeight: "700", color: "var(--text-accent)", fontSize: "14px" });
-          info.createDiv({ text: script.description }).setCssStyles({ fontSize: "12px", color: "var(--text-normal)", lineHeight: "1.4" });
-          info.createDiv({ text: `By ${script.author}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)" });
-          const btnWrap = item.createDiv();
-          btnWrap.setCssStyles({ display: "flex", gap: "8px", alignItems: "center" });
-          const installBtn = btnWrap.createEl("button", { text: "Download", cls: "mod-cta" });
-          installBtn.setCssStyles({ fontSize: "12px", height: "28px" });
-          const filePath = `${scriptFolder}/${script.name}`;
-          const isInstalled = await this.app.vault.adapter.exists(filePath);
-          if (isInstalled) {
-            installBtn.innerText = "\u{1F504} Update";
-            installBtn.removeClass("mod-cta");
-            const deleteBtn = btnWrap.createEl("button", { text: "\u{1F5D1}\uFE0F", attr: { title: "Delete Script" } });
-            deleteBtn.setCssStyles({ background: "transparent", border: "1px solid var(--background-modifier-border)", boxShadow: "none", fontSize: "14px", padding: "4px 8px", height: "28px" });
-            deleteBtn.onclick = async () => {
-              var _a;
-              const file = this.app.vault.getAbstractFileByPath(filePath);
-              if (file instanceof import_obsidian.TFile) {
-                await this.app.vault.delete(file);
-                await ((_a = this.plugin.scriptEngine) == null ? void 0 : _a.loadScripts());
-                new import_obsidian.Notice(`Deleted ${script.name}`);
-                void this.renderStore();
-              }
-            };
-          }
-          installBtn.onclick = async () => {
-            var _a;
-            installBtn.innerText = "\u23F3...";
-            try {
-              if (!await this.app.vault.adapter.exists(scriptFolder)) await this.app.vault.createFolder(scriptFolder);
-              let codeToSave = script.code || "";
-              if (script.url) {
-                const raw = await (0, import_obsidian.requestUrl)(script.url);
-                if (raw.status === 200) codeToSave = raw.text;
-              }
-              const existingFile = this.app.vault.getAbstractFileByPath(filePath);
-              if (existingFile instanceof import_obsidian.TFile) await this.app.vault.modify(existingFile, codeToSave);
-              else await this.app.vault.create(filePath, codeToSave);
-              await ((_a = this.plugin.scriptEngine) == null ? void 0 : _a.loadScripts());
-              new import_obsidian.Notice(`${script.name} installed!`);
-              void this.renderStore();
-            } catch (e6) {
-              installBtn.innerText = "\u274C Error";
-            }
-          };
-        }
-      }
-      onClose() {
-        this.contentEl.empty();
-      }
     };
   }
 });
@@ -559890,11 +559710,11 @@ function takeStandardPhoto(callback) {
   };
   input.click();
 }
-var import_obsidian3, TlcModal;
+var import_obsidian2, TlcModal;
 var init_SharedMedia = __esm({
   "SharedMedia.ts"() {
-    import_obsidian3 = require("obsidian");
-    TlcModal = class extends import_obsidian3.Modal {
+    import_obsidian2 = require("obsidian");
+    TlcModal = class extends import_obsidian2.Modal {
       constructor(app, onSave) {
         super(app);
         this.img = null;
@@ -559907,7 +559727,7 @@ var init_SharedMedia = __esm({
       onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        if (import_obsidian3.Platform.isMobile) {
+        if (import_obsidian2.Platform.isMobile) {
           this.modalEl.setCssStyles({ width: "100vw", height: "100vh" });
         }
         contentEl.createEl("h3", { text: "Digital TLC Calculator" }).setCssStyles({ marginTop: "0", marginBottom: "10px" });
@@ -560088,2667 +559908,6 @@ var init_SharedMedia = __esm({
   }
 });
 
-// node_modules/qrcode/lib/can-promise.js
-var require_can_promise = __commonJS({
-  "node_modules/qrcode/lib/can-promise.js"(exports, module2) {
-    module2.exports = function() {
-      return typeof Promise === "function" && Promise.prototype && Promise.prototype.then;
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/utils.js
-var require_utils = __commonJS({
-  "node_modules/qrcode/lib/core/utils.js"(exports) {
-    var toSJISFunction;
-    var CODEWORDS_COUNT = [
-      0,
-      // Not used
-      26,
-      44,
-      70,
-      100,
-      134,
-      172,
-      196,
-      242,
-      292,
-      346,
-      404,
-      466,
-      532,
-      581,
-      655,
-      733,
-      815,
-      901,
-      991,
-      1085,
-      1156,
-      1258,
-      1364,
-      1474,
-      1588,
-      1706,
-      1828,
-      1921,
-      2051,
-      2185,
-      2323,
-      2465,
-      2611,
-      2761,
-      2876,
-      3034,
-      3196,
-      3362,
-      3532,
-      3706
-    ];
-    exports.getSymbolSize = function getSymbolSize(version3) {
-      if (!version3) throw new Error('"version" cannot be null or undefined');
-      if (version3 < 1 || version3 > 40) throw new Error('"version" should be in range from 1 to 40');
-      return version3 * 4 + 17;
-    };
-    exports.getSymbolTotalCodewords = function getSymbolTotalCodewords(version3) {
-      return CODEWORDS_COUNT[version3];
-    };
-    exports.getBCHDigit = function(data) {
-      let digit = 0;
-      while (data !== 0) {
-        digit++;
-        data >>>= 1;
-      }
-      return digit;
-    };
-    exports.setToSJISFunction = function setToSJISFunction(f9) {
-      if (typeof f9 !== "function") {
-        throw new Error('"toSJISFunc" is not a valid function.');
-      }
-      toSJISFunction = f9;
-    };
-    exports.isKanjiModeEnabled = function() {
-      return typeof toSJISFunction !== "undefined";
-    };
-    exports.toSJIS = function toSJIS(kanji) {
-      return toSJISFunction(kanji);
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/error-correction-level.js
-var require_error_correction_level = __commonJS({
-  "node_modules/qrcode/lib/core/error-correction-level.js"(exports) {
-    exports.L = { bit: 1 };
-    exports.M = { bit: 0 };
-    exports.Q = { bit: 3 };
-    exports.H = { bit: 2 };
-    function fromString(string) {
-      if (typeof string !== "string") {
-        throw new Error("Param is not a string");
-      }
-      const lcStr = string.toLowerCase();
-      switch (lcStr) {
-        case "l":
-        case "low":
-          return exports.L;
-        case "m":
-        case "medium":
-          return exports.M;
-        case "q":
-        case "quartile":
-          return exports.Q;
-        case "h":
-        case "high":
-          return exports.H;
-        default:
-          throw new Error("Unknown EC Level: " + string);
-      }
-    }
-    exports.isValid = function isValid(level) {
-      return level && typeof level.bit !== "undefined" && level.bit >= 0 && level.bit < 4;
-    };
-    exports.from = function from2(value, defaultValue) {
-      if (exports.isValid(value)) {
-        return value;
-      }
-      try {
-        return fromString(value);
-      } catch (e6) {
-        return defaultValue;
-      }
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/bit-buffer.js
-var require_bit_buffer = __commonJS({
-  "node_modules/qrcode/lib/core/bit-buffer.js"(exports, module2) {
-    function BitBuffer() {
-      this.buffer = [];
-      this.length = 0;
-    }
-    BitBuffer.prototype = {
-      get: function(index) {
-        const bufIndex = Math.floor(index / 8);
-        return (this.buffer[bufIndex] >>> 7 - index % 8 & 1) === 1;
-      },
-      put: function(num, length2) {
-        for (let i8 = 0; i8 < length2; i8++) {
-          this.putBit((num >>> length2 - i8 - 1 & 1) === 1);
-        }
-      },
-      getLengthInBits: function() {
-        return this.length;
-      },
-      putBit: function(bit) {
-        const bufIndex = Math.floor(this.length / 8);
-        if (this.buffer.length <= bufIndex) {
-          this.buffer.push(0);
-        }
-        if (bit) {
-          this.buffer[bufIndex] |= 128 >>> this.length % 8;
-        }
-        this.length++;
-      }
-    };
-    module2.exports = BitBuffer;
-  }
-});
-
-// node_modules/qrcode/lib/core/bit-matrix.js
-var require_bit_matrix = __commonJS({
-  "node_modules/qrcode/lib/core/bit-matrix.js"(exports, module2) {
-    function BitMatrix(size) {
-      if (!size || size < 1) {
-        throw new Error("BitMatrix size must be defined and greater than 0");
-      }
-      this.size = size;
-      this.data = new Uint8Array(size * size);
-      this.reservedBit = new Uint8Array(size * size);
-    }
-    BitMatrix.prototype.set = function(row, col, value, reserved) {
-      const index = row * this.size + col;
-      this.data[index] = value;
-      if (reserved) this.reservedBit[index] = true;
-    };
-    BitMatrix.prototype.get = function(row, col) {
-      return this.data[row * this.size + col];
-    };
-    BitMatrix.prototype.xor = function(row, col, value) {
-      this.data[row * this.size + col] ^= value;
-    };
-    BitMatrix.prototype.isReserved = function(row, col) {
-      return this.reservedBit[row * this.size + col];
-    };
-    module2.exports = BitMatrix;
-  }
-});
-
-// node_modules/qrcode/lib/core/alignment-pattern.js
-var require_alignment_pattern = __commonJS({
-  "node_modules/qrcode/lib/core/alignment-pattern.js"(exports) {
-    var getSymbolSize = require_utils().getSymbolSize;
-    exports.getRowColCoords = function getRowColCoords(version3) {
-      if (version3 === 1) return [];
-      const posCount = Math.floor(version3 / 7) + 2;
-      const size = getSymbolSize(version3);
-      const intervals = size === 145 ? 26 : Math.ceil((size - 13) / (2 * posCount - 2)) * 2;
-      const positions = [size - 7];
-      for (let i8 = 1; i8 < posCount - 1; i8++) {
-        positions[i8] = positions[i8 - 1] - intervals;
-      }
-      positions.push(6);
-      return positions.reverse();
-    };
-    exports.getPositions = function getPositions(version3) {
-      const coords = [];
-      const pos = exports.getRowColCoords(version3);
-      const posLength = pos.length;
-      for (let i8 = 0; i8 < posLength; i8++) {
-        for (let j4 = 0; j4 < posLength; j4++) {
-          if (i8 === 0 && j4 === 0 || // top-left
-          i8 === 0 && j4 === posLength - 1 || // bottom-left
-          i8 === posLength - 1 && j4 === 0) {
-            continue;
-          }
-          coords.push([pos[i8], pos[j4]]);
-        }
-      }
-      return coords;
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/finder-pattern.js
-var require_finder_pattern = __commonJS({
-  "node_modules/qrcode/lib/core/finder-pattern.js"(exports) {
-    var getSymbolSize = require_utils().getSymbolSize;
-    var FINDER_PATTERN_SIZE = 7;
-    exports.getPositions = function getPositions(version3) {
-      const size = getSymbolSize(version3);
-      return [
-        // top-left
-        [0, 0],
-        // top-right
-        [size - FINDER_PATTERN_SIZE, 0],
-        // bottom-left
-        [0, size - FINDER_PATTERN_SIZE]
-      ];
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/mask-pattern.js
-var require_mask_pattern = __commonJS({
-  "node_modules/qrcode/lib/core/mask-pattern.js"(exports) {
-    exports.Patterns = {
-      PATTERN000: 0,
-      PATTERN001: 1,
-      PATTERN010: 2,
-      PATTERN011: 3,
-      PATTERN100: 4,
-      PATTERN101: 5,
-      PATTERN110: 6,
-      PATTERN111: 7
-    };
-    var PenaltyScores = {
-      N1: 3,
-      N2: 3,
-      N3: 40,
-      N4: 10
-    };
-    exports.isValid = function isValid(mask) {
-      return mask != null && mask !== "" && !isNaN(mask) && mask >= 0 && mask <= 7;
-    };
-    exports.from = function from2(value) {
-      return exports.isValid(value) ? parseInt(value, 10) : void 0;
-    };
-    exports.getPenaltyN1 = function getPenaltyN1(data) {
-      const size = data.size;
-      let points = 0;
-      let sameCountCol = 0;
-      let sameCountRow = 0;
-      let lastCol = null;
-      let lastRow = null;
-      for (let row = 0; row < size; row++) {
-        sameCountCol = sameCountRow = 0;
-        lastCol = lastRow = null;
-        for (let col = 0; col < size; col++) {
-          let module3 = data.get(row, col);
-          if (module3 === lastCol) {
-            sameCountCol++;
-          } else {
-            if (sameCountCol >= 5) points += PenaltyScores.N1 + (sameCountCol - 5);
-            lastCol = module3;
-            sameCountCol = 1;
-          }
-          module3 = data.get(col, row);
-          if (module3 === lastRow) {
-            sameCountRow++;
-          } else {
-            if (sameCountRow >= 5) points += PenaltyScores.N1 + (sameCountRow - 5);
-            lastRow = module3;
-            sameCountRow = 1;
-          }
-        }
-        if (sameCountCol >= 5) points += PenaltyScores.N1 + (sameCountCol - 5);
-        if (sameCountRow >= 5) points += PenaltyScores.N1 + (sameCountRow - 5);
-      }
-      return points;
-    };
-    exports.getPenaltyN2 = function getPenaltyN2(data) {
-      const size = data.size;
-      let points = 0;
-      for (let row = 0; row < size - 1; row++) {
-        for (let col = 0; col < size - 1; col++) {
-          const last = data.get(row, col) + data.get(row, col + 1) + data.get(row + 1, col) + data.get(row + 1, col + 1);
-          if (last === 4 || last === 0) points++;
-        }
-      }
-      return points * PenaltyScores.N2;
-    };
-    exports.getPenaltyN3 = function getPenaltyN3(data) {
-      const size = data.size;
-      let points = 0;
-      let bitsCol = 0;
-      let bitsRow = 0;
-      for (let row = 0; row < size; row++) {
-        bitsCol = bitsRow = 0;
-        for (let col = 0; col < size; col++) {
-          bitsCol = bitsCol << 1 & 2047 | data.get(row, col);
-          if (col >= 10 && (bitsCol === 1488 || bitsCol === 93)) points++;
-          bitsRow = bitsRow << 1 & 2047 | data.get(col, row);
-          if (col >= 10 && (bitsRow === 1488 || bitsRow === 93)) points++;
-        }
-      }
-      return points * PenaltyScores.N3;
-    };
-    exports.getPenaltyN4 = function getPenaltyN4(data) {
-      let darkCount = 0;
-      const modulesCount = data.data.length;
-      for (let i8 = 0; i8 < modulesCount; i8++) darkCount += data.data[i8];
-      const k7 = Math.abs(Math.ceil(darkCount * 100 / modulesCount / 5) - 10);
-      return k7 * PenaltyScores.N4;
-    };
-    function getMaskAt(maskPattern, i8, j4) {
-      switch (maskPattern) {
-        case exports.Patterns.PATTERN000:
-          return (i8 + j4) % 2 === 0;
-        case exports.Patterns.PATTERN001:
-          return i8 % 2 === 0;
-        case exports.Patterns.PATTERN010:
-          return j4 % 3 === 0;
-        case exports.Patterns.PATTERN011:
-          return (i8 + j4) % 3 === 0;
-        case exports.Patterns.PATTERN100:
-          return (Math.floor(i8 / 2) + Math.floor(j4 / 3)) % 2 === 0;
-        case exports.Patterns.PATTERN101:
-          return i8 * j4 % 2 + i8 * j4 % 3 === 0;
-        case exports.Patterns.PATTERN110:
-          return (i8 * j4 % 2 + i8 * j4 % 3) % 2 === 0;
-        case exports.Patterns.PATTERN111:
-          return (i8 * j4 % 3 + (i8 + j4) % 2) % 2 === 0;
-        default:
-          throw new Error("bad maskPattern:" + maskPattern);
-      }
-    }
-    exports.applyMask = function applyMask(pattern, data) {
-      const size = data.size;
-      for (let col = 0; col < size; col++) {
-        for (let row = 0; row < size; row++) {
-          if (data.isReserved(row, col)) continue;
-          data.xor(row, col, getMaskAt(pattern, row, col));
-        }
-      }
-    };
-    exports.getBestMask = function getBestMask(data, setupFormatFunc) {
-      const numPatterns = Object.keys(exports.Patterns).length;
-      let bestPattern = 0;
-      let lowerPenalty = Infinity;
-      for (let p7 = 0; p7 < numPatterns; p7++) {
-        setupFormatFunc(p7);
-        exports.applyMask(p7, data);
-        const penalty = exports.getPenaltyN1(data) + exports.getPenaltyN2(data) + exports.getPenaltyN3(data) + exports.getPenaltyN4(data);
-        exports.applyMask(p7, data);
-        if (penalty < lowerPenalty) {
-          lowerPenalty = penalty;
-          bestPattern = p7;
-        }
-      }
-      return bestPattern;
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/error-correction-code.js
-var require_error_correction_code = __commonJS({
-  "node_modules/qrcode/lib/core/error-correction-code.js"(exports) {
-    var ECLevel = require_error_correction_level();
-    var EC_BLOCKS_TABLE = [
-      // L  M  Q  H
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      2,
-      2,
-      1,
-      2,
-      2,
-      4,
-      1,
-      2,
-      4,
-      4,
-      2,
-      4,
-      4,
-      4,
-      2,
-      4,
-      6,
-      5,
-      2,
-      4,
-      6,
-      6,
-      2,
-      5,
-      8,
-      8,
-      4,
-      5,
-      8,
-      8,
-      4,
-      5,
-      8,
-      11,
-      4,
-      8,
-      10,
-      11,
-      4,
-      9,
-      12,
-      16,
-      4,
-      9,
-      16,
-      16,
-      6,
-      10,
-      12,
-      18,
-      6,
-      10,
-      17,
-      16,
-      6,
-      11,
-      16,
-      19,
-      6,
-      13,
-      18,
-      21,
-      7,
-      14,
-      21,
-      25,
-      8,
-      16,
-      20,
-      25,
-      8,
-      17,
-      23,
-      25,
-      9,
-      17,
-      23,
-      34,
-      9,
-      18,
-      25,
-      30,
-      10,
-      20,
-      27,
-      32,
-      12,
-      21,
-      29,
-      35,
-      12,
-      23,
-      34,
-      37,
-      12,
-      25,
-      34,
-      40,
-      13,
-      26,
-      35,
-      42,
-      14,
-      28,
-      38,
-      45,
-      15,
-      29,
-      40,
-      48,
-      16,
-      31,
-      43,
-      51,
-      17,
-      33,
-      45,
-      54,
-      18,
-      35,
-      48,
-      57,
-      19,
-      37,
-      51,
-      60,
-      19,
-      38,
-      53,
-      63,
-      20,
-      40,
-      56,
-      66,
-      21,
-      43,
-      59,
-      70,
-      22,
-      45,
-      62,
-      74,
-      24,
-      47,
-      65,
-      77,
-      25,
-      49,
-      68,
-      81
-    ];
-    var EC_CODEWORDS_TABLE = [
-      // L  M  Q  H
-      7,
-      10,
-      13,
-      17,
-      10,
-      16,
-      22,
-      28,
-      15,
-      26,
-      36,
-      44,
-      20,
-      36,
-      52,
-      64,
-      26,
-      48,
-      72,
-      88,
-      36,
-      64,
-      96,
-      112,
-      40,
-      72,
-      108,
-      130,
-      48,
-      88,
-      132,
-      156,
-      60,
-      110,
-      160,
-      192,
-      72,
-      130,
-      192,
-      224,
-      80,
-      150,
-      224,
-      264,
-      96,
-      176,
-      260,
-      308,
-      104,
-      198,
-      288,
-      352,
-      120,
-      216,
-      320,
-      384,
-      132,
-      240,
-      360,
-      432,
-      144,
-      280,
-      408,
-      480,
-      168,
-      308,
-      448,
-      532,
-      180,
-      338,
-      504,
-      588,
-      196,
-      364,
-      546,
-      650,
-      224,
-      416,
-      600,
-      700,
-      224,
-      442,
-      644,
-      750,
-      252,
-      476,
-      690,
-      816,
-      270,
-      504,
-      750,
-      900,
-      300,
-      560,
-      810,
-      960,
-      312,
-      588,
-      870,
-      1050,
-      336,
-      644,
-      952,
-      1110,
-      360,
-      700,
-      1020,
-      1200,
-      390,
-      728,
-      1050,
-      1260,
-      420,
-      784,
-      1140,
-      1350,
-      450,
-      812,
-      1200,
-      1440,
-      480,
-      868,
-      1290,
-      1530,
-      510,
-      924,
-      1350,
-      1620,
-      540,
-      980,
-      1440,
-      1710,
-      570,
-      1036,
-      1530,
-      1800,
-      570,
-      1064,
-      1590,
-      1890,
-      600,
-      1120,
-      1680,
-      1980,
-      630,
-      1204,
-      1770,
-      2100,
-      660,
-      1260,
-      1860,
-      2220,
-      720,
-      1316,
-      1950,
-      2310,
-      750,
-      1372,
-      2040,
-      2430
-    ];
-    exports.getBlocksCount = function getBlocksCount(version3, errorCorrectionLevel) {
-      switch (errorCorrectionLevel) {
-        case ECLevel.L:
-          return EC_BLOCKS_TABLE[(version3 - 1) * 4 + 0];
-        case ECLevel.M:
-          return EC_BLOCKS_TABLE[(version3 - 1) * 4 + 1];
-        case ECLevel.Q:
-          return EC_BLOCKS_TABLE[(version3 - 1) * 4 + 2];
-        case ECLevel.H:
-          return EC_BLOCKS_TABLE[(version3 - 1) * 4 + 3];
-        default:
-          return void 0;
-      }
-    };
-    exports.getTotalCodewordsCount = function getTotalCodewordsCount(version3, errorCorrectionLevel) {
-      switch (errorCorrectionLevel) {
-        case ECLevel.L:
-          return EC_CODEWORDS_TABLE[(version3 - 1) * 4 + 0];
-        case ECLevel.M:
-          return EC_CODEWORDS_TABLE[(version3 - 1) * 4 + 1];
-        case ECLevel.Q:
-          return EC_CODEWORDS_TABLE[(version3 - 1) * 4 + 2];
-        case ECLevel.H:
-          return EC_CODEWORDS_TABLE[(version3 - 1) * 4 + 3];
-        default:
-          return void 0;
-      }
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/galois-field.js
-var require_galois_field = __commonJS({
-  "node_modules/qrcode/lib/core/galois-field.js"(exports) {
-    var EXP_TABLE = new Uint8Array(512);
-    var LOG_TABLE = new Uint8Array(256);
-    (function initTables() {
-      let x25 = 1;
-      for (let i8 = 0; i8 < 255; i8++) {
-        EXP_TABLE[i8] = x25;
-        LOG_TABLE[x25] = i8;
-        x25 <<= 1;
-        if (x25 & 256) {
-          x25 ^= 285;
-        }
-      }
-      for (let i8 = 255; i8 < 512; i8++) {
-        EXP_TABLE[i8] = EXP_TABLE[i8 - 255];
-      }
-    })();
-    exports.log = function log(n8) {
-      if (n8 < 1) throw new Error("log(" + n8 + ")");
-      return LOG_TABLE[n8];
-    };
-    exports.exp = function exp(n8) {
-      return EXP_TABLE[n8];
-    };
-    exports.mul = function mul(x25, y9) {
-      if (x25 === 0 || y9 === 0) return 0;
-      return EXP_TABLE[LOG_TABLE[x25] + LOG_TABLE[y9]];
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/polynomial.js
-var require_polynomial = __commonJS({
-  "node_modules/qrcode/lib/core/polynomial.js"(exports) {
-    var GF = require_galois_field();
-    exports.mul = function mul(p1, p22) {
-      const coeff = new Uint8Array(p1.length + p22.length - 1);
-      for (let i8 = 0; i8 < p1.length; i8++) {
-        for (let j4 = 0; j4 < p22.length; j4++) {
-          coeff[i8 + j4] ^= GF.mul(p1[i8], p22[j4]);
-        }
-      }
-      return coeff;
-    };
-    exports.mod = function mod20(divident, divisor) {
-      let result = new Uint8Array(divident);
-      while (result.length - divisor.length >= 0) {
-        const coeff = result[0];
-        for (let i8 = 0; i8 < divisor.length; i8++) {
-          result[i8] ^= GF.mul(divisor[i8], coeff);
-        }
-        let offset2 = 0;
-        while (offset2 < result.length && result[offset2] === 0) offset2++;
-        result = result.slice(offset2);
-      }
-      return result;
-    };
-    exports.generateECPolynomial = function generateECPolynomial(degree) {
-      let poly = new Uint8Array([1]);
-      for (let i8 = 0; i8 < degree; i8++) {
-        poly = exports.mul(poly, new Uint8Array([1, GF.exp(i8)]));
-      }
-      return poly;
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/reed-solomon-encoder.js
-var require_reed_solomon_encoder = __commonJS({
-  "node_modules/qrcode/lib/core/reed-solomon-encoder.js"(exports, module2) {
-    var Polynomial = require_polynomial();
-    function ReedSolomonEncoder(degree) {
-      this.genPoly = void 0;
-      this.degree = degree;
-      if (this.degree) this.initialize(this.degree);
-    }
-    ReedSolomonEncoder.prototype.initialize = function initialize(degree) {
-      this.degree = degree;
-      this.genPoly = Polynomial.generateECPolynomial(this.degree);
-    };
-    ReedSolomonEncoder.prototype.encode = function encode(data) {
-      if (!this.genPoly) {
-        throw new Error("Encoder not initialized");
-      }
-      const paddedData = new Uint8Array(data.length + this.degree);
-      paddedData.set(data);
-      const remainder = Polynomial.mod(paddedData, this.genPoly);
-      const start4 = this.degree - remainder.length;
-      if (start4 > 0) {
-        const buff = new Uint8Array(this.degree);
-        buff.set(remainder, start4);
-        return buff;
-      }
-      return remainder;
-    };
-    module2.exports = ReedSolomonEncoder;
-  }
-});
-
-// node_modules/qrcode/lib/core/version-check.js
-var require_version_check = __commonJS({
-  "node_modules/qrcode/lib/core/version-check.js"(exports) {
-    exports.isValid = function isValid(version3) {
-      return !isNaN(version3) && version3 >= 1 && version3 <= 40;
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/regex.js
-var require_regex = __commonJS({
-  "node_modules/qrcode/lib/core/regex.js"(exports) {
-    var numeric = "[0-9]+";
-    var alphanumeric = "[A-Z $%*+\\-./:]+";
-    var kanji = "(?:[u3000-u303F]|[u3040-u309F]|[u30A0-u30FF]|[uFF00-uFFEF]|[u4E00-u9FAF]|[u2605-u2606]|[u2190-u2195]|u203B|[u2010u2015u2018u2019u2025u2026u201Cu201Du2225u2260]|[u0391-u0451]|[u00A7u00A8u00B1u00B4u00D7u00F7])+";
-    kanji = kanji.replace(/u/g, "\\u");
-    var byte = "(?:(?![A-Z0-9 $%*+\\-./:]|" + kanji + ")(?:.|[\r\n]))+";
-    exports.KANJI = new RegExp(kanji, "g");
-    exports.BYTE_KANJI = new RegExp("[^A-Z0-9 $%*+\\-./:]+", "g");
-    exports.BYTE = new RegExp(byte, "g");
-    exports.NUMERIC = new RegExp(numeric, "g");
-    exports.ALPHANUMERIC = new RegExp(alphanumeric, "g");
-    var TEST_KANJI = new RegExp("^" + kanji + "$");
-    var TEST_NUMERIC = new RegExp("^" + numeric + "$");
-    var TEST_ALPHANUMERIC = new RegExp("^[A-Z0-9 $%*+\\-./:]+$");
-    exports.testKanji = function testKanji(str) {
-      return TEST_KANJI.test(str);
-    };
-    exports.testNumeric = function testNumeric(str) {
-      return TEST_NUMERIC.test(str);
-    };
-    exports.testAlphanumeric = function testAlphanumeric(str) {
-      return TEST_ALPHANUMERIC.test(str);
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/mode.js
-var require_mode = __commonJS({
-  "node_modules/qrcode/lib/core/mode.js"(exports) {
-    var VersionCheck = require_version_check();
-    var Regex = require_regex();
-    exports.NUMERIC = {
-      id: "Numeric",
-      bit: 1 << 0,
-      ccBits: [10, 12, 14]
-    };
-    exports.ALPHANUMERIC = {
-      id: "Alphanumeric",
-      bit: 1 << 1,
-      ccBits: [9, 11, 13]
-    };
-    exports.BYTE = {
-      id: "Byte",
-      bit: 1 << 2,
-      ccBits: [8, 16, 16]
-    };
-    exports.KANJI = {
-      id: "Kanji",
-      bit: 1 << 3,
-      ccBits: [8, 10, 12]
-    };
-    exports.MIXED = {
-      bit: -1
-    };
-    exports.getCharCountIndicator = function getCharCountIndicator(mode, version3) {
-      if (!mode.ccBits) throw new Error("Invalid mode: " + mode);
-      if (!VersionCheck.isValid(version3)) {
-        throw new Error("Invalid version: " + version3);
-      }
-      if (version3 >= 1 && version3 < 10) return mode.ccBits[0];
-      else if (version3 < 27) return mode.ccBits[1];
-      return mode.ccBits[2];
-    };
-    exports.getBestModeForData = function getBestModeForData(dataStr) {
-      if (Regex.testNumeric(dataStr)) return exports.NUMERIC;
-      else if (Regex.testAlphanumeric(dataStr)) return exports.ALPHANUMERIC;
-      else if (Regex.testKanji(dataStr)) return exports.KANJI;
-      else return exports.BYTE;
-    };
-    exports.toString = function toString(mode) {
-      if (mode && mode.id) return mode.id;
-      throw new Error("Invalid mode");
-    };
-    exports.isValid = function isValid(mode) {
-      return mode && mode.bit && mode.ccBits;
-    };
-    function fromString(string) {
-      if (typeof string !== "string") {
-        throw new Error("Param is not a string");
-      }
-      const lcStr = string.toLowerCase();
-      switch (lcStr) {
-        case "numeric":
-          return exports.NUMERIC;
-        case "alphanumeric":
-          return exports.ALPHANUMERIC;
-        case "kanji":
-          return exports.KANJI;
-        case "byte":
-          return exports.BYTE;
-        default:
-          throw new Error("Unknown mode: " + string);
-      }
-    }
-    exports.from = function from2(value, defaultValue) {
-      if (exports.isValid(value)) {
-        return value;
-      }
-      try {
-        return fromString(value);
-      } catch (e6) {
-        return defaultValue;
-      }
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/version.js
-var require_version = __commonJS({
-  "node_modules/qrcode/lib/core/version.js"(exports) {
-    var Utils = require_utils();
-    var ECCode = require_error_correction_code();
-    var ECLevel = require_error_correction_level();
-    var Mode2 = require_mode();
-    var VersionCheck = require_version_check();
-    var G18 = 1 << 12 | 1 << 11 | 1 << 10 | 1 << 9 | 1 << 8 | 1 << 5 | 1 << 2 | 1 << 0;
-    var G18_BCH = Utils.getBCHDigit(G18);
-    function getBestVersionForDataLength(mode, length2, errorCorrectionLevel) {
-      for (let currentVersion = 1; currentVersion <= 40; currentVersion++) {
-        if (length2 <= exports.getCapacity(currentVersion, errorCorrectionLevel, mode)) {
-          return currentVersion;
-        }
-      }
-      return void 0;
-    }
-    function getReservedBitsCount(mode, version3) {
-      return Mode2.getCharCountIndicator(mode, version3) + 4;
-    }
-    function getTotalBitsFromDataArray(segments, version3) {
-      let totalBits = 0;
-      segments.forEach(function(data) {
-        const reservedBits = getReservedBitsCount(data.mode, version3);
-        totalBits += reservedBits + data.getBitsLength();
-      });
-      return totalBits;
-    }
-    function getBestVersionForMixedData(segments, errorCorrectionLevel) {
-      for (let currentVersion = 1; currentVersion <= 40; currentVersion++) {
-        const length2 = getTotalBitsFromDataArray(segments, currentVersion);
-        if (length2 <= exports.getCapacity(currentVersion, errorCorrectionLevel, Mode2.MIXED)) {
-          return currentVersion;
-        }
-      }
-      return void 0;
-    }
-    exports.from = function from2(value, defaultValue) {
-      if (VersionCheck.isValid(value)) {
-        return parseInt(value, 10);
-      }
-      return defaultValue;
-    };
-    exports.getCapacity = function getCapacity(version3, errorCorrectionLevel, mode) {
-      if (!VersionCheck.isValid(version3)) {
-        throw new Error("Invalid QR Code version");
-      }
-      if (typeof mode === "undefined") mode = Mode2.BYTE;
-      const totalCodewords = Utils.getSymbolTotalCodewords(version3);
-      const ecTotalCodewords = ECCode.getTotalCodewordsCount(version3, errorCorrectionLevel);
-      const dataTotalCodewordsBits = (totalCodewords - ecTotalCodewords) * 8;
-      if (mode === Mode2.MIXED) return dataTotalCodewordsBits;
-      const usableBits = dataTotalCodewordsBits - getReservedBitsCount(mode, version3);
-      switch (mode) {
-        case Mode2.NUMERIC:
-          return Math.floor(usableBits / 10 * 3);
-        case Mode2.ALPHANUMERIC:
-          return Math.floor(usableBits / 11 * 2);
-        case Mode2.KANJI:
-          return Math.floor(usableBits / 13);
-        case Mode2.BYTE:
-        default:
-          return Math.floor(usableBits / 8);
-      }
-    };
-    exports.getBestVersionForData = function getBestVersionForData(data, errorCorrectionLevel) {
-      let seg;
-      const ecl = ECLevel.from(errorCorrectionLevel, ECLevel.M);
-      if (Array.isArray(data)) {
-        if (data.length > 1) {
-          return getBestVersionForMixedData(data, ecl);
-        }
-        if (data.length === 0) {
-          return 1;
-        }
-        seg = data[0];
-      } else {
-        seg = data;
-      }
-      return getBestVersionForDataLength(seg.mode, seg.getLength(), ecl);
-    };
-    exports.getEncodedBits = function getEncodedBits(version3) {
-      if (!VersionCheck.isValid(version3) || version3 < 7) {
-        throw new Error("Invalid QR Code version");
-      }
-      let d10 = version3 << 12;
-      while (Utils.getBCHDigit(d10) - G18_BCH >= 0) {
-        d10 ^= G18 << Utils.getBCHDigit(d10) - G18_BCH;
-      }
-      return version3 << 12 | d10;
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/format-info.js
-var require_format_info = __commonJS({
-  "node_modules/qrcode/lib/core/format-info.js"(exports) {
-    var Utils = require_utils();
-    var G15 = 1 << 10 | 1 << 8 | 1 << 5 | 1 << 4 | 1 << 2 | 1 << 1 | 1 << 0;
-    var G15_MASK = 1 << 14 | 1 << 12 | 1 << 10 | 1 << 4 | 1 << 1;
-    var G15_BCH = Utils.getBCHDigit(G15);
-    exports.getEncodedBits = function getEncodedBits(errorCorrectionLevel, mask) {
-      const data = errorCorrectionLevel.bit << 3 | mask;
-      let d10 = data << 10;
-      while (Utils.getBCHDigit(d10) - G15_BCH >= 0) {
-        d10 ^= G15 << Utils.getBCHDigit(d10) - G15_BCH;
-      }
-      return (data << 10 | d10) ^ G15_MASK;
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/numeric-data.js
-var require_numeric_data = __commonJS({
-  "node_modules/qrcode/lib/core/numeric-data.js"(exports, module2) {
-    var Mode2 = require_mode();
-    function NumericData(data) {
-      this.mode = Mode2.NUMERIC;
-      this.data = data.toString();
-    }
-    NumericData.getBitsLength = function getBitsLength(length2) {
-      return 10 * Math.floor(length2 / 3) + (length2 % 3 ? length2 % 3 * 3 + 1 : 0);
-    };
-    NumericData.prototype.getLength = function getLength() {
-      return this.data.length;
-    };
-    NumericData.prototype.getBitsLength = function getBitsLength() {
-      return NumericData.getBitsLength(this.data.length);
-    };
-    NumericData.prototype.write = function write2(bitBuffer) {
-      let i8, group, value;
-      for (i8 = 0; i8 + 3 <= this.data.length; i8 += 3) {
-        group = this.data.substr(i8, 3);
-        value = parseInt(group, 10);
-        bitBuffer.put(value, 10);
-      }
-      const remainingNum = this.data.length - i8;
-      if (remainingNum > 0) {
-        group = this.data.substr(i8);
-        value = parseInt(group, 10);
-        bitBuffer.put(value, remainingNum * 3 + 1);
-      }
-    };
-    module2.exports = NumericData;
-  }
-});
-
-// node_modules/qrcode/lib/core/alphanumeric-data.js
-var require_alphanumeric_data = __commonJS({
-  "node_modules/qrcode/lib/core/alphanumeric-data.js"(exports, module2) {
-    var Mode2 = require_mode();
-    var ALPHA_NUM_CHARS = [
-      "0",
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-      "7",
-      "8",
-      "9",
-      "A",
-      "B",
-      "C",
-      "D",
-      "E",
-      "F",
-      "G",
-      "H",
-      "I",
-      "J",
-      "K",
-      "L",
-      "M",
-      "N",
-      "O",
-      "P",
-      "Q",
-      "R",
-      "S",
-      "T",
-      "U",
-      "V",
-      "W",
-      "X",
-      "Y",
-      "Z",
-      " ",
-      "$",
-      "%",
-      "*",
-      "+",
-      "-",
-      ".",
-      "/",
-      ":"
-    ];
-    function AlphanumericData(data) {
-      this.mode = Mode2.ALPHANUMERIC;
-      this.data = data;
-    }
-    AlphanumericData.getBitsLength = function getBitsLength(length2) {
-      return 11 * Math.floor(length2 / 2) + 6 * (length2 % 2);
-    };
-    AlphanumericData.prototype.getLength = function getLength() {
-      return this.data.length;
-    };
-    AlphanumericData.prototype.getBitsLength = function getBitsLength() {
-      return AlphanumericData.getBitsLength(this.data.length);
-    };
-    AlphanumericData.prototype.write = function write2(bitBuffer) {
-      let i8;
-      for (i8 = 0; i8 + 2 <= this.data.length; i8 += 2) {
-        let value = ALPHA_NUM_CHARS.indexOf(this.data[i8]) * 45;
-        value += ALPHA_NUM_CHARS.indexOf(this.data[i8 + 1]);
-        bitBuffer.put(value, 11);
-      }
-      if (this.data.length % 2) {
-        bitBuffer.put(ALPHA_NUM_CHARS.indexOf(this.data[i8]), 6);
-      }
-    };
-    module2.exports = AlphanumericData;
-  }
-});
-
-// node_modules/qrcode/lib/core/byte-data.js
-var require_byte_data = __commonJS({
-  "node_modules/qrcode/lib/core/byte-data.js"(exports, module2) {
-    var Mode2 = require_mode();
-    function ByteData(data) {
-      this.mode = Mode2.BYTE;
-      if (typeof data === "string") {
-        this.data = new TextEncoder().encode(data);
-      } else {
-        this.data = new Uint8Array(data);
-      }
-    }
-    ByteData.getBitsLength = function getBitsLength(length2) {
-      return length2 * 8;
-    };
-    ByteData.prototype.getLength = function getLength() {
-      return this.data.length;
-    };
-    ByteData.prototype.getBitsLength = function getBitsLength() {
-      return ByteData.getBitsLength(this.data.length);
-    };
-    ByteData.prototype.write = function(bitBuffer) {
-      for (let i8 = 0, l8 = this.data.length; i8 < l8; i8++) {
-        bitBuffer.put(this.data[i8], 8);
-      }
-    };
-    module2.exports = ByteData;
-  }
-});
-
-// node_modules/qrcode/lib/core/kanji-data.js
-var require_kanji_data = __commonJS({
-  "node_modules/qrcode/lib/core/kanji-data.js"(exports, module2) {
-    var Mode2 = require_mode();
-    var Utils = require_utils();
-    function KanjiData(data) {
-      this.mode = Mode2.KANJI;
-      this.data = data;
-    }
-    KanjiData.getBitsLength = function getBitsLength(length2) {
-      return length2 * 13;
-    };
-    KanjiData.prototype.getLength = function getLength() {
-      return this.data.length;
-    };
-    KanjiData.prototype.getBitsLength = function getBitsLength() {
-      return KanjiData.getBitsLength(this.data.length);
-    };
-    KanjiData.prototype.write = function(bitBuffer) {
-      let i8;
-      for (i8 = 0; i8 < this.data.length; i8++) {
-        let value = Utils.toSJIS(this.data[i8]);
-        if (value >= 33088 && value <= 40956) {
-          value -= 33088;
-        } else if (value >= 57408 && value <= 60351) {
-          value -= 49472;
-        } else {
-          throw new Error(
-            "Invalid SJIS character: " + this.data[i8] + "\nMake sure your charset is UTF-8"
-          );
-        }
-        value = (value >>> 8 & 255) * 192 + (value & 255);
-        bitBuffer.put(value, 13);
-      }
-    };
-    module2.exports = KanjiData;
-  }
-});
-
-// node_modules/dijkstrajs/dijkstra.js
-var require_dijkstra = __commonJS({
-  "node_modules/dijkstrajs/dijkstra.js"(exports, module2) {
-    "use strict";
-    var dijkstra = {
-      single_source_shortest_paths: function(graph, s8, d10) {
-        var predecessors = {};
-        var costs = {};
-        costs[s8] = 0;
-        var open2 = dijkstra.PriorityQueue.make();
-        open2.push(s8, 0);
-        var closest3, u8, v8, cost_of_s_to_u, adjacent_nodes, cost_of_e, cost_of_s_to_u_plus_cost_of_e, cost_of_s_to_v, first_visit;
-        while (!open2.empty()) {
-          closest3 = open2.pop();
-          u8 = closest3.value;
-          cost_of_s_to_u = closest3.cost;
-          adjacent_nodes = graph[u8] || {};
-          for (v8 in adjacent_nodes) {
-            if (adjacent_nodes.hasOwnProperty(v8)) {
-              cost_of_e = adjacent_nodes[v8];
-              cost_of_s_to_u_plus_cost_of_e = cost_of_s_to_u + cost_of_e;
-              cost_of_s_to_v = costs[v8];
-              first_visit = typeof costs[v8] === "undefined";
-              if (first_visit || cost_of_s_to_v > cost_of_s_to_u_plus_cost_of_e) {
-                costs[v8] = cost_of_s_to_u_plus_cost_of_e;
-                open2.push(v8, cost_of_s_to_u_plus_cost_of_e);
-                predecessors[v8] = u8;
-              }
-            }
-          }
-        }
-        if (typeof d10 !== "undefined" && typeof costs[d10] === "undefined") {
-          var msg = ["Could not find a path from ", s8, " to ", d10, "."].join("");
-          throw new Error(msg);
-        }
-        return predecessors;
-      },
-      extract_shortest_path_from_predecessor_list: function(predecessors, d10) {
-        var nodes = [];
-        var u8 = d10;
-        var predecessor;
-        while (u8) {
-          nodes.push(u8);
-          predecessor = predecessors[u8];
-          u8 = predecessors[u8];
-        }
-        nodes.reverse();
-        return nodes;
-      },
-      find_path: function(graph, s8, d10) {
-        var predecessors = dijkstra.single_source_shortest_paths(graph, s8, d10);
-        return dijkstra.extract_shortest_path_from_predecessor_list(
-          predecessors,
-          d10
-        );
-      },
-      /**
-       * A very naive priority queue implementation.
-       */
-      PriorityQueue: {
-        make: function(opts) {
-          var T5 = dijkstra.PriorityQueue, t8 = {}, key;
-          opts = opts || {};
-          for (key in T5) {
-            if (T5.hasOwnProperty(key)) {
-              t8[key] = T5[key];
-            }
-          }
-          t8.queue = [];
-          t8.sorter = opts.sorter || T5.default_sorter;
-          return t8;
-        },
-        default_sorter: function(a9, b9) {
-          return a9.cost - b9.cost;
-        },
-        /**
-         * Add a new item to the queue and ensure the highest priority element
-         * is at the front of the queue.
-         */
-        push: function(value, cost) {
-          var item = { value, cost };
-          this.queue.push(item);
-          this.queue.sort(this.sorter);
-        },
-        /**
-         * Return the highest priority element in the queue.
-         */
-        pop: function() {
-          return this.queue.shift();
-        },
-        empty: function() {
-          return this.queue.length === 0;
-        }
-      }
-    };
-    if (typeof module2 !== "undefined") {
-      module2.exports = dijkstra;
-    }
-  }
-});
-
-// node_modules/qrcode/lib/core/segments.js
-var require_segments = __commonJS({
-  "node_modules/qrcode/lib/core/segments.js"(exports) {
-    var Mode2 = require_mode();
-    var NumericData = require_numeric_data();
-    var AlphanumericData = require_alphanumeric_data();
-    var ByteData = require_byte_data();
-    var KanjiData = require_kanji_data();
-    var Regex = require_regex();
-    var Utils = require_utils();
-    var dijkstra = require_dijkstra();
-    function getStringByteLength(str) {
-      return unescape(encodeURIComponent(str)).length;
-    }
-    function getSegments(regex, mode, str) {
-      const segments = [];
-      let result;
-      while ((result = regex.exec(str)) !== null) {
-        segments.push({
-          data: result[0],
-          index: result.index,
-          mode,
-          length: result[0].length
-        });
-      }
-      return segments;
-    }
-    function getSegmentsFromString(dataStr) {
-      const numSegs = getSegments(Regex.NUMERIC, Mode2.NUMERIC, dataStr);
-      const alphaNumSegs = getSegments(Regex.ALPHANUMERIC, Mode2.ALPHANUMERIC, dataStr);
-      let byteSegs;
-      let kanjiSegs;
-      if (Utils.isKanjiModeEnabled()) {
-        byteSegs = getSegments(Regex.BYTE, Mode2.BYTE, dataStr);
-        kanjiSegs = getSegments(Regex.KANJI, Mode2.KANJI, dataStr);
-      } else {
-        byteSegs = getSegments(Regex.BYTE_KANJI, Mode2.BYTE, dataStr);
-        kanjiSegs = [];
-      }
-      const segs = numSegs.concat(alphaNumSegs, byteSegs, kanjiSegs);
-      return segs.sort(function(s1, s22) {
-        return s1.index - s22.index;
-      }).map(function(obj) {
-        return {
-          data: obj.data,
-          mode: obj.mode,
-          length: obj.length
-        };
-      });
-    }
-    function getSegmentBitsLength(length2, mode) {
-      switch (mode) {
-        case Mode2.NUMERIC:
-          return NumericData.getBitsLength(length2);
-        case Mode2.ALPHANUMERIC:
-          return AlphanumericData.getBitsLength(length2);
-        case Mode2.KANJI:
-          return KanjiData.getBitsLength(length2);
-        case Mode2.BYTE:
-          return ByteData.getBitsLength(length2);
-      }
-    }
-    function mergeSegments(segs) {
-      return segs.reduce(function(acc, curr) {
-        const prevSeg = acc.length - 1 >= 0 ? acc[acc.length - 1] : null;
-        if (prevSeg && prevSeg.mode === curr.mode) {
-          acc[acc.length - 1].data += curr.data;
-          return acc;
-        }
-        acc.push(curr);
-        return acc;
-      }, []);
-    }
-    function buildNodes(segs) {
-      const nodes = [];
-      for (let i8 = 0; i8 < segs.length; i8++) {
-        const seg = segs[i8];
-        switch (seg.mode) {
-          case Mode2.NUMERIC:
-            nodes.push([
-              seg,
-              { data: seg.data, mode: Mode2.ALPHANUMERIC, length: seg.length },
-              { data: seg.data, mode: Mode2.BYTE, length: seg.length }
-            ]);
-            break;
-          case Mode2.ALPHANUMERIC:
-            nodes.push([
-              seg,
-              { data: seg.data, mode: Mode2.BYTE, length: seg.length }
-            ]);
-            break;
-          case Mode2.KANJI:
-            nodes.push([
-              seg,
-              { data: seg.data, mode: Mode2.BYTE, length: getStringByteLength(seg.data) }
-            ]);
-            break;
-          case Mode2.BYTE:
-            nodes.push([
-              { data: seg.data, mode: Mode2.BYTE, length: getStringByteLength(seg.data) }
-            ]);
-        }
-      }
-      return nodes;
-    }
-    function buildGraph(nodes, version3) {
-      const table = {};
-      const graph = { start: {} };
-      let prevNodeIds = ["start"];
-      for (let i8 = 0; i8 < nodes.length; i8++) {
-        const nodeGroup = nodes[i8];
-        const currentNodeIds = [];
-        for (let j4 = 0; j4 < nodeGroup.length; j4++) {
-          const node2 = nodeGroup[j4];
-          const key = "" + i8 + j4;
-          currentNodeIds.push(key);
-          table[key] = { node: node2, lastCount: 0 };
-          graph[key] = {};
-          for (let n8 = 0; n8 < prevNodeIds.length; n8++) {
-            const prevNodeId = prevNodeIds[n8];
-            if (table[prevNodeId] && table[prevNodeId].node.mode === node2.mode) {
-              graph[prevNodeId][key] = getSegmentBitsLength(table[prevNodeId].lastCount + node2.length, node2.mode) - getSegmentBitsLength(table[prevNodeId].lastCount, node2.mode);
-              table[prevNodeId].lastCount += node2.length;
-            } else {
-              if (table[prevNodeId]) table[prevNodeId].lastCount = node2.length;
-              graph[prevNodeId][key] = getSegmentBitsLength(node2.length, node2.mode) + 4 + Mode2.getCharCountIndicator(node2.mode, version3);
-            }
-          }
-        }
-        prevNodeIds = currentNodeIds;
-      }
-      for (let n8 = 0; n8 < prevNodeIds.length; n8++) {
-        graph[prevNodeIds[n8]].end = 0;
-      }
-      return { map: graph, table };
-    }
-    function buildSingleSegment(data, modesHint) {
-      let mode;
-      const bestMode = Mode2.getBestModeForData(data);
-      mode = Mode2.from(modesHint, bestMode);
-      if (mode !== Mode2.BYTE && mode.bit < bestMode.bit) {
-        throw new Error('"' + data + '" cannot be encoded with mode ' + Mode2.toString(mode) + ".\n Suggested mode is: " + Mode2.toString(bestMode));
-      }
-      if (mode === Mode2.KANJI && !Utils.isKanjiModeEnabled()) {
-        mode = Mode2.BYTE;
-      }
-      switch (mode) {
-        case Mode2.NUMERIC:
-          return new NumericData(data);
-        case Mode2.ALPHANUMERIC:
-          return new AlphanumericData(data);
-        case Mode2.KANJI:
-          return new KanjiData(data);
-        case Mode2.BYTE:
-          return new ByteData(data);
-      }
-    }
-    exports.fromArray = function fromArray(array3) {
-      return array3.reduce(function(acc, seg) {
-        if (typeof seg === "string") {
-          acc.push(buildSingleSegment(seg, null));
-        } else if (seg.data) {
-          acc.push(buildSingleSegment(seg.data, seg.mode));
-        }
-        return acc;
-      }, []);
-    };
-    exports.fromString = function fromString(data, version3) {
-      const segs = getSegmentsFromString(data, Utils.isKanjiModeEnabled());
-      const nodes = buildNodes(segs);
-      const graph = buildGraph(nodes, version3);
-      const path2 = dijkstra.find_path(graph.map, "start", "end");
-      const optimizedSegs = [];
-      for (let i8 = 1; i8 < path2.length - 1; i8++) {
-        optimizedSegs.push(graph.table[path2[i8]].node);
-      }
-      return exports.fromArray(mergeSegments(optimizedSegs));
-    };
-    exports.rawSplit = function rawSplit(data) {
-      return exports.fromArray(
-        getSegmentsFromString(data, Utils.isKanjiModeEnabled())
-      );
-    };
-  }
-});
-
-// node_modules/qrcode/lib/core/qrcode.js
-var require_qrcode = __commonJS({
-  "node_modules/qrcode/lib/core/qrcode.js"(exports) {
-    var Utils = require_utils();
-    var ECLevel = require_error_correction_level();
-    var BitBuffer = require_bit_buffer();
-    var BitMatrix = require_bit_matrix();
-    var AlignmentPattern = require_alignment_pattern();
-    var FinderPattern = require_finder_pattern();
-    var MaskPattern = require_mask_pattern();
-    var ECCode = require_error_correction_code();
-    var ReedSolomonEncoder = require_reed_solomon_encoder();
-    var Version = require_version();
-    var FormatInfo = require_format_info();
-    var Mode2 = require_mode();
-    var Segments = require_segments();
-    function setupFinderPattern(matrix, version3) {
-      const size = matrix.size;
-      const pos = FinderPattern.getPositions(version3);
-      for (let i8 = 0; i8 < pos.length; i8++) {
-        const row = pos[i8][0];
-        const col = pos[i8][1];
-        for (let r12 = -1; r12 <= 7; r12++) {
-          if (row + r12 <= -1 || size <= row + r12) continue;
-          for (let c10 = -1; c10 <= 7; c10++) {
-            if (col + c10 <= -1 || size <= col + c10) continue;
-            if (r12 >= 0 && r12 <= 6 && (c10 === 0 || c10 === 6) || c10 >= 0 && c10 <= 6 && (r12 === 0 || r12 === 6) || r12 >= 2 && r12 <= 4 && c10 >= 2 && c10 <= 4) {
-              matrix.set(row + r12, col + c10, true, true);
-            } else {
-              matrix.set(row + r12, col + c10, false, true);
-            }
-          }
-        }
-      }
-    }
-    function setupTimingPattern(matrix) {
-      const size = matrix.size;
-      for (let r12 = 8; r12 < size - 8; r12++) {
-        const value = r12 % 2 === 0;
-        matrix.set(r12, 6, value, true);
-        matrix.set(6, r12, value, true);
-      }
-    }
-    function setupAlignmentPattern(matrix, version3) {
-      const pos = AlignmentPattern.getPositions(version3);
-      for (let i8 = 0; i8 < pos.length; i8++) {
-        const row = pos[i8][0];
-        const col = pos[i8][1];
-        for (let r12 = -2; r12 <= 2; r12++) {
-          for (let c10 = -2; c10 <= 2; c10++) {
-            if (r12 === -2 || r12 === 2 || c10 === -2 || c10 === 2 || r12 === 0 && c10 === 0) {
-              matrix.set(row + r12, col + c10, true, true);
-            } else {
-              matrix.set(row + r12, col + c10, false, true);
-            }
-          }
-        }
-      }
-    }
-    function setupVersionInfo(matrix, version3) {
-      const size = matrix.size;
-      const bits = Version.getEncodedBits(version3);
-      let row, col, mod20;
-      for (let i8 = 0; i8 < 18; i8++) {
-        row = Math.floor(i8 / 3);
-        col = i8 % 3 + size - 8 - 3;
-        mod20 = (bits >> i8 & 1) === 1;
-        matrix.set(row, col, mod20, true);
-        matrix.set(col, row, mod20, true);
-      }
-    }
-    function setupFormatInfo(matrix, errorCorrectionLevel, maskPattern) {
-      const size = matrix.size;
-      const bits = FormatInfo.getEncodedBits(errorCorrectionLevel, maskPattern);
-      let i8, mod20;
-      for (i8 = 0; i8 < 15; i8++) {
-        mod20 = (bits >> i8 & 1) === 1;
-        if (i8 < 6) {
-          matrix.set(i8, 8, mod20, true);
-        } else if (i8 < 8) {
-          matrix.set(i8 + 1, 8, mod20, true);
-        } else {
-          matrix.set(size - 15 + i8, 8, mod20, true);
-        }
-        if (i8 < 8) {
-          matrix.set(8, size - i8 - 1, mod20, true);
-        } else if (i8 < 9) {
-          matrix.set(8, 15 - i8 - 1 + 1, mod20, true);
-        } else {
-          matrix.set(8, 15 - i8 - 1, mod20, true);
-        }
-      }
-      matrix.set(size - 8, 8, 1, true);
-    }
-    function setupData(matrix, data) {
-      const size = matrix.size;
-      let inc = -1;
-      let row = size - 1;
-      let bitIndex = 7;
-      let byteIndex = 0;
-      for (let col = size - 1; col > 0; col -= 2) {
-        if (col === 6) col--;
-        while (true) {
-          for (let c10 = 0; c10 < 2; c10++) {
-            if (!matrix.isReserved(row, col - c10)) {
-              let dark2 = false;
-              if (byteIndex < data.length) {
-                dark2 = (data[byteIndex] >>> bitIndex & 1) === 1;
-              }
-              matrix.set(row, col - c10, dark2);
-              bitIndex--;
-              if (bitIndex === -1) {
-                byteIndex++;
-                bitIndex = 7;
-              }
-            }
-          }
-          row += inc;
-          if (row < 0 || size <= row) {
-            row -= inc;
-            inc = -inc;
-            break;
-          }
-        }
-      }
-    }
-    function createData(version3, errorCorrectionLevel, segments) {
-      const buffer = new BitBuffer();
-      segments.forEach(function(data) {
-        buffer.put(data.mode.bit, 4);
-        buffer.put(data.getLength(), Mode2.getCharCountIndicator(data.mode, version3));
-        data.write(buffer);
-      });
-      const totalCodewords = Utils.getSymbolTotalCodewords(version3);
-      const ecTotalCodewords = ECCode.getTotalCodewordsCount(version3, errorCorrectionLevel);
-      const dataTotalCodewordsBits = (totalCodewords - ecTotalCodewords) * 8;
-      if (buffer.getLengthInBits() + 4 <= dataTotalCodewordsBits) {
-        buffer.put(0, 4);
-      }
-      while (buffer.getLengthInBits() % 8 !== 0) {
-        buffer.putBit(0);
-      }
-      const remainingByte = (dataTotalCodewordsBits - buffer.getLengthInBits()) / 8;
-      for (let i8 = 0; i8 < remainingByte; i8++) {
-        buffer.put(i8 % 2 ? 17 : 236, 8);
-      }
-      return createCodewords(buffer, version3, errorCorrectionLevel);
-    }
-    function createCodewords(bitBuffer, version3, errorCorrectionLevel) {
-      const totalCodewords = Utils.getSymbolTotalCodewords(version3);
-      const ecTotalCodewords = ECCode.getTotalCodewordsCount(version3, errorCorrectionLevel);
-      const dataTotalCodewords = totalCodewords - ecTotalCodewords;
-      const ecTotalBlocks = ECCode.getBlocksCount(version3, errorCorrectionLevel);
-      const blocksInGroup2 = totalCodewords % ecTotalBlocks;
-      const blocksInGroup1 = ecTotalBlocks - blocksInGroup2;
-      const totalCodewordsInGroup1 = Math.floor(totalCodewords / ecTotalBlocks);
-      const dataCodewordsInGroup1 = Math.floor(dataTotalCodewords / ecTotalBlocks);
-      const dataCodewordsInGroup2 = dataCodewordsInGroup1 + 1;
-      const ecCount = totalCodewordsInGroup1 - dataCodewordsInGroup1;
-      const rs3 = new ReedSolomonEncoder(ecCount);
-      let offset2 = 0;
-      const dcData = new Array(ecTotalBlocks);
-      const ecData = new Array(ecTotalBlocks);
-      let maxDataSize = 0;
-      const buffer = new Uint8Array(bitBuffer.buffer);
-      for (let b9 = 0; b9 < ecTotalBlocks; b9++) {
-        const dataSize = b9 < blocksInGroup1 ? dataCodewordsInGroup1 : dataCodewordsInGroup2;
-        dcData[b9] = buffer.slice(offset2, offset2 + dataSize);
-        ecData[b9] = rs3.encode(dcData[b9]);
-        offset2 += dataSize;
-        maxDataSize = Math.max(maxDataSize, dataSize);
-      }
-      const data = new Uint8Array(totalCodewords);
-      let index = 0;
-      let i8, r12;
-      for (i8 = 0; i8 < maxDataSize; i8++) {
-        for (r12 = 0; r12 < ecTotalBlocks; r12++) {
-          if (i8 < dcData[r12].length) {
-            data[index++] = dcData[r12][i8];
-          }
-        }
-      }
-      for (i8 = 0; i8 < ecCount; i8++) {
-        for (r12 = 0; r12 < ecTotalBlocks; r12++) {
-          data[index++] = ecData[r12][i8];
-        }
-      }
-      return data;
-    }
-    function createSymbol(data, version3, errorCorrectionLevel, maskPattern) {
-      let segments;
-      if (Array.isArray(data)) {
-        segments = Segments.fromArray(data);
-      } else if (typeof data === "string") {
-        let estimatedVersion = version3;
-        if (!estimatedVersion) {
-          const rawSegments = Segments.rawSplit(data);
-          estimatedVersion = Version.getBestVersionForData(rawSegments, errorCorrectionLevel);
-        }
-        segments = Segments.fromString(data, estimatedVersion || 40);
-      } else {
-        throw new Error("Invalid data");
-      }
-      const bestVersion = Version.getBestVersionForData(segments, errorCorrectionLevel);
-      if (!bestVersion) {
-        throw new Error("The amount of data is too big to be stored in a QR Code");
-      }
-      if (!version3) {
-        version3 = bestVersion;
-      } else if (version3 < bestVersion) {
-        throw new Error(
-          "\nThe chosen QR Code version cannot contain this amount of data.\nMinimum version required to store current data is: " + bestVersion + ".\n"
-        );
-      }
-      const dataBits = createData(version3, errorCorrectionLevel, segments);
-      const moduleCount = Utils.getSymbolSize(version3);
-      const modules = new BitMatrix(moduleCount);
-      setupFinderPattern(modules, version3);
-      setupTimingPattern(modules);
-      setupAlignmentPattern(modules, version3);
-      setupFormatInfo(modules, errorCorrectionLevel, 0);
-      if (version3 >= 7) {
-        setupVersionInfo(modules, version3);
-      }
-      setupData(modules, dataBits);
-      if (isNaN(maskPattern)) {
-        maskPattern = MaskPattern.getBestMask(
-          modules,
-          setupFormatInfo.bind(null, modules, errorCorrectionLevel)
-        );
-      }
-      MaskPattern.applyMask(maskPattern, modules);
-      setupFormatInfo(modules, errorCorrectionLevel, maskPattern);
-      return {
-        modules,
-        version: version3,
-        errorCorrectionLevel,
-        maskPattern,
-        segments
-      };
-    }
-    exports.create = function create3(data, options3) {
-      if (typeof data === "undefined" || data === "") {
-        throw new Error("No input text");
-      }
-      let errorCorrectionLevel = ECLevel.M;
-      let version3;
-      let mask;
-      if (typeof options3 !== "undefined") {
-        errorCorrectionLevel = ECLevel.from(options3.errorCorrectionLevel, ECLevel.M);
-        version3 = Version.from(options3.version);
-        mask = MaskPattern.from(options3.maskPattern);
-        if (options3.toSJISFunc) {
-          Utils.setToSJISFunction(options3.toSJISFunc);
-        }
-      }
-      return createSymbol(data, version3, errorCorrectionLevel, mask);
-    };
-  }
-});
-
-// node_modules/qrcode/lib/renderer/utils.js
-var require_utils2 = __commonJS({
-  "node_modules/qrcode/lib/renderer/utils.js"(exports) {
-    function hex2rgba(hex3) {
-      if (typeof hex3 === "number") {
-        hex3 = hex3.toString();
-      }
-      if (typeof hex3 !== "string") {
-        throw new Error("Color should be defined as hex string");
-      }
-      let hexCode = hex3.slice().replace("#", "").split("");
-      if (hexCode.length < 3 || hexCode.length === 5 || hexCode.length > 8) {
-        throw new Error("Invalid hex color: " + hex3);
-      }
-      if (hexCode.length === 3 || hexCode.length === 4) {
-        hexCode = Array.prototype.concat.apply([], hexCode.map(function(c10) {
-          return [c10, c10];
-        }));
-      }
-      if (hexCode.length === 6) hexCode.push("F", "F");
-      const hexValue = parseInt(hexCode.join(""), 16);
-      return {
-        r: hexValue >> 24 & 255,
-        g: hexValue >> 16 & 255,
-        b: hexValue >> 8 & 255,
-        a: hexValue & 255,
-        hex: "#" + hexCode.slice(0, 6).join("")
-      };
-    }
-    exports.getOptions = function getOptions3(options3) {
-      if (!options3) options3 = {};
-      if (!options3.color) options3.color = {};
-      const margin2 = typeof options3.margin === "undefined" || options3.margin === null || options3.margin < 0 ? 4 : options3.margin;
-      const width2 = options3.width && options3.width >= 21 ? options3.width : void 0;
-      const scale = options3.scale || 4;
-      return {
-        width: width2,
-        scale: width2 ? 4 : scale,
-        margin: margin2,
-        color: {
-          dark: hex2rgba(options3.color.dark || "#000000ff"),
-          light: hex2rgba(options3.color.light || "#ffffffff")
-        },
-        type: options3.type,
-        rendererOpts: options3.rendererOpts || {}
-      };
-    };
-    exports.getScale = function getScale3(qrSize, opts) {
-      return opts.width && opts.width >= qrSize + opts.margin * 2 ? opts.width / (qrSize + opts.margin * 2) : opts.scale;
-    };
-    exports.getImageWidth = function getImageWidth(qrSize, opts) {
-      const scale = exports.getScale(qrSize, opts);
-      return Math.floor((qrSize + opts.margin * 2) * scale);
-    };
-    exports.qrToImageData = function qrToImageData(imgData, qr2, opts) {
-      const size = qr2.modules.size;
-      const data = qr2.modules.data;
-      const scale = exports.getScale(size, opts);
-      const symbolSize = Math.floor((size + opts.margin * 2) * scale);
-      const scaledMargin = opts.margin * scale;
-      const palette3 = [opts.color.light, opts.color.dark];
-      for (let i8 = 0; i8 < symbolSize; i8++) {
-        for (let j4 = 0; j4 < symbolSize; j4++) {
-          let posDst = (i8 * symbolSize + j4) * 4;
-          let pxColor = opts.color.light;
-          if (i8 >= scaledMargin && j4 >= scaledMargin && i8 < symbolSize - scaledMargin && j4 < symbolSize - scaledMargin) {
-            const iSrc = Math.floor((i8 - scaledMargin) / scale);
-            const jSrc = Math.floor((j4 - scaledMargin) / scale);
-            pxColor = palette3[data[iSrc * size + jSrc] ? 1 : 0];
-          }
-          imgData[posDst++] = pxColor.r;
-          imgData[posDst++] = pxColor.g;
-          imgData[posDst++] = pxColor.b;
-          imgData[posDst] = pxColor.a;
-        }
-      }
-    };
-  }
-});
-
-// node_modules/qrcode/lib/renderer/canvas.js
-var require_canvas = __commonJS({
-  "node_modules/qrcode/lib/renderer/canvas.js"(exports) {
-    var Utils = require_utils2();
-    function clearCanvas(ctx, canvas, size) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (!canvas.style) canvas.style = {};
-      canvas.height = size;
-      canvas.width = size;
-      canvas.style.height = size + "px";
-      canvas.style.width = size + "px";
-    }
-    function getCanvasElement() {
-      try {
-        return document.createElement("canvas");
-      } catch (e6) {
-        throw new Error("You need to specify a canvas element");
-      }
-    }
-    exports.render = function render2(qrData, canvas, options3) {
-      let opts = options3;
-      let canvasEl = canvas;
-      if (typeof opts === "undefined" && (!canvas || !canvas.getContext)) {
-        opts = canvas;
-        canvas = void 0;
-      }
-      if (!canvas) {
-        canvasEl = getCanvasElement();
-      }
-      opts = Utils.getOptions(opts);
-      const size = Utils.getImageWidth(qrData.modules.size, opts);
-      const ctx = canvasEl.getContext("2d");
-      const image = ctx.createImageData(size, size);
-      Utils.qrToImageData(image.data, qrData, opts);
-      clearCanvas(ctx, canvasEl, size);
-      ctx.putImageData(image, 0, 0);
-      return canvasEl;
-    };
-    exports.renderToDataURL = function renderToDataURL(qrData, canvas, options3) {
-      let opts = options3;
-      if (typeof opts === "undefined" && (!canvas || !canvas.getContext)) {
-        opts = canvas;
-        canvas = void 0;
-      }
-      if (!opts) opts = {};
-      const canvasEl = exports.render(qrData, canvas, opts);
-      const type3 = opts.type || "image/png";
-      const rendererOpts = opts.rendererOpts || {};
-      return canvasEl.toDataURL(type3, rendererOpts.quality);
-    };
-  }
-});
-
-// node_modules/qrcode/lib/renderer/svg-tag.js
-var require_svg_tag = __commonJS({
-  "node_modules/qrcode/lib/renderer/svg-tag.js"(exports) {
-    var Utils = require_utils2();
-    function getColorAttrib(color5, attrib) {
-      const alpha12 = color5.a / 255;
-      const str = attrib + '="' + color5.hex + '"';
-      return alpha12 < 1 ? str + " " + attrib + '-opacity="' + alpha12.toFixed(2).slice(1) + '"' : str;
-    }
-    function svgCmd(cmd, x25, y9) {
-      let str = cmd + x25;
-      if (typeof y9 !== "undefined") str += " " + y9;
-      return str;
-    }
-    function qrToPath(data, size, margin2) {
-      let path2 = "";
-      let moveBy = 0;
-      let newRow = false;
-      let lineLength = 0;
-      for (let i8 = 0; i8 < data.length; i8++) {
-        const col = Math.floor(i8 % size);
-        const row = Math.floor(i8 / size);
-        if (!col && !newRow) newRow = true;
-        if (data[i8]) {
-          lineLength++;
-          if (!(i8 > 0 && col > 0 && data[i8 - 1])) {
-            path2 += newRow ? svgCmd("M", col + margin2, 0.5 + row + margin2) : svgCmd("m", moveBy, 0);
-            moveBy = 0;
-            newRow = false;
-          }
-          if (!(col + 1 < size && data[i8 + 1])) {
-            path2 += svgCmd("h", lineLength);
-            lineLength = 0;
-          }
-        } else {
-          moveBy++;
-        }
-      }
-      return path2;
-    }
-    exports.render = function render2(qrData, options3, cb) {
-      const opts = Utils.getOptions(options3);
-      const size = qrData.modules.size;
-      const data = qrData.modules.data;
-      const qrcodesize = size + opts.margin * 2;
-      const bg = !opts.color.light.a ? "" : "<path " + getColorAttrib(opts.color.light, "fill") + ' d="M0 0h' + qrcodesize + "v" + qrcodesize + 'H0z"/>';
-      const path2 = "<path " + getColorAttrib(opts.color.dark, "stroke") + ' d="' + qrToPath(data, size, opts.margin) + '"/>';
-      const viewBox = 'viewBox="0 0 ' + qrcodesize + " " + qrcodesize + '"';
-      const width2 = !opts.width ? "" : 'width="' + opts.width + '" height="' + opts.width + '" ';
-      const svgTag = '<svg xmlns="http://www.w3.org/2000/svg" ' + width2 + viewBox + ' shape-rendering="crispEdges">' + bg + path2 + "</svg>\n";
-      if (typeof cb === "function") {
-        cb(null, svgTag);
-      }
-      return svgTag;
-    };
-  }
-});
-
-// node_modules/qrcode/lib/browser.js
-var require_browser = __commonJS({
-  "node_modules/qrcode/lib/browser.js"(exports) {
-    var canPromise = require_can_promise();
-    var QRCode2 = require_qrcode();
-    var CanvasRenderer = require_canvas();
-    var SvgRenderer = require_svg_tag();
-    function renderCanvas(renderFunc, canvas, text2, opts, cb) {
-      const args = [].slice.call(arguments, 1);
-      const argsNum = args.length;
-      const isLastArgCb = typeof args[argsNum - 1] === "function";
-      if (!isLastArgCb && !canPromise()) {
-        throw new Error("Callback required as last argument");
-      }
-      if (isLastArgCb) {
-        if (argsNum < 2) {
-          throw new Error("Too few arguments provided");
-        }
-        if (argsNum === 2) {
-          cb = text2;
-          text2 = canvas;
-          canvas = opts = void 0;
-        } else if (argsNum === 3) {
-          if (canvas.getContext && typeof cb === "undefined") {
-            cb = opts;
-            opts = void 0;
-          } else {
-            cb = opts;
-            opts = text2;
-            text2 = canvas;
-            canvas = void 0;
-          }
-        }
-      } else {
-        if (argsNum < 1) {
-          throw new Error("Too few arguments provided");
-        }
-        if (argsNum === 1) {
-          text2 = canvas;
-          canvas = opts = void 0;
-        } else if (argsNum === 2 && !canvas.getContext) {
-          opts = text2;
-          text2 = canvas;
-          canvas = void 0;
-        }
-        return new Promise(function(resolve, reject) {
-          try {
-            const data = QRCode2.create(text2, opts);
-            resolve(renderFunc(data, canvas, opts));
-          } catch (e6) {
-            reject(e6);
-          }
-        });
-      }
-      try {
-        const data = QRCode2.create(text2, opts);
-        cb(null, renderFunc(data, canvas, opts));
-      } catch (e6) {
-        cb(e6);
-      }
-    }
-    exports.create = QRCode2.create;
-    exports.toCanvas = renderCanvas.bind(null, CanvasRenderer.render);
-    exports.toDataURL = renderCanvas.bind(null, CanvasRenderer.renderToDataURL);
-    exports.toString = renderCanvas.bind(null, function(data, _11, opts) {
-      return SvgRenderer.render(data, opts);
-    });
-  }
-});
-
-// SharedBase.ts
-function addCompoundToLibrary(app, plugin, folder, onComplete, initialData = "") {
-  plugin.openKetcherModal(initialData, "smiles", async (smi) => {
-    let name = "Compound " + window.moment().format("HHmmss");
-    let mw = 0;
-    let formula = "";
-    try {
-      const chemData = ChemDataEngine.getPropertiesFromSmiles(smi);
-      if (chemData) {
-        mw = chemData.mw;
-        formula = chemData.formula;
-      }
-      const res = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smi)}/property/Title/JSON`);
-      if (res.status === 200) {
-        const props2 = res.json.PropertyTable.Properties[0];
-        name = props2.Title || name;
-      }
-    } catch (e6) {
-    }
-    const safeName = name.replace(/[\\/:"*?<>|]/g, "_");
-    const content4 = `---
-tags: [library]
-name: "${name}"
-formula: "${formula}"
-mw: ${mw}
-smiles: "${smi}"
----
-# ${name}
-\`\`\`smiles
-${smi}
-\`\`\`
-`;
-    if (!await app.vault.adapter.exists(folder)) await app.vault.createFolder(folder);
-    await app.vault.create(`${folder}/${safeName}.md`, content4);
-    new import_obsidian4.Notice("Added to Library Database!");
-    onComplete();
-  });
-}
-function renderLimsNav(parent, activeTab, plugin) {
-  const navSwitcher = parent.createDiv({ attr: { style: "display: flex; gap: 20px; margin-bottom: 12px; flex-wrap: wrap;" } });
-  const s8 = plugin.settings;
-  const makeNav = (text2, id5, onClick) => {
-    const isActive = id5 === activeTab;
-    const el2 = navSwitcher.createEl("span", { text: text2, attr: { style: `font-size: 13px; font-weight: ${isActive ? "700" : "600"}; color: ${isActive ? "var(--text-normal)" : "var(--text-muted)"}; border-bottom: 2px solid ${isActive ? "var(--interactive-accent)" : "transparent"}; cursor: ${isActive ? "default" : "pointer"}; transition: color 0.2s; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;` } });
-    if (!isActive) {
-      el2.onmouseover = () => el2.style.color = "var(--text-normal)";
-      el2.onmouseout = () => el2.style.color = "var(--text-muted)";
-      el2.onclick = onClick;
-    }
-  };
-  if (s8.enableElnDashboard) makeNav("\u{1F9EA} ELN", "eln", () => plugin.activateElnDashboard());
-  if (s8.enableOrdersDashboard) makeNav("\u{1F6D2} Orders", "orders", () => plugin.activateOrdersDashboard());
-  if (s8.enableInventoryDashboard) makeNav("\u{1F4E6} Inventory", "inventory", () => plugin.activateInventoryDashboard());
-  if (s8.enableEquipmentDashboard) makeNav("\u{1F52C} Equipment", "equipment", () => plugin.activateEquipmentDashboard());
-  if (s8.enableProtocolsDashboard) makeNav("\u{1F4C4} Protocols", "protocols", () => plugin.activateProtocolsDashboard());
-  if (s8.enableLibraryDashboard) makeNav("\u{1F4DA} Library", "library", () => plugin.activateLibraryDashboard());
-  if (s8.enableGalleryDashboard) makeNav("\u{1F5BC}\uFE0F Gallery", "gallery", () => plugin.activateGalleryDashboard());
-  if (s8.enableCharacterizationDashboard) makeNav("\u{1F4CA} Data", "data", () => plugin.activateCharacterizationDashboard());
-}
-var import_obsidian4, QRCode, ChemDatabaseRenderer, AddInventoryModal, QrCodeModal;
-var init_SharedBase = __esm({
-  "SharedBase.ts"() {
-    import_obsidian4 = require("obsidian");
-    init_SharedEln();
-    init_ChemDataEngine();
-    QRCode = __toESM(require_browser());
-    ChemDatabaseRenderer = class {
-      constructor(plugin) {
-        this.plugin = plugin;
-      }
-      async renderDatabase(source, el2, ctx) {
-        var _a, _b, _c, _d, _e2, _f, _g2, _h;
-        const { parseYaml: parseYaml2 } = require("obsidian");
-        let config2 = {};
-        try {
-          config2 = parseYaml2(source);
-        } catch (e6) {
-          config2 = { type: "library", folder: "", layout: "table" };
-        }
-        const folderPath = config2.folder || config2.path || "";
-        const dbType = config2.type || "library";
-        const layout = config2.layout || "table";
-        if (!folderPath) {
-          el2.createEl("div", { text: "\u26A0\uFE0F Please specify a folder (e.g., path: Library/)", cls: "color-text-error" });
-          return;
-        }
-        const folder = this.plugin.app.vault.getAbstractFileByPath(folderPath);
-        if (!folder) {
-          const errWrap = el2.createDiv();
-          errWrap.createEl("span", { text: `Folder not found: ${folderPath}. `, cls: "color-text-error" });
-          const createBtn = errWrap.createEl("button", { text: "Create Folder", attr: { style: "padding: 2px 8px; font-size: 11px;" } });
-          createBtn.onclick = async () => {
-            await this.plugin.app.vault.createFolder(folderPath);
-            new import_obsidian4.Notice(`Created folder: ${folderPath}`);
-            this.renderDatabase(source, el2, ctx);
-          };
-          return;
-        }
-        const wrapper2 = el2.createDiv();
-        wrapper2.style.border = "1px solid var(--background-modifier-border)";
-        wrapper2.style.borderRadius = "8px";
-        wrapper2.style.backgroundColor = "var(--background-primary)";
-        wrapper2.style.overflow = "hidden";
-        wrapper2.style.fontFamily = "var(--font-interface)";
-        wrapper2.style.marginTop = "10px";
-        const toolbar = wrapper2.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border); flex-wrap: wrap; gap: 10px;" } });
-        let titleText = "\u{1F4DA} Compound Library";
-        if (dbType === "inventory") titleText = "\u{1F4E6} Chemical Inventory";
-        else if (dbType === "equipment") titleText = "\u{1F52C} Lab Equipment Tracker";
-        else if (dbType === "eln") titleText = "\u{1F9EA} ELN Database";
-        toolbar.createEl("h3", { text: titleText, attr: { style: "margin: 0; font-size: 16px; font-weight: 600;" } });
-        const rightTools = toolbar.createDiv({ attr: { style: "display: flex; gap: 10px; align-items: center; flex-wrap: wrap;" } });
-        const activeSearchBadge = rightTools.createDiv({ attr: { style: "display: none; align-items: center; gap: 5px; background: var(--interactive-accent); color: var(--text-on-accent); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;" } });
-        activeSearchBadge.innerHTML = `<span>\u2B21 Substructure Active</span><button style="background:transparent; border:none; color:inherit; padding:0; height:auto; cursor:pointer;">\u2716</button>`;
-        const clearBadgeBtn = activeSearchBadge.querySelector("button");
-        if (dbType !== "equipment") {
-          const smartsBtn = rightTools.createEl("button", { text: "\u2B21 Substructure", attr: { style: "font-size: 12px; height: 28px;" } });
-          smartsBtn.onclick = async () => {
-            this.plugin.openKetcherModal("", "smiles", (query) => {
-              if (!query || query.trim() === "") return;
-              currentQuery = query;
-              isSubstructActive = true;
-              activeSearchBadge.style.display = "flex";
-              applyFilters();
-            });
-          };
-        }
-        const searchInput = rightTools.createEl("input", {
-          type: "search",
-          placeholder: "Search database...",
-          attr: { style: "width: 220px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border);" }
-        });
-        const addBtn = rightTools.createEl("button", { text: "\u2795 Add Item", cls: "mod-cta", attr: { style: "font-size: 12px; height: 28px;" } });
-        const files = folder.children.filter((f9) => f9 instanceof import_obsidian4.TFile && f9.extension === "md");
-        const rows = [];
-        if (layout === "grid" || layout === "cards") {
-          const gridContainer = wrapper2.createDiv({ attr: { style: "display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; padding: 16px; max-height: 600px; overflow-y: auto; background: var(--background-primary-alt);" } });
-          for (const file of files) {
-            const cache2 = this.plugin.app.metadataCache.getFileCache(file);
-            const fm = (cache2 == null ? void 0 : cache2.frontmatter) || {};
-            const content4 = await this.plugin.app.vault.cachedRead(file);
-            let smiles = fm.smiles || this.extractSmilesFromContent(content4);
-            if (dbType === "eln") {
-              const blockMatch = content4.match(/```eln\s*\n([\s\S]*?)\n```/);
-              if (!blockMatch) continue;
-              const elnData = parseYaml2(blockMatch[1]);
-              const rctSmiles = ((_b = (_a = elnData.reactants) == null ? void 0 : _a[0]) == null ? void 0 : _b.smiles) || "";
-              const prdSmiles = ((_d = (_c = elnData.products) == null ? void 0 : _c[0]) == null ? void 0 : _d.smiles) || "";
-              smiles = prdSmiles || rctSmiles;
-              fm.name = elnData.code || file.basename;
-              fm.formula = elnData.status || "Planned";
-              fm.mw = fm.date || "";
-            } else if (dbType === "equipment") {
-              smiles = "";
-            } else if (!smiles) continue;
-            const card = gridContainer.createDiv({ attr: { style: "border: 1px solid var(--background-modifier-border); border-radius: 8px; overflow: hidden; background: var(--background-primary); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column;" } });
-            card.onmouseover = () => {
-              card.style.transform = "translateY(-2px)";
-              card.style.boxShadow = "0 6px 12px rgba(0,0,0,0.1)";
-              card.style.borderColor = "var(--interactive-accent)";
-            };
-            card.onmouseout = () => {
-              card.style.transform = "translateY(0)";
-              card.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
-              card.style.borderColor = "var(--background-modifier-border)";
-            };
-            card.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
-            if (dbType !== "equipment") {
-              const previewWrapper = card.createDiv({ attr: { style: "height: 160px; display: flex; align-items: center; justify-content: center; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border); padding: 10px;" } });
-              previewWrapper.innerHTML = `<span class="color-text-muted" style="font-size:12px;">\u23F3</span>`;
-              requestAnimationFrame(async () => {
-                const originalW = this.plugin.settings.width;
-                const originalH = this.plugin.settings.height;
-                this.plugin.settings.width = 200;
-                this.plugin.settings.height = 140;
-                try {
-                  let previewEl;
-                  try {
-                    previewEl = await this.plugin.renderMoleculeToPreview(smiles, "smiles", false);
-                  } catch (e6) {
-                    if (smiles.includes(">>")) previewEl = await this.plugin.renderMoleculeToPreview(smiles.split(">>")[1], "smiles", false);
-                  }
-                  previewWrapper.empty();
-                  if (previewEl) {
-                    previewEl.style.maxWidth = "100%";
-                    previewEl.style.maxHeight = "100%";
-                    previewWrapper.appendChild(previewEl);
-                  } else previewWrapper.innerHTML = `<span class="color-text-muted">No structure</span>`;
-                } catch (e6) {
-                  previewWrapper.innerHTML = `\u274C`;
-                } finally {
-                  this.plugin.settings.width = originalW;
-                  this.plugin.settings.height = originalH;
-                }
-              });
-            }
-            const details = card.createDiv({ attr: { style: "padding: 12px; display: flex; flex-direction: column; gap: 4px;" } });
-            details.createEl("div", { text: fm.name || file.basename, attr: { style: "font-weight: 600; font-size: 14px; color: var(--text-normal); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" } });
-            const metaRow = details.createDiv({ attr: { style: "display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);" } });
-            if (dbType === "equipment") {
-              metaRow.createEl("span", { text: fm.location || "Unassigned" });
-              metaRow.createEl("span", { text: fm.status || "Available" });
-            } else {
-              metaRow.createEl("span", { text: fm.formula || "-" });
-              metaRow.createEl("span", { text: fm.mw ? `${fm.mw} g/mol` : "-" });
-            }
-            const searchableText = `${fm.name} ${fm.formula} ${smiles} ${file.basename} ${fm.location} ${fm.status}`.toLowerCase();
-            rows.push({ el: card, text: searchableText, smiles });
-          }
-          if (rows.length === 0) gridContainer.createEl("div", { text: "No items found.", attr: { style: "grid-column: 1 / -1; text-align: center; padding: 20px; color: var(--text-muted);" } });
-        } else {
-          const tableContainer = wrapper2.createDiv({ attr: { style: "overflow-x: auto; max-height: 500px; overflow-y: auto;" } });
-          const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;" } });
-          const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-secondary); z-index: 2;" } });
-          const tr2 = thead.createEl("tr");
-          let columns = [];
-          if (dbType === "inventory") columns = ["Structure", "Name", "Location", "Amount", "Status", "Actions"];
-          else if (dbType === "equipment") columns = ["Instrument", "Location", "Status", "Booked By", "Last Maint.", "Actions"];
-          else if (dbType === "eln") columns = ["Code", "Reaction", "Status", "Date"];
-          else columns = ["Structure", "Name", "MW", "Formula", "SMILES"];
-          columns.forEach((text2) => tr2.createEl("th", { text: text2, attr: { style: "padding: 10px; border-bottom: 2px solid var(--background-modifier-border); font-weight: 600; color: var(--text-muted); white-space: nowrap;" } }));
-          const tbody = table.createEl("tbody");
-          for (const file of files) {
-            const cache2 = this.plugin.app.metadataCache.getFileCache(file);
-            const fm = (cache2 == null ? void 0 : cache2.frontmatter) || {};
-            const content4 = await this.plugin.app.vault.cachedRead(file);
-            const row = tbody.createEl("tr", { attr: { style: "border-bottom: 1px solid var(--background-modifier-border-hover); transition: background 0.2s;" } });
-            row.onmouseover = () => row.style.backgroundColor = "var(--background-modifier-hover)";
-            row.onmouseout = () => row.style.backgroundColor = "transparent";
-            let searchableText = file.basename;
-            const createEditableCell = (value, yamlKey, fallback) => {
-              const td = row.createEl("td", { attr: { style: "padding: 10px; cursor: text; min-width: 80px;" } });
-              td.innerText = value || fallback;
-              td.onclick = (e6) => {
-                e6.stopPropagation();
-                if (td.querySelector("input")) return;
-                const input = document.createElement("input");
-                input.value = value || "";
-                input.style.width = "100%";
-                input.style.padding = "2px 4px";
-                td.empty();
-                td.appendChild(input);
-                input.focus();
-                const saveVal = async () => {
-                  const newVal = input.value;
-                  td.innerText = newVal || fallback;
-                  if (newVal !== value) {
-                    await this.plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
-                      frontmatter[yamlKey] = newVal;
-                    });
-                    new import_obsidian4.Notice(`Updated ${yamlKey}`);
-                  }
-                };
-                input.onblur = () => saveVal();
-                input.onkeydown = (ev) => {
-                  if (ev.key === "Enter") input.blur();
-                };
-              };
-            };
-            let rowSmiles = "";
-            if (dbType === "equipment") {
-              const tdName = row.createEl("td", { text: fm.name || file.basename, attr: { style: "padding: 10px; font-weight: 600; cursor: pointer; color: var(--text-accent);" } });
-              tdName.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
-              createEditableCell(fm.location, "location", "Unassigned");
-              const statusColor = fm.status === "In Use" ? "var(--text-warning)" : fm.status === "Maintenance" ? "var(--text-error)" : "var(--text-success)";
-              const displayStatus = fm.status || "Available";
-              row.createEl("td", { innerHTML: `<span style="border: 1px solid ${statusColor}; color: ${statusColor}; padding: 2px 8px; border-radius: 12px; font-size: 11px;">${displayStatus}</span>`, attr: { style: "padding: 10px;" } });
-              createEditableCell(fm.booked_by, "booked_by", "-");
-              createEditableCell(fm.last_maintenance, "last_maintenance", "-");
-              const actionTd = row.createEl("td", { attr: { style: "padding: 10px;" } });
-              const toggleBtn = actionTd.createEl("button", { text: displayStatus === "Available" ? "Book" : "Release", attr: { style: "font-size: 10px; padding: 2px 6px;" } });
-              toggleBtn.onclick = async () => {
-                const newStatus = displayStatus === "Available" ? "In Use" : "Available";
-                await this.plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
-                  frontmatter.status = newStatus;
-                });
-                this.renderDatabase(source, el2, ctx);
-              };
-              searchableText += ` ${fm.name} ${fm.location} ${fm.status}`;
-            } else if (dbType === "inventory") {
-              if (!fm.smiles && !content4.includes("smiles")) continue;
-              rowSmiles = fm.smiles || this.extractSmilesFromContent(content4);
-              this.createStructureCell(row, rowSmiles, "smiles", 90, 90);
-              const tdName = row.createEl("td", { text: fm.name || file.basename, attr: { style: "padding: 10px; font-weight: 600; cursor: pointer; color: var(--text-accent);" } });
-              tdName.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
-              createEditableCell(fm.location, "location", "-");
-              createEditableCell(fm.amount, "amount", "-");
-              const invStatus = fm.status || "Available";
-              const invStatusColor = invStatus === "Available" ? "var(--text-success)" : "var(--text-warning)";
-              row.createEl("td", { innerHTML: `<span style="color: ${invStatusColor}; font-weight: bold; font-size: 11px;">${invStatus}</span><br><span style="font-size:9px; color:var(--text-muted);">${fm.checked_out_by || ""}</span>`, attr: { style: "padding: 10px;" } });
-              const actionTd = row.createEl("td", { attr: { style: "padding: 10px; display: flex; gap: 4px; flex-direction: column;" } });
-              const checkoutBtn = actionTd.createEl("button", { text: invStatus === "Available" ? "\u{1F4E4} Check Out" : "\u{1F4E5} Return", attr: { style: "font-size: 10px; padding: 2px 6px;" } });
-              checkoutBtn.onclick = async () => {
-                const newStatus = invStatus === "Available" ? "Checked Out" : "Available";
-                const user = newStatus === "Checked Out" ? "Current User" : "";
-                await this.plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
-                  frontmatter.status = newStatus;
-                  frontmatter.checked_out_by = user;
-                  frontmatter.last_updated = window.moment().format("YYYY-MM-DD");
-                });
-                this.renderDatabase(source, el2, ctx);
-              };
-              const qrBtn = actionTd.createEl("button", { text: "\u{1F5A8}\uFE0F QR Label", attr: { style: "font-size: 10px; padding: 2px 6px;" } });
-              qrBtn.onclick = () => {
-                new QrCodeModal(this.plugin.app, file).open();
-              };
-              searchableText += ` ${fm.name} ${fm.location} ${fm.supplier}`;
-            } else if (dbType === "eln") {
-              const blockMatch = content4.match(/```eln\s*\n([\s\S]*?)\n```/);
-              if (!blockMatch) continue;
-              const elnData = parseYaml2(blockMatch[1]);
-              const rctSmiles = ((_f = (_e2 = elnData.reactants) == null ? void 0 : _e2[0]) == null ? void 0 : _f.smiles) || "";
-              const prdSmiles = ((_h = (_g2 = elnData.products) == null ? void 0 : _g2[0]) == null ? void 0 : _h.smiles) || "";
-              if (rctSmiles && prdSmiles) rowSmiles = `${rctSmiles}>>${prdSmiles}`;
-              else rowSmiles = prdSmiles || rctSmiles;
-              const tdCode = row.createEl("td", { text: elnData.code || file.basename, attr: { style: "padding: 10px; font-weight: 600; cursor: pointer; color: var(--text-accent);" } });
-              tdCode.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
-              if (rowSmiles) {
-                this.createStructureCell(row, rowSmiles, "smiles", 150, 80);
-              } else {
-                row.createEl("td", { innerHTML: `<span class="color-text-muted">No structures</span>`, attr: { style: "padding: 10px; text-align: center;" } });
-              }
-              const statusColor = elnData.status === "Completed" ? "var(--text-success)" : elnData.status === "Failed" ? "var(--text-error)" : "var(--text-warning)";
-              row.createEl("td", { innerHTML: `<span style="border: 1px solid ${statusColor}; color: ${statusColor}; padding: 2px 8px; border-radius: 12px; font-size: 11px;">${elnData.status || "-"}</span>`, attr: { style: "padding: 10px;" } });
-              createEditableCell(fm.date, "date", "-");
-              searchableText += ` ${elnData.code} ${elnData.status}`;
-            } else {
-              if (!fm.smiles && !content4.includes("smiles")) continue;
-              rowSmiles = fm.smiles || this.extractSmilesFromContent(content4);
-              this.createStructureCell(row, rowSmiles, "smiles", 100, 100);
-              const tdName = row.createEl("td", { text: fm.name || file.basename, attr: { style: "padding: 10px; font-weight: 600; cursor: pointer; color: var(--text-accent);" } });
-              tdName.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
-              row.createEl("td", { text: fm.mw || "-", attr: { style: "padding: 10px; color: var(--text-muted);" } });
-              row.createEl("td", { text: fm.formula || "-", attr: { style: "padding: 10px; color: var(--text-muted);" } });
-              const tdSmiles = row.createEl("td", { attr: { style: "padding: 10px;" } });
-              const sCode = tdSmiles.createEl("code", { text: rowSmiles.length > 20 ? rowSmiles.substring(0, 20) + "..." : rowSmiles, attr: { style: "font-size: 11px; cursor: copy;" } });
-              sCode.onclick = (e6) => {
-                e6.stopPropagation();
-                navigator.clipboard.writeText(rowSmiles);
-                new import_obsidian4.Notice("Copied SMILES!");
-              };
-              searchableText += ` ${fm.name} ${fm.formula} ${rowSmiles}`;
-            }
-            rows.push({ el: row, text: searchableText.toLowerCase(), smiles: rowSmiles });
-          }
-          if (rows.length === 0) tbody.createEl("tr").createEl("td", { text: "No items found.", attr: { colspan: columns.length, style: "padding: 20px; text-align: center; color: var(--text-muted);" } });
-        }
-        let isSubstructActive = false;
-        let currentQuery = "";
-        const applyFilters = () => {
-          const textQuery = searchInput.value.toLowerCase();
-          rows.forEach((r12) => {
-            let textMatch = r12.text.includes(textQuery);
-            let subMatch = true;
-            if (isSubstructActive && currentQuery) {
-              subMatch = ChemDataEngine.isSubstructureMatch(r12.smiles, currentQuery);
-            }
-            r12.el.style.display = textMatch && subMatch ? "" : "none";
-          });
-        };
-        searchInput.addEventListener("input", () => applyFilters());
-        clearBadgeBtn.onclick = () => {
-          isSubstructActive = false;
-          currentQuery = "";
-          activeSearchBadge.style.display = "none";
-          applyFilters();
-        };
-        addBtn.onclick = () => {
-          if (dbType === "inventory") {
-            new AddInventoryModal(this.plugin.app, this.plugin, folderPath, () => this.renderDatabase(source, el2, ctx)).open();
-          } else if (dbType === "equipment") {
-            this.createEquipmentFile(folderPath, () => this.renderDatabase(source, el2, ctx));
-          } else if (dbType === "eln") {
-            new CreateExperimentModal(this.plugin.app, this.plugin, this.plugin.settings.elnPrefix, folderPath, async (expCode) => {
-              await createNewElnExperiment(this.plugin.app, expCode, folderPath, this.plugin.settings.elnSections);
-              this.renderDatabase(source, el2, ctx);
-            }).open();
-          } else {
-            addCompoundToLibrary(this.plugin.app, this.plugin, folderPath, () => this.renderDatabase(source, el2, ctx));
-          }
-        };
-      }
-      async createEquipmentFile(folder, onComplete) {
-        const name = "New Equipment " + window.moment().format("HHmmss");
-        const safeName = name.replace(/[\\/:"*?<>|]/g, "_");
-        const content4 = `---
-tags: [equipment]
-name: "${name}"
-location: "Unassigned"
-status: "Available"
-booked_by: ""
-last_maintenance: "${window.moment().format("YYYY-MM-DD")}"
----
-# ${name}
-**Operating Instructions / Notes:**
-`;
-        if (!await this.plugin.app.vault.adapter.exists(folder)) await this.plugin.app.vault.createFolder(folder);
-        await this.plugin.app.vault.create(`${folder}/${safeName}.md`, content4);
-        new import_obsidian4.Notice("Equipment added!");
-        onComplete();
-      }
-      extractSmilesFromContent(content4) {
-        const blockMatch = content4.match(/```smiles\s*\n([\s\S]*?)\n```/);
-        if (blockMatch) return blockMatch[1].trim();
-        const inlineMatch = content4.match(/\$smiles=([^\s]+)/);
-        if (inlineMatch) return inlineMatch[1].trim();
-        return "";
-      }
-      createStructureCell(row, data, format3, w7, h5) {
-        const td = row.createEl("td", { attr: { style: `padding: 10px; width: ${w7 + 20}px;` } });
-        const previewWrapper = td.createDiv({ attr: { style: `width: ${w7}px; height: ${h5}px; display: flex; align-items: center; justify-content: center;` } });
-        previewWrapper.innerHTML = `<span class="color-text-muted" style="font-size:10px;">\u23F3</span>`;
-        requestAnimationFrame(async () => {
-          const originalW = this.plugin.settings.width;
-          const originalH = this.plugin.settings.height;
-          this.plugin.settings.width = w7;
-          this.plugin.settings.height = h5;
-          try {
-            let previewEl;
-            try {
-              previewEl = await this.plugin.renderMoleculeToPreview(data, format3, false);
-            } catch (e6) {
-              if (data.includes(">>")) previewEl = await this.plugin.renderMoleculeToPreview(data.split(">>")[1], format3, false);
-            }
-            previewWrapper.empty();
-            if (previewEl) {
-              previewEl.style.maxWidth = "100%";
-              previewEl.style.maxHeight = "100%";
-              previewWrapper.appendChild(previewEl);
-            } else previewWrapper.innerHTML = `<span class="color-text-muted">Error</span>`;
-          } catch (e6) {
-            previewWrapper.innerHTML = `<span class="color-text-muted">Error</span>`;
-          } finally {
-            this.plugin.settings.width = originalW;
-            this.plugin.settings.height = originalH;
-          }
-        });
-      }
-    };
-    AddInventoryModal = class extends import_obsidian4.Modal {
-      constructor(app, plugin, folder, onComplete) {
-        super(app);
-        this.data = { name: "", smiles: "", mw: 0, formula: "", location: "", amount: "", supplier: "", cas: "", lot: "", expiration: "", purity: "" };
-        this.plugin = plugin;
-        this.folder = folder;
-        this.onComplete = onComplete;
-      }
-      onOpen() {
-        const { contentEl } = this;
-        contentEl.createEl("h2", { text: "Add to Inventory" });
-        const topRow = contentEl.createDiv({ attr: { style: "display:flex; gap: 10px; margin-bottom: 15px;" } });
-        const nameInp = topRow.createEl("input", { type: "text", placeholder: "Chemical Name", attr: { style: "flex: 1;" } });
-        nameInp.onchange = (e6) => this.data.name = e6.target.value;
-        const autoBtn = topRow.createEl("button", { text: "\u{1F50D} Auto-Fill from Name" });
-        autoBtn.onclick = () => this.autoFillFromName();
-        const grid2 = contentEl.createDiv({ attr: { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;" } });
-        const addInput = (label, key) => {
-          var _a;
-          const w7 = grid2.createDiv();
-          w7.createEl("div", { text: label, cls: "color-text-muted", attr: { style: "font-size:12px;" } });
-          const i8 = w7.createEl("input", { type: "text", value: (_a = this.data[key]) == null ? void 0 : _a.toString(), attr: { style: "width:100%;" } });
-          i8.onchange = (e6) => this.data[key] = e6.target.value;
-          return i8;
-        };
-        addInput("SMILES String", "smiles");
-        addInput("Location (e.g. Cabinet 3)", "location");
-        addInput("Amount (e.g. 500 mL)", "amount");
-        addInput("Supplier", "supplier");
-        addInput("CAS Number", "cas");
-        addInput("Lot Number", "lot");
-        addInput("Purity", "purity");
-        addInput("Expiration", "expiration");
-        const botRow = contentEl.createDiv({ attr: { style: "display:flex; justify-content:flex-end; gap:10px;" } });
-        const cancel = botRow.createEl("button", { text: "Cancel" });
-        cancel.onclick = () => this.close();
-        const save = botRow.createEl("button", { text: "Save Item", cls: "mod-cta" });
-        save.onclick = async () => {
-          if (!this.data.name) {
-            new import_obsidian4.Notice("Name required");
-            return;
-          }
-          const safeName = this.data.name.replace(/[\\/:"*?<>|]/g, "_");
-          const content4 = `---
-tags: [inventory]
-name: "${this.data.name}"
-formula: "${this.data.formula}"
-mw: ${this.data.mw || 0}
-location: "${this.data.location}"
-amount: "${this.data.amount}"
-status: "Available"
-checked_out_by: ""
-supplier: "${this.data.supplier}"
-cas: "${this.data.cas}"
-lot: "${this.data.lot}"
-purity: "${this.data.purity}"
-expiration: "${this.data.expiration}"
-smiles: "${this.data.smiles}"
----
-# ${this.data.name}
-\`\`\`smiles
-${this.data.smiles || "C"}
-\`\`\`
-`;
-          try {
-            if (!await this.plugin.app.vault.adapter.exists(this.folder)) await this.plugin.app.vault.createFolder(this.folder);
-            await this.plugin.app.vault.create(`${this.folder}/${safeName}.md`, content4);
-            new import_obsidian4.Notice("Item added to inventory!");
-            this.onComplete();
-            this.close();
-          } catch (e6) {
-            new import_obsidian4.Notice(`File creation failed: ${e6.message}`);
-          }
-        };
-      }
-      async autoFillFromName() {
-        if (!this.data.name) return;
-        new import_obsidian4.Notice("Fetching data...");
-        try {
-          const res = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(this.data.name)}/property/IsomericSMILES,MolecularWeight,MolecularFormula/JSON`);
-          if (res.status === 200) {
-            const props2 = res.json.PropertyTable.Properties[0];
-            this.data.smiles = props2.IsomericSMILES || "";
-            this.data.mw = parseFloat(props2.MolecularWeight);
-            this.data.formula = props2.MolecularFormula;
-            this.contentEl.empty();
-            this.onOpen();
-            new import_obsidian4.Notice("Auto-fill successful!");
-          }
-        } catch (e6) {
-          new import_obsidian4.Notice("Could not find chemical data.");
-        }
-      }
-      onClose() {
-        this.contentEl.empty();
-      }
-    };
-    QrCodeModal = class extends import_obsidian4.Modal {
-      constructor(app, file) {
-        super(app);
-        this.qrDataUrl = "";
-        this.file = file;
-      }
-      async onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-        const vaultName = encodeURIComponent(this.app.vault.getName());
-        const filePath = encodeURIComponent(this.file.path);
-        const obsidianUri = `obsidian://open?vault=${vaultName}&file=${filePath}`;
-        contentEl.createEl("h3", { text: "Print Sample Label", attr: { style: "text-align: center; margin-bottom: 5px;" } });
-        contentEl.createEl("p", { text: this.file.basename, attr: { style: "text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 0;" } });
-        const qrContainer = contentEl.createDiv({ attr: { style: "display: flex; justify-content: center; padding: 20px; background: white; border-radius: 8px; width: 200px; margin: 0 auto 20px auto;" } });
-        try {
-          this.qrDataUrl = await QRCode.toDataURL(obsidianUri, { width: 150, margin: 1 });
-          qrContainer.createEl("img", { attr: { src: this.qrDataUrl, width: "150", height: "150" } });
-        } catch (err) {
-          qrContainer.createEl("span", { text: "Failed to generate QR code offline.", cls: "color-text-error" });
-        }
-        const printBtn = contentEl.createEl("button", { text: "Print Label", cls: "mod-cta", attr: { style: "width: 100%;" } });
-        printBtn.onclick = () => {
-          if (!this.qrDataUrl) return;
-          const printWindow = window.open("", "_blank");
-          if (printWindow) {
-            printWindow.document.write(`
-                    <html><head><title>Print Label</title></head>
-                    <body style="display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
-                        <div style="text-align:center; font-family:sans-serif;">
-                            <img src="${this.qrDataUrl}" width="100" height="100" />
-                            <div style="font-size:10px; margin-top:5px; font-weight:bold;">${this.file.basename}</div>
-                        </div>
-                        <script>window.onload = function() { window.print(); window.close(); }<\/script>
-                    </body></html>
-                `);
-            printWindow.document.close();
-          }
-        };
-      }
-      onClose() {
-        this.contentEl.empty();
-      }
-    };
-  }
-});
-
 // SharedContextMenu.ts
 var SharedContextMenu_exports = {};
 __export(SharedContextMenu_exports, {
@@ -562759,21 +559918,15 @@ function populateChemicalMenu(menu, plugin, smiles) {
   menu.addItem((item) => {
     item.setTitle("Add to Inline Library (Table)").setIcon("bookmark").onClick(() => {
       new AddToLibraryModal(plugin.app, smiles, (name, sm) => {
-        addCompoundToLibrary2(plugin, name, sm);
+        addCompoundToLibrary(plugin, name, sm);
       }).open();
-    });
-  });
-  menu.addItem((item) => {
-    item.setTitle("Add to Compound Database (Card)").setIcon("flask-round").onClick(() => {
-      addCompoundToLibrary(plugin.app, plugin, plugin.settings.elnDirectory || "Library", () => {
-      }, smiles);
     });
   });
   menu.addSeparator();
   menu.addItem((item) => {
     item.setTitle("Copy SMILES").setIcon("copy").onClick(async () => {
       await navigator.clipboard.writeText(smiles);
-      new import_obsidian5.Notice("SMILES copied to clipboard!");
+      new import_obsidian3.Notice("SMILES copied to clipboard!");
     });
   });
   menu.addItem((item) => {
@@ -562786,30 +559939,30 @@ function populateChemicalMenu(menu, plugin, smiles) {
           const molBlock = await ketcher.getMolfile();
           if (molBlock) {
             await navigator.clipboard.writeText(molBlock);
-            new import_obsidian5.Notice("MOL Block copied to clipboard!");
+            new import_obsidian3.Notice("MOL Block copied to clipboard!");
           }
         } else {
-          new import_obsidian5.Notice("Ketcher engine loading, try again in a second.");
+          new import_obsidian3.Notice("Ketcher engine loading, try again in a second.");
         }
       } catch (err) {
-        new import_obsidian5.Notice("Error generating MOL Block.");
+        new import_obsidian3.Notice("Error generating MOL Block.");
       }
     });
   });
   menu.addItem((item) => {
     item.setTitle("Copy IUPAC Name (Web)").setIcon("whole-word").onClick(async () => {
       try {
-        new import_obsidian5.Notice("Fetching IUPAC name...");
-        const res = await (0, import_obsidian5.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smiles)}/property/IUPACName/JSON`);
+        new import_obsidian3.Notice("Fetching IUPAC name...");
+        const res = await (0, import_obsidian3.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smiles)}/property/IUPACName/JSON`);
         if (res.status === 200) {
           const iupac = res.json.PropertyTable.Properties[0].IUPACName;
           await navigator.clipboard.writeText(iupac);
-          new import_obsidian5.Notice("IUPAC Name copied!");
+          new import_obsidian3.Notice("IUPAC Name copied!");
         } else {
-          new import_obsidian5.Notice("Failed to fetch IUPAC Name.");
+          new import_obsidian3.Notice("Failed to fetch IUPAC Name.");
         }
       } catch (err) {
-        new import_obsidian5.Notice("Error fetching IUPAC Name.");
+        new import_obsidian3.Notice("Error fetching IUPAC Name.");
       }
     });
   });
@@ -562819,26 +559972,26 @@ function populateChemicalMenu(menu, plugin, smiles) {
         const offlineProps = ChemDataEngine.getPropertiesFromSmiles(smiles);
         if (offlineProps && offlineProps.mw > 0) {
           await navigator.clipboard.writeText(`Formula: ${offlineProps.formula}, MW: ${offlineProps.mw.toFixed(2)}`);
-          new import_obsidian5.Notice("Properties copied (Offline)!");
+          new import_obsidian3.Notice("Properties copied (Offline)!");
         } else {
-          new import_obsidian5.Notice("Fetching from Web...");
-          const res = await (0, import_obsidian5.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smiles)}/property/MolecularWeight,MolecularFormula/JSON`);
+          new import_obsidian3.Notice("Fetching from Web...");
+          const res = await (0, import_obsidian3.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smiles)}/property/MolecularWeight,MolecularFormula/JSON`);
           if (res.status === 200) {
             const p7 = res.json.PropertyTable.Properties[0];
             await navigator.clipboard.writeText(`Formula: ${p7.MolecularFormula}, MW: ${p7.MolecularWeight}`);
-            new import_obsidian5.Notice("Properties copied (Web)!");
+            new import_obsidian3.Notice("Properties copied (Web)!");
           } else {
             const props2 = await calculateMwOffline(smiles, plugin);
             if (props2 && props2.mw > 0) {
               await navigator.clipboard.writeText(`Formula: ${props2.formula}, MW: ${props2.mw.toFixed(2)}`);
-              new import_obsidian5.Notice(`Copied: Formula: ${props2.formula}, MW: ${props2.mw.toFixed(2)}`);
+              new import_obsidian3.Notice(`Copied: Formula: ${props2.formula}, MW: ${props2.mw.toFixed(2)}`);
             } else {
-              new import_obsidian5.Notice("Properties not found.");
+              new import_obsidian3.Notice("Properties not found.");
             }
           }
         }
       } catch (err) {
-        new import_obsidian5.Notice("Error fetching properties.");
+        new import_obsidian3.Notice("Error fetching properties.");
       }
     });
   });
@@ -562857,7 +560010,7 @@ function populateChemicalMenu(menu, plugin, smiles) {
     item.setTitle("Get Web Share Link").setIcon("globe").onClick(async () => {
       const viewerUrl = `https://ruzx.github.io/viewer.html#smi=${encodeURIComponent(smiles)}`;
       await navigator.clipboard.writeText(viewerUrl);
-      new import_obsidian5.Notice("\u{1F517} Web link copied! Paste anywhere to share.");
+      new import_obsidian3.Notice("\u{1F517} Web link copied! Paste anywhere to share.");
     });
   });
   const s8 = plugin.settings;
@@ -562868,16 +560021,15 @@ function populateChemicalMenu(menu, plugin, smiles) {
 }
 function showChemicalContextMenu(plugin, e6, smiles) {
   e6.preventDefault();
-  const menu = new import_obsidian5.Menu();
+  const menu = new import_obsidian3.Menu();
   populateChemicalMenu(menu, plugin, smiles);
   menu.showAtMouseEvent(e6);
 }
-var import_obsidian5;
+var import_obsidian3;
 var init_SharedContextMenu = __esm({
   "SharedContextMenu.ts"() {
-    import_obsidian5 = require("obsidian");
+    import_obsidian3 = require("obsidian");
     init_SharedEln();
-    init_SharedBase();
     init_ChemDataEngine();
   }
 });
@@ -562931,15 +560083,15 @@ async function calculateMwOffline(smiles, plugin) {
     const props2 = ChemDataEngine.getPropertiesFromSmiles(sForMw);
     if (props2 && props2.mw > 0) return { mw: props2.mw, formula: props2.formula };
     try {
-      const mwRes = await (0, import_obsidian6.requestUrl)(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(sForMw)}/mw`);
-      const formulaRes = await (0, import_obsidian6.requestUrl)(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(sForMw)}/formula`);
+      const mwRes = await (0, import_obsidian4.requestUrl)(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(sForMw)}/mw`);
+      const formulaRes = await (0, import_obsidian4.requestUrl)(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(sForMw)}/formula`);
       if (mwRes.status === 200 && formulaRes.status === 200) {
         return { mw: parseFloat(mwRes.text), formula: formulaRes.text.trim() };
       }
     } catch (e6) {
     }
     try {
-      const res = await (0, import_obsidian6.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(sForMw)}/property/MolecularWeight,MolecularFormula/JSON`);
+      const res = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(sForMw)}/property/MolecularWeight,MolecularFormula/JSON`);
       if (res.status === 200) {
         const p7 = res.json.PropertyTable.Properties[0];
         return { mw: parseFloat(p7.MolecularWeight), formula: p7.MolecularFormula };
@@ -562991,7 +560143,7 @@ async function getCompoundLibrary(plugin) {
   const path2 = (_a = plugin.settings) == null ? void 0 : _a.libraryFilePath;
   if (!path2) return DEFAULT_LIBRARY;
   const file = plugin.app.vault.getAbstractFileByPath(path2);
-  if (file instanceof import_obsidian6.TFile) {
+  if (file instanceof import_obsidian4.TFile) {
     try {
       const content4 = await plugin.app.vault.read(file);
       const results = [];
@@ -563012,7 +560164,7 @@ async function getCompoundLibrary(plugin) {
   }
   return DEFAULT_LIBRARY;
 }
-async function addCompoundToLibrary2(plugin, name, smiles) {
+async function addCompoundToLibrary(plugin, name, smiles) {
   var _a;
   const path2 = (_a = plugin.settings) == null ? void 0 : _a.libraryFilePath;
   if (path2) {
@@ -563025,18 +560177,18 @@ async function addCompoundToLibrary2(plugin, name, smiles) {
 `;
       file = await plugin.app.vault.create(path2, header);
     }
-    if (file instanceof import_obsidian6.TFile) {
+    if (file instanceof import_obsidian4.TFile) {
       const content4 = await plugin.app.vault.read(file);
       const newEntry = `| ${name} | ${smiles} |`;
       await plugin.app.vault.modify(file, content4 + (content4.endsWith("\n") ? "" : "\n") + newEntry + "\n");
-      new import_obsidian6.Notice(`${name} added to library file!`);
+      new import_obsidian4.Notice(`${name} added to library file!`);
       return;
     }
   }
   if (!plugin.settings.compoundLibrary) plugin.settings.compoundLibrary = [];
   plugin.settings.compoundLibrary.push({ name, smiles });
   await plugin.saveSettings();
-  new import_obsidian6.Notice(`${name} added to internal library!`);
+  new import_obsidian4.Notice(`${name} added to internal library!`);
 }
 async function createNewElnExperiment(app, code, folderPath = "", sectionsString = "TLC, LCMS, NMR") {
   const baseCode = code.trim() || "Experiment";
@@ -563050,7 +560202,7 @@ async function createNewElnExperiment(app, code, folderPath = "", sectionsString
     reactants: [],
     products: []
   };
-  const yaml = (0, import_obsidian6.stringifyYaml)(defaultData);
+  const yaml = (0, import_obsidian4.stringifyYaml)(defaultData);
   const dateStr = window.moment().format("YYYY-MM-DD");
   const sections = sectionsString.split(",").map((s8) => s8.trim()).filter((s8) => s8.length > 0);
   let analyticalDataStr = "";
@@ -563083,15 +560235,15 @@ ${analyticalDataStr}`;
   try {
     const newFile = await app.vault.create(finalPath, template);
     app.workspace.getLeaf(false).openFile(newFile);
-    new import_obsidian6.Notice(`Created new experiment: ${newFile.basename}`);
+    new import_obsidian4.Notice(`Created new experiment: ${newFile.basename}`);
   } catch (e6) {
-    new import_obsidian6.Notice(`Error creating experiment: ${e6.message}`);
+    new import_obsidian4.Notice(`Error creating experiment: ${e6.message}`);
   }
 }
-var import_obsidian6, DEFAULT_LIBRARY, CompoundSuggestModal, AddToLibraryModal, ElnCalculator, SharedElnRenderer, ElnGalleryRenderer, CreateExperimentModal, CloneExperimentModal, ElnMetaEditorModal;
+var import_obsidian4, DEFAULT_LIBRARY, CompoundSuggestModal, AddToLibraryModal, ElnCalculator, SharedElnRenderer, CreateExperimentModal, CloneExperimentModal, ElnMetaEditorModal;
 var init_SharedEln = __esm({
   "SharedEln.ts"() {
-    import_obsidian6 = require("obsidian");
+    import_obsidian4 = require("obsidian");
     init_SharedMedia();
     init_ChemDataEngine();
     DEFAULT_LIBRARY = [
@@ -563111,7 +560263,7 @@ var init_SharedEln = __esm({
       { name: "Na2SO4 (Sodium Sulfate)", smiles: "[Na+].[Na+].[O-]S(=O)(=O)[O-]" },
       { name: "MgSO4 (Magnesium Sulfate)", smiles: "[Mg+2].[O-]S(=O)(=O)[O-]" }
     ];
-    CompoundSuggestModal = class extends import_obsidian6.FuzzySuggestModal {
+    CompoundSuggestModal = class extends import_obsidian4.FuzzySuggestModal {
       constructor(app, library, onChoose) {
         super(app);
         this.library = library;
@@ -563128,7 +560280,7 @@ var init_SharedEln = __esm({
         this.onChoose(item);
       }
     };
-    AddToLibraryModal = class extends import_obsidian6.Modal {
+    AddToLibraryModal = class extends import_obsidian4.Modal {
       constructor(app, smiles, onSubmit) {
         super(app);
         this.name = "";
@@ -563150,7 +560302,7 @@ var init_SharedEln = __esm({
         const btn = btnRow.createEl("button", { text: "Add to Library", cls: "mod-cta" });
         btn.onclick = () => {
           if (!this.name.trim()) {
-            new import_obsidian6.Notice("Please enter a name.");
+            new import_obsidian4.Notice("Please enter a name.");
             return;
           }
           this.onSubmit(this.name.trim(), this.smiles);
@@ -563249,7 +560401,7 @@ var init_SharedEln = __esm({
             s8 = s8.replace(/'/g, "''");
             return `smiles: '${s8}'${comment2}`;
           });
-          let data = (0, import_obsidian6.parseYaml)(safeSource);
+          let data = (0, import_obsidian4.parseYaml)(safeSource);
           if (!data) throw new Error("Empty YAML Data.");
           if (!data.reactants) data.reactants = [];
           if (!data.products) data.products = [];
@@ -563274,7 +560426,7 @@ var init_SharedEln = __esm({
             }
           }
           data = ElnCalculator.calculate(data);
-          const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian6.MarkdownView);
+          const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian4.MarkdownView);
           const currentFile = view ? view.file : null;
           const expCode = data.code || (currentFile ? currentFile.basename : "EXP");
           const filePrefix = expCode ? `${expCode.replace(/[/\\?%*:|"<>]/g, "-")}_` : "";
@@ -563311,7 +560463,7 @@ var init_SharedEln = __esm({
                   const cursor2 = view.editor.getCursor();
                   const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
                   try {
-                    let yamlObj = (0, import_obsidian6.parseYaml)(blockText);
+                    let yamlObj = (0, import_obsidian4.parseYaml)(blockText);
                     let valToSave = newValStr;
                     if (inputType === "number") {
                       const num = parseFloat(newValStr);
@@ -563346,7 +560498,7 @@ var init_SharedEln = __esm({
                       }
                     }
                     yamlObj = ElnCalculator.calculate(yamlObj);
-                    const newYaml = (0, import_obsidian6.stringifyYaml)(yamlObj);
+                    const newYaml = (0, import_obsidian4.stringifyYaml)(yamlObj);
                     view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
                     window.setTimeout(() => {
                       view.editor.scrollTo(scrollInfo.left, scrollInfo.top);
@@ -563420,16 +560572,16 @@ ${text2}
             if (!info) return;
             const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
             try {
-              const yamlObj = (0, import_obsidian6.parseYaml)(blockText);
+              const yamlObj = (0, import_obsidian4.parseYaml)(blockText);
               mutate(yamlObj);
-              const newYaml = (0, import_obsidian6.stringifyYaml)(yamlObj);
+              const newYaml = (0, import_obsidian4.stringifyYaml)(yamlObj);
               view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
             } catch (err) {
             }
           };
           createBtn("\u2699\uFE0F Status", "Change Experiment Status", (e6) => {
             if (!e6) return;
-            const menu = new import_obsidian6.Menu();
+            const menu = new import_obsidian4.Menu();
             menu.addItem((item) => item.setTitle("Mark as Planned").setIcon("calendar").onClick(() => updateYamlState((y9) => y9.status = "Planned")));
             menu.addItem((item) => item.setTitle("Mark as Running").setIcon("play").onClick(() => updateYamlState((y9) => y9.status = "Running")));
             menu.addItem((item) => item.setTitle("Mark as Completed").setIcon("check").onClick(() => updateYamlState((y9) => y9.status = "Completed")));
@@ -563447,13 +560599,13 @@ ${text2}
                   delete p7.formula;
                 });
               });
-              new import_obsidian6.Notice("Molecular weights recalculated!");
+              new import_obsidian4.Notice("Molecular weights recalculated!");
             }));
             menu.showAtMouseEvent(e6);
           });
           createBtn("\u26A1 Macros", "Insert useful text snippets", (e6) => {
             if (!e6) return;
-            const menu = new import_obsidian6.Menu();
+            const menu = new import_obsidian4.Menu();
             menu.addItem((item) => item.setTitle("\u{1F552} Insert Current Time").setIcon("clock").onClick(() => {
               const time = window.moment().format("HH:mm");
               appendSmart(`**[${time}]:** `, "Procedure");
@@ -563473,7 +560625,7 @@ ${text2}
               appendSmart(`
 ![[${link}]]
 `, "Photo");
-              new import_obsidian6.Notice(`Added ${filename}`);
+              new import_obsidian4.Notice(`Added ${filename}`);
             });
           });
           createBtn("\u{1F9EA} TLC", "Add Digital TLC", () => {
@@ -563489,7 +560641,7 @@ ${text2}
               rfData.forEach((s8, i8) => md += `| ${i8 + 1} | **${s8.rf.toFixed(2)}** |
 `);
               appendSmart(md, "Analytical Data");
-              new import_obsidian6.Notice(`Added ${filename}`);
+              new import_obsidian4.Notice(`Added ${filename}`);
             }).open();
           });
           createBtn("\u{1F310} Share", "Create Web Link for Collaborators", () => {
@@ -563514,9 +560666,9 @@ ${text2}
               const b64 = btoa(binString);
               const viewerUrl = `https://ruzx.github.io/elnviewer.html#eln=${b64}`;
               navigator.clipboard.writeText(viewerUrl);
-              new import_obsidian6.Notice("\u{1F517} Web link copied to clipboard!");
+              new import_obsidian4.Notice("\u{1F517} Web link copied to clipboard!");
             } catch (e6) {
-              new import_obsidian6.Notice("Failed to generate share link.");
+              new import_obsidian4.Notice("Failed to generate share link.");
             }
           });
           createBtn("\u{1F4CB} Copy", "Copy Stoichiometry Table to Clipboard", () => {
@@ -563532,7 +560684,7 @@ ${text2}
 `;
             });
             navigator.clipboard.writeText(tsv);
-            new import_obsidian6.Notice("Table copied to clipboard! Paste into Excel.");
+            new import_obsidian4.Notice("Table copied to clipboard! Paste into Excel.");
           });
           createBtn("\u{1F5D0} Clone", "Duplicate this experiment into a new file", () => {
             new CloneExperimentModal(this.plugin.app, this.plugin, expCode, currentFile, data).open();
@@ -563544,7 +560696,7 @@ ${text2}
             if (info) {
               new ElnMetaEditorModal(this.plugin.app, this.plugin, data, async (updatedYamlObj, shouldRename) => {
                 var _a2;
-                const newYaml = (0, import_obsidian6.stringifyYaml)(updatedYamlObj);
+                const newYaml = (0, import_obsidian4.stringifyYaml)(updatedYamlObj);
                 view.editor.replaceRange(`\`\`\`eln
 ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: view.editor.getLine(info.lineEnd).length });
                 if (shouldRename && currentFile && updatedYamlObj.code) {
@@ -563553,9 +560705,9 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
                   const newPath = !folderPath || folderPath === "/" ? `${newName}.md` : `${folderPath}/${newName}.md`;
                   try {
                     await this.plugin.app.fileManager.renameFile(currentFile, newPath);
-                    new import_obsidian6.Notice(`File renamed to ${newName}.md`);
+                    new import_obsidian4.Notice(`File renamed to ${newName}.md`);
                   } catch (e6) {
-                    new import_obsidian6.Notice(`Note updated, but could not rename file.`);
+                    new import_obsidian4.Notice(`Note updated, but could not rename file.`);
                   }
                 }
               }).open();
@@ -563802,25 +560954,25 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
             });
             parent.addEventListener("dblclick", (e6) => {
               e6.stopPropagation();
-              const view2 = this.plugin.app.workspace.getActiveViewOfType(import_obsidian6.MarkdownView);
+              const view2 = this.plugin.app.workspace.getActiveViewOfType(import_obsidian4.MarkdownView);
               let info = ctx.getSectionInfo(el2);
               if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
               if (!view2 || !info) return;
               this.plugin.api.ketcher.openEditor(smiles || "", "smiles", (newData, isFile, newFormat) => {
                 if (newFormat === "ket") {
-                  new import_obsidian6.Notice("ELN tables only support SMILES.");
+                  new import_obsidian4.Notice("ELN tables only support SMILES.");
                   return;
                 }
                 const blockText = view2.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
                 try {
-                  const yamlObj = (0, import_obsidian6.parseYaml)(blockText);
+                  const yamlObj = (0, import_obsidian4.parseYaml)(blockText);
                   yamlObj[type3][index].smiles = newData;
                   delete yamlObj[type3][index].mw;
                   delete yamlObj[type3][index].formula;
-                  const newYaml = (0, import_obsidian6.stringifyYaml)(yamlObj);
+                  const newYaml = (0, import_obsidian4.stringifyYaml)(yamlObj);
                   view2.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
                 } catch (err) {
-                  new import_obsidian6.Notice("Error updating ELN YAML.");
+                  new import_obsidian4.Notice("Error updating ELN YAML.");
                 }
               });
             });
@@ -563838,7 +560990,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
             if (tableEl) attachStructure(tableEl, p7.smiles, "products", i8, 90, 90);
           });
           if (currentFile && currentFile.parent && data.reactants.length > 0 && data.products.length > 0) {
-            const folderFiles = currentFile.parent.children.filter((f9) => f9 instanceof import_obsidian6.TFile && f9.extension.toLowerCase() === "md" && f9.path !== currentFile.path);
+            const folderFiles = currentFile.parent.children.filter((f9) => f9 instanceof import_obsidian4.TFile && f9.extension.toLowerCase() === "md" && f9.path !== currentFile.path);
             const matchRows = [];
             const currReactantSmi = ((_a = data.reactants[0].smiles) == null ? void 0 : _a.trim()) || "A";
             const currProductSmi = ((_b = data.products[0].smiles) == null ? void 0 : _b.trim()) || "B";
@@ -563847,7 +560999,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
               const bMatch = content4.match(/```eln\s*\n([\s\S]*?)\n```/);
               if (bMatch) {
                 try {
-                  const otherData = (0, import_obsidian6.parseYaml)(bMatch[1]);
+                  const otherData = (0, import_obsidian4.parseYaml)(bMatch[1]);
                   const otherRSmi = (_e2 = (_d = (_c = otherData.reactants) == null ? void 0 : _c[0]) == null ? void 0 : _d.smiles) == null ? void 0 : _e2.trim();
                   const otherPSmi = (_h = (_g2 = (_f = otherData.products) == null ? void 0 : _f[0]) == null ? void 0 : _g2.smiles) == null ? void 0 : _h.trim();
                   if (otherRSmi === currReactantSmi && otherPSmi === currProductSmi) {
@@ -563905,163 +561057,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
         }
       }
     };
-    ElnGalleryRenderer = class {
-      constructor(plugin) {
-        this.plugin = plugin;
-      }
-      async renderGalleryBlock(source, el2, ctx) {
-        var _a;
-        const match2 = source.match(/path:\s*['"]?(.*?)['"]?(?:\n|$)/);
-        const folderPath = match2 ? match2[1].trim() : "";
-        if (!folderPath) {
-          el2.createEl("div", { text: "\u26A0\uFE0F Please specify a folder path (e.g., path: Experiments/)", cls: "color-text-error" });
-          return;
-        }
-        const folder = this.plugin.app.vault.getAbstractFileByPath(folderPath);
-        if (!folder || !("children" in folder)) {
-          el2.createEl("div", { text: `\u26A0\uFE0F Folder not found: ${folderPath}`, cls: "color-text-error" });
-          return;
-        }
-        const files = folder.children.filter((f9) => f9 instanceof import_obsidian6.TFile && f9.extension.toLowerCase() === "md");
-        const header = el2.createDiv();
-        header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", flexWrap: "wrap", gap: "10px" });
-        const countLabel = header.createDiv({ text: `Loading...` });
-        countLabel.setCssStyles({ fontSize: "13px", color: "var(--text-muted)", fontWeight: "500" });
-        const searchInput = header.createEl("input", { type: "search", placeholder: "Search experiments..." });
-        searchInput.setCssStyles({ width: "250px", padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--background-modifier-border)", background: "var(--background-primary)" });
-        const container = el2.createDiv({ cls: "chem-gallery-container" });
-        container.setCssStyles({ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "15px", padding: "5px 0" });
-        const cards = [];
-        let renderCount = 0;
-        for (const file of files) {
-          const content4 = await this.plugin.app.vault.cachedRead(file);
-          const blockMatch = content4.match(/```eln\s*\n([\s\S]*?)\n```/);
-          if (!blockMatch) continue;
-          try {
-            const safeSource = blockMatch[1].replace(/smiles:\s*(.*)$/gm, (match3, p1) => {
-              let s8 = p1.trim();
-              if (!s8) return match3;
-              let comment2 = "";
-              const commentMatch = s8.match(/(\s+#.*)$/);
-              if (commentMatch) {
-                comment2 = commentMatch[1];
-                s8 = s8.substring(0, s8.length - comment2.length).trim();
-              }
-              if (s8.startsWith('"') && s8.endsWith('"') || s8.startsWith("'") && s8.endsWith("'")) {
-                s8 = s8.substring(1, s8.length - 1);
-              }
-              s8 = s8.replace(/\\"/g, '"');
-              s8 = s8.replace(/'/g, "''");
-              return `smiles: '${s8}'${comment2}`;
-            });
-            const yamlObj = (0, import_obsidian6.parseYaml)(safeSource);
-            let dataToRender = "";
-            if (yamlObj.products && yamlObj.products.length > 0 && typeof yamlObj.products[0].smiles === "string" && yamlObj.products[0].smiles.trim()) {
-              dataToRender = yamlObj.products[0].smiles.trim();
-            } else if (yamlObj.reactants && yamlObj.reactants.length > 0 && typeof yamlObj.reactants[0].smiles === "string" && yamlObj.reactants[0].smiles.trim()) {
-              dataToRender = yamlObj.reactants[0].smiles.trim();
-            } else {
-              continue;
-            }
-            const searchableText = `${file.name.toLowerCase()} ${((_a = yamlObj.code) == null ? void 0 : _a.toLowerCase()) || ""}`;
-            renderCount++;
-            const card = container.createDiv({ cls: "chem-gallery-card" });
-            card.setCssStyles({ border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "10px", display: "flex", flexDirection: "column", alignItems: "center", backgroundColor: "var(--background-primary)", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" });
-            card.onmouseover = () => card.setCssStyles({ borderColor: "var(--interactive-accent)" });
-            card.onmouseout = () => card.setCssStyles({ borderColor: "var(--background-modifier-border)" });
-            const previewWrapper = card.createDiv();
-            previewWrapper.setCssStyles({ width: "100%", height: "100px", display: "flex", justifyContent: "center", alignItems: "center" });
-            const label = card.createDiv();
-            label.textContent = yamlObj.code || file.basename;
-            label.setCssStyles({ fontSize: "12px", marginTop: "10px", textAlign: "center", wordBreak: "break-word", color: "var(--text-normal)", fontWeight: "500" });
-            cards.push({ el: card, text: searchableText });
-            card.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
-            if (!dataToRender) {
-              previewWrapper.createSpan({ text: "No Structure", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" });
-              continue;
-            }
-            previewWrapper.createSpan({ text: "\u23F3", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" });
-            window.requestAnimationFrame(async () => {
-              try {
-                const previewEl = await this.plugin.api.renderStructure(dataToRender, 120, 100);
-                previewWrapper.empty();
-                if (previewEl) {
-                  previewEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
-                  previewWrapper.appendChild(previewEl);
-                } else {
-                  previewWrapper.createSpan({ text: "Invalid", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" });
-                }
-              } catch (e6) {
-                previewWrapper.createSpan({ text: "Invalid", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" });
-              }
-            });
-          } catch (e6) {
-          }
-        }
-        countLabel.textContent = `${renderCount} experiments`;
-        searchInput.addEventListener("input", (e6) => {
-          const query = e6.target.value.toLowerCase();
-          let visibleCount = 0;
-          cards.forEach((c10) => {
-            if (c10.text.includes(query)) {
-              c10.el.setCssStyles({ display: "flex" });
-              visibleCount++;
-            } else {
-              c10.el.setCssStyles({ display: "none" });
-            }
-          });
-          countLabel.textContent = `${visibleCount} / ${renderCount} experiments`;
-        });
-      }
-      async renderChemGallery(source, el2, ctx) {
-        const match2 = source.match(/path:\s*['"]?(.*?)['"]?(?:\n|$)/);
-        const folderPath = match2 ? match2[1].trim() : "";
-        if (!folderPath) {
-          el2.createEl("div", { text: "\u26A0\uFE0F Please specify a folder path", cls: "color-text-error" });
-          return;
-        }
-        const folder = this.plugin.app.vault.getAbstractFileByPath(folderPath);
-        if (!folder || !("children" in folder)) {
-          el2.createEl("div", { text: `\u26A0\uFE0F Folder not found`, cls: "color-text-error" });
-          return;
-        }
-        const files = folder.children.filter((f9) => f9 instanceof import_obsidian6.TFile && f9.extension.toLowerCase() === "md");
-        const container = el2.createDiv({ cls: "chem-gallery-container" });
-        container.setCssStyles({ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "15px", padding: "5px 0" });
-        for (const file of files) {
-          const content4 = await this.plugin.app.vault.cachedRead(file);
-          const blockMatch = content4.match(/```(smiles|mol)\s*\n([\s\S]*?)\n```/);
-          if (!blockMatch) continue;
-          const format3 = blockMatch[1];
-          const dataToRender = blockMatch[2].trim();
-          if (!dataToRender) continue;
-          const card = container.createDiv({ cls: "chem-gallery-card" });
-          card.setCssStyles({ border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "10px", display: "flex", flexDirection: "column", alignItems: "center", backgroundColor: "var(--background-primary)", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" });
-          const previewWrapper = card.createDiv();
-          previewWrapper.setCssStyles({ width: "100%", height: "100px", display: "flex", justifyContent: "center", alignItems: "center" });
-          previewWrapper.createSpan({ text: "\u23F3", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" });
-          const label = card.createDiv();
-          label.textContent = file.basename;
-          label.setCssStyles({ fontSize: "12px", marginTop: "10px", textAlign: "center", wordBreak: "break-word", color: "var(--text-normal)", fontWeight: "500" });
-          card.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
-          window.requestAnimationFrame(async () => {
-            try {
-              const previewEl = await this.plugin.api.renderStructure(dataToRender, 120, 100);
-              previewWrapper.empty();
-              if (previewEl) {
-                previewEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
-                previewWrapper.appendChild(previewEl);
-              } else {
-                previewWrapper.createSpan({ text: "Invalid", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" });
-              }
-            } catch (e6) {
-              previewWrapper.createSpan({ text: "Invalid", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" });
-            }
-          });
-        }
-      }
-    };
-    CreateExperimentModal = class extends import_obsidian6.Modal {
+    CreateExperimentModal = class extends import_obsidian4.Modal {
       constructor(app, plugin, defaultPrefix, folderPath, onSubmit) {
         super(app);
         this.plugin = plugin;
@@ -564094,7 +561090,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
         input.onchange = (e6) => this.code = e6.target.value;
         const attemptSubmit = () => {
           if (!this.code.trim()) {
-            new import_obsidian6.Notice("Please enter a code");
+            new import_obsidian4.Notice("Please enter a code");
             return;
           }
           this.onSubmit(this.code.trim());
@@ -564118,7 +561114,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
         this.contentEl.empty();
       }
     };
-    CloneExperimentModal = class extends import_obsidian6.Modal {
+    CloneExperimentModal = class extends import_obsidian4.Modal {
       constructor(app, plugin, currentCode, currentFile, sourceData) {
         super(app);
         this.plugin = plugin;
@@ -564172,7 +561168,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
               delete p7.mmol_isolated;
             });
           }
-          const newYaml = (0, import_obsidian6.stringifyYaml)(cloneData);
+          const newYaml = (0, import_obsidian4.stringifyYaml)(cloneData);
           let currentSections = "## \u{1F4DD} Procedure & Observations\n- \n\n## \u{1F52C} Analytical Data\n- **TLC:**\n- **LCMS:**\n- **NMR:**";
           if (this.currentFile) {
             const content4 = await this.plugin.app.vault.cachedRead(this.currentFile);
@@ -564191,9 +561187,9 @@ ${currentSections}`;
           try {
             const newFile = await this.plugin.app.vault.create(newPath, template);
             this.plugin.app.workspace.getLeaf(false).openFile(newFile);
-            new import_obsidian6.Notice(`Experiment cloned to ${newFile.basename}`);
+            new import_obsidian4.Notice(`Experiment cloned to ${newFile.basename}`);
           } catch (e6) {
-            new import_obsidian6.Notice(`Error cloning: ${e6.message}`);
+            new import_obsidian4.Notice(`Error cloning: ${e6.message}`);
           }
           this.close();
         };
@@ -564207,7 +561203,7 @@ ${currentSections}`;
         this.contentEl.empty();
       }
     };
-    ElnMetaEditorModal = class extends import_obsidian6.Modal {
+    ElnMetaEditorModal = class extends import_obsidian4.Modal {
       constructor(app, plugin, yamlObj, onSave) {
         super(app);
         this.advancedMode = false;
@@ -564220,17 +561216,17 @@ ${currentSections}`;
       }
       async fetchSmilesFromName(name) {
         try {
-          const opsin = await (0, import_obsidian6.requestUrl)(`https://opsin.ch.cam.ac.uk/opsin/${encodeURIComponent(name)}.smi`);
+          const opsin = await (0, import_obsidian4.requestUrl)(`https://opsin.ch.cam.ac.uk/opsin/${encodeURIComponent(name)}.smi`);
           if (opsin.status === 200) return opsin.text.trim();
         } catch (e6) {
         }
         try {
-          const cactus = await (0, import_obsidian6.requestUrl)(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(name)}/smiles`);
+          const cactus = await (0, import_obsidian4.requestUrl)(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(name)}/smiles`);
           if (cactus.status === 200) return cactus.text.trim();
         } catch (e6) {
         }
         try {
-          const pubchem = await (0, import_obsidian6.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(name)}/property/IsomericSMILES/JSON`);
+          const pubchem = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(name)}/property/IsomericSMILES/JSON`);
           if (pubchem.status === 200) return pubchem.json.PropertyTable.Properties[0].IsomericSMILES;
         } catch (e6) {
         }
@@ -564265,7 +561261,7 @@ ${currentSections}`;
         this.data.reactants = newReactants;
         this.data.products = newProducts;
         this.render();
-        new import_obsidian6.Notice("Reaction successfully parsed and calculated!");
+        new import_obsidian4.Notice("Reaction successfully parsed and calculated!");
       }
       render() {
         const { contentEl } = this;
@@ -564282,7 +561278,7 @@ ${currentSections}`;
           const rxnStr = currentR && currentP ? `${currentR}>>${currentP}` : "";
           this.plugin.api.ketcher.openEditor(rxnStr, "smiles", (smi) => {
             if (smi.includes(">")) this.processReactionSmiles(smi);
-            else new import_obsidian6.Notice("Please draw a reaction arrow to split reactants and products.");
+            else new import_obsidian4.Notice("Please draw a reaction arrow to split reactants and products.");
           });
         };
         const saveBtn = hActions.createEl("button", { text: "Save", cls: "mod-cta" });
@@ -564366,17 +561362,17 @@ ${currentSections}`;
           fetchSmilesBtn.setCssStyles({ fontSize: "11px", padding: "4px 8px" });
           fetchSmilesBtn.onclick = async () => {
             if (!item.name) {
-              new import_obsidian6.Notice("Enter a name first.");
+              new import_obsidian4.Notice("Enter a name first.");
               return;
             }
             fetchSmilesBtn.innerText = "\u23F3...";
             const smiles = await this.fetchSmilesFromName(item.name);
             if (smiles) {
               item.smiles = smiles;
-              new import_obsidian6.Notice(`Structure found for ${item.name}`);
+              new import_obsidian4.Notice(`Structure found for ${item.name}`);
               this.render();
             } else {
-              new import_obsidian6.Notice("Structure not found.");
+              new import_obsidian4.Notice("Structure not found.");
               fetchSmilesBtn.innerText = "\u{1F9EA} N \u2192 S (Web)";
             }
           };
@@ -564384,7 +561380,7 @@ ${currentSections}`;
           fetchDataBtn.setCssStyles({ fontSize: "11px", padding: "4px 8px" });
           fetchDataBtn.onclick = async () => {
             if (!item.smiles) {
-              new import_obsidian6.Notice("Draw a structure first.");
+              new import_obsidian4.Notice("Draw a structure first.");
               return;
             }
             fetchDataBtn.innerText = "\u23F3...";
@@ -564393,16 +561389,16 @@ ${currentSections}`;
             if (d10.formula) item.formula = d10.formula;
             if (!item.name) {
               try {
-                const res = await (0, import_obsidian6.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(item.smiles)}/property/Title/JSON`);
+                const res = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(item.smiles)}/property/Title/JSON`);
                 if (res.status === 200) item.name = res.json.PropertyTable.Properties[0].Title;
               } catch (e6) {
               }
             }
             try {
-              const cidRes = await (0, import_obsidian6.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(item.smiles)}/cids/JSON`);
+              const cidRes = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(item.smiles)}/cids/JSON`);
               if (cidRes.status === 200) {
                 const cid = cidRes.json.IdentifierList.CID[0];
-                const ghsRes = await (0, import_obsidian6.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/${cid}/JSON?heading=GHS+Classification`);
+                const ghsRes = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/${cid}/JSON?heading=GHS+Classification`);
                 const str = JSON.stringify(ghsRes.json);
                 const emojis = [];
                 if (str.includes("GHS01")) emojis.push("\u{1F4A3}");
@@ -564417,7 +561413,7 @@ ${currentSections}`;
             } catch (e6) {
             }
             nameInp.value = item.name || "";
-            new import_obsidian6.Notice(`Calculated offline MW for ${item.name || "Structure"}`);
+            new import_obsidian4.Notice(`Calculated offline MW for ${item.name || "Structure"}`);
             fetchDataBtn.innerText = "\u{1F50D} S \u2192 D";
             this.render();
           };
@@ -564496,7 +561492,7 @@ __export(main_exports, {
   default: () => ChemEditPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian22 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 var import_react26 = __toESM(require_react());
 var import_react_dom7 = __toESM(require_react_dom());
 
@@ -570426,7 +567422,7 @@ var KetcherReact = ({ data, onInit, onChange }) => {
 var KetcherReact_default = KetcherReact;
 
 // Settings.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian = require("obsidian");
 var DEFAULT_SETTINGS = {
   enableEln: true,
   enableNavigator: true,
@@ -570475,7 +567471,7 @@ var DEFAULT_SETTINGS = {
   pathwayColors: "#4e79a7, #f28e2c, #e15759, #76b7b2, #59a14f, #edc949, #af7aa1, #ff9da7, #9c755f, #bab0ab",
   scriptsFolder: "ChemEdit/Scripts"
 };
-var ChemEditSettingTab = class extends import_obsidian2.PluginSettingTab {
+var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -570520,48 +567516,48 @@ var ChemEditSettingTab = class extends import_obsidian2.PluginSettingTab {
     li4.createEl("b", { text: "Edit: " });
     li4.appendText("Double-click any rendered molecule to open Ketcher!");
     const genSec = this.createAccordion(containerEl, "General & File Paths", "\u{1F4C2}", true);
-    new import_obsidian2.Setting(genSec).setName("Default ELN Directory").setDesc("Folder where new ELN experiments will be saved.").addText((text2) => text2.setPlaceholder("Experiments/").setValue(this.plugin.settings.elnDirectory).onChange(async (v8) => {
+    new import_obsidian.Setting(genSec).setName("Default ELN Directory").setDesc("Folder where new ELN experiments will be saved.").addText((text2) => text2.setPlaceholder("Experiments/").setValue(this.plugin.settings.elnDirectory).onChange(async (v8) => {
       this.plugin.settings.elnDirectory = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(genSec).setName("Default Experiment Prefix").setDesc("Prefix for new ELN files (e.g., EXP, JH, CHEM).").addText((text2) => text2.setPlaceholder("EXP").setValue(this.plugin.settings.elnPrefix).onChange(async (v8) => {
+    new import_obsidian.Setting(genSec).setName("Default Experiment Prefix").setDesc("Prefix for new ELN files (e.g., EXP, JH, CHEM).").addText((text2) => text2.setPlaceholder("EXP").setValue(this.plugin.settings.elnPrefix).onChange(async (v8) => {
       this.plugin.settings.elnPrefix = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(genSec).setName("Analytical Sections").setDesc("Comma-separated list of sections to auto-generate inside new experiments.").addText((text2) => text2.setPlaceholder("TLC, LCMS, NMR").setValue(this.plugin.settings.elnSections).onChange(async (v8) => {
+    new import_obsidian.Setting(genSec).setName("Analytical Sections").setDesc("Comma-separated list of sections to auto-generate inside new experiments.").addText((text2) => text2.setPlaceholder("TLC, LCMS, NMR").setValue(this.plugin.settings.elnSections).onChange(async (v8) => {
       this.plugin.settings.elnSections = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(genSec).setName("Compound Library File Path").setDesc("Point to a .md file (e.g. Meta/Compounds.md) that contains markdown tables or lists of your common chemicals. Used for auto-filling.").addText((text2) => text2.setPlaceholder("Meta/Compounds.md").setValue(this.plugin.settings.libraryFilePath).onChange(async (v8) => {
+    new import_obsidian.Setting(genSec).setName("Compound Library File Path").setDesc("Point to a .md file (e.g. Meta/Compounds.md) that contains markdown tables or lists of your common chemicals. Used for auto-filling.").addText((text2) => text2.setPlaceholder("Meta/Compounds.md").setValue(this.plugin.settings.libraryFilePath).onChange(async (v8) => {
       this.plugin.settings.libraryFilePath = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(genSec).setName("Media Images Save Path").setDesc("Folder where camera/TLC pictures will be stored (e.g. Assets/)").addText((text2) => text2.setPlaceholder("Assets/").setValue(this.plugin.settings.mediaSavePath).onChange(async (v8) => {
+    new import_obsidian.Setting(genSec).setName("Media Images Save Path").setDesc("Folder where camera/TLC pictures will be stored (e.g. Assets/)").addText((text2) => text2.setPlaceholder("Assets/").setValue(this.plugin.settings.mediaSavePath).onChange(async (v8) => {
       this.plugin.settings.mediaSavePath = v8;
       await this.plugin.saveSettings();
     }));
     const modSec = this.createAccordion(containerEl, "Active Modules & Dashboards", "\u{1F9E9}");
     modSec.createEl("p", { text: "Turn off features you don't use to save memory and declutter the command palette. (Restart Obsidian for changes to take effect).", cls: "setting-item-description" });
-    new import_obsidian2.Setting(modSec).setName("Enable Core Dashboards & ELN").setDesc("Allows rendering of ```eln and enables the LIMS Dashboards.").addToggle((t8) => t8.setValue(this.plugin.settings.enableEln).onChange(async (v8) => {
+    new import_obsidian.Setting(modSec).setName("Enable Core Dashboards & ELN").setDesc("Allows rendering of ```eln and enables the LIMS Dashboards.").addToggle((t8) => t8.setValue(this.plugin.settings.enableEln).onChange(async (v8) => {
       this.plugin.settings.enableEln = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(modSec).setName("Enable Chem Navigator").setDesc("Enables the interactive side-panel for contextual chemistry analysis.").addToggle((t8) => t8.setValue(this.plugin.settings.enableNavigator).onChange(async (v8) => {
+    new import_obsidian.Setting(modSec).setName("Enable Chem Navigator").setDesc("Enables the interactive side-panel for contextual chemistry analysis.").addToggle((t8) => t8.setValue(this.plugin.settings.enableNavigator).onChange(async (v8) => {
       this.plugin.settings.enableNavigator = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(modSec).setName("Enable Synthesis Pathways").setDesc("Allows rendering of interactive ```chem-pathway and ```synthesis-plan blocks.").addToggle((t8) => t8.setValue(this.plugin.settings.enablePathways).onChange(async (v8) => {
+    new import_obsidian.Setting(modSec).setName("Enable Synthesis Pathways").setDesc("Allows rendering of interactive ```chem-pathway and ```synthesis-plan blocks.").addToggle((t8) => t8.setValue(this.plugin.settings.enablePathways).onChange(async (v8) => {
       this.plugin.settings.enablePathways = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(modSec).setName("Enable Chemistry Context Menu").setDesc("Shows properties and copy options when you right-click a SMILES block.").addToggle((t8) => t8.setValue(this.plugin.settings.enableContextMenu).onChange(async (v8) => {
+    new import_obsidian.Setting(modSec).setName("Enable Chemistry Context Menu").setDesc("Shows properties and copy options when you right-click a SMILES block.").addToggle((t8) => t8.setValue(this.plugin.settings.enableContextMenu).onChange(async (v8) => {
       this.plugin.settings.enableContextMenu = v8;
       await this.plugin.saveSettings();
     }));
     const dbH4 = modSec.createEl("h4", { text: "Enable Specific Dashboards" });
     dbH4.setCssStyles({ marginTop: "20px", marginBottom: "10px", color: "var(--text-normal)", borderBottom: "1px solid var(--background-modifier-border)", paddingBottom: "5px" });
     const makeDbToggle = (name, settingKey) => {
-      new import_obsidian2.Setting(modSec).setName(name).addToggle((t8) => t8.setValue(this.plugin.settings[settingKey]).onChange(async (v8) => {
+      new import_obsidian.Setting(modSec).setName(name).addToggle((t8) => t8.setValue(this.plugin.settings[settingKey]).onChange(async (v8) => {
         this.plugin.settings[settingKey] = v8;
         await this.plugin.saveSettings();
       }));
@@ -570576,40 +567572,40 @@ var ChemEditSettingTab = class extends import_obsidian2.PluginSettingTab {
     makeDbToggle("\u{1F4CA} Characterization Data", "enableCharacterizationDashboard");
     const linkSec = this.createAccordion(containerEl, "Context Menu Web Links", "\u{1F310}");
     linkSec.createEl("p", { text: "Customize the web searches available when you right-click a chemical structure. Use {{smiles}} to inject the SMILES string.", cls: "setting-item-description" });
-    new import_obsidian2.Setting(linkSec).setName("Custom Link 1 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl1Name).onChange(async (v8) => {
+    new import_obsidian.Setting(linkSec).setName("Custom Link 1 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl1Name).onChange(async (v8) => {
       this.plugin.settings.contextUrl1Name = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(linkSec).setName("Custom Link 1 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl1).onChange(async (v8) => {
+    new import_obsidian.Setting(linkSec).setName("Custom Link 1 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl1).onChange(async (v8) => {
       this.plugin.settings.contextUrl1 = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(linkSec).setName("Custom Link 2 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl2Name).onChange(async (v8) => {
+    new import_obsidian.Setting(linkSec).setName("Custom Link 2 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl2Name).onChange(async (v8) => {
       this.plugin.settings.contextUrl2Name = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(linkSec).setName("Custom Link 2 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl2).onChange(async (v8) => {
+    new import_obsidian.Setting(linkSec).setName("Custom Link 2 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl2).onChange(async (v8) => {
       this.plugin.settings.contextUrl2 = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(linkSec).setName("Custom Link 3 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl3Name).onChange(async (v8) => {
+    new import_obsidian.Setting(linkSec).setName("Custom Link 3 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl3Name).onChange(async (v8) => {
       this.plugin.settings.contextUrl3Name = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(linkSec).setName("Custom Link 3 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl3).onChange(async (v8) => {
+    new import_obsidian.Setting(linkSec).setName("Custom Link 3 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl3).onChange(async (v8) => {
       this.plugin.settings.contextUrl3 = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(linkSec).setName("Custom Link 4 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4Name).onChange(async (v8) => {
+    new import_obsidian.Setting(linkSec).setName("Custom Link 4 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4Name).onChange(async (v8) => {
       this.plugin.settings.contextUrl4Name = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(linkSec).setName("Custom Link 4 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4).onChange(async (v8) => {
+    new import_obsidian.Setting(linkSec).setName("Custom Link 4 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4).onChange(async (v8) => {
       this.plugin.settings.contextUrl4 = v8;
       await this.plugin.saveSettings();
     }));
     const scriptSec = this.createAccordion(containerEl, "Scripting Engine", "\u{1F4DC}");
-    new import_obsidian2.Setting(scriptSec).setName("Enable Script Engine").setDesc("Turn off to save memory if you do not use custom JavaScript macros.").addToggle((t8) => t8.setValue(this.plugin.settings.enableScripting).onChange(async (v8) => {
+    new import_obsidian.Setting(scriptSec).setName("Enable Script Engine").setDesc("Turn off to save memory if you do not use custom JavaScript macros.").addToggle((t8) => t8.setValue(this.plugin.settings.enableScripting).onChange(async (v8) => {
       this.plugin.settings.enableScripting = v8;
       await this.plugin.saveSettings();
       this.display();
@@ -570620,34 +567616,29 @@ var ChemEditSettingTab = class extends import_obsidian2.PluginSettingTab {
       const storeText = storeWrap.createDiv();
       storeText.createDiv({ text: "ChemEdit Script Store" }).setCssStyles({ fontWeight: "600", color: "var(--text-normal)" });
       storeText.createDiv({ text: "Browse and install community macros (like MathifyChem)." }).setCssStyles({ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" });
-      const openStoreBtn = storeWrap.createEl("button", { text: "Browse Scripts", cls: "mod-cta" });
-      openStoreBtn.onclick = () => {
-        const { ScriptStoreModal: ScriptStoreModal2 } = (init_ScriptStore(), __toCommonJS(ScriptStore_exports));
-        new ScriptStoreModal2(this.app, this.plugin).open();
-      };
-      new import_obsidian2.Setting(scriptSec).setName("Scripts Folder").setDesc("Folder containing custom .js scripts.").addText((text2) => text2.setPlaceholder("ChemEdit/Scripts").setValue(this.plugin.settings.scriptsFolder).onChange(async (v8) => {
+      new import_obsidian.Setting(scriptSec).setName("Scripts Folder").setDesc("Folder containing custom .js scripts.").addText((text2) => text2.setPlaceholder("ChemEdit/Scripts").setValue(this.plugin.settings.scriptsFolder).onChange(async (v8) => {
         this.plugin.settings.scriptsFolder = v8;
         await this.plugin.saveSettings();
       }));
     }
     const renderSec = this.createAccordion(containerEl, "Rendering & Theming", "\u{1F3A8}");
-    new import_obsidian2.Setting(renderSec).setName("Image Size (Block Embeds)").setDesc("Width and Height of the rendered structure blocks (pixels)").addText((text2) => text2.setPlaceholder("Width (300)").setValue(this.plugin.settings.width.toString()).onChange(async (v8) => {
+    new import_obsidian.Setting(renderSec).setName("Image Size (Block Embeds)").setDesc("Width and Height of the rendered structure blocks (pixels)").addText((text2) => text2.setPlaceholder("Width (300)").setValue(this.plugin.settings.width.toString()).onChange(async (v8) => {
       this.plugin.settings.width = parseInt(v8) || 300;
       await this.plugin.saveSettings();
     })).addText((text2) => text2.setPlaceholder("Height (300)").setValue(this.plugin.settings.height.toString()).onChange(async (v8) => {
       this.plugin.settings.height = parseInt(v8) || 300;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(renderSec).setName("Render SMILES as SVG").setDesc("Uses SVG instead of High-DPI Canvas for SMILES blocks. Looks crisper at extreme zoom levels.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useSvgSmiles).onChange(async (value) => {
+    new import_obsidian.Setting(renderSec).setName("Render SMILES as SVG").setDesc("Uses SVG instead of High-DPI Canvas for SMILES blocks. Looks crisper at extreme zoom levels.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useSvgSmiles).onChange(async (value) => {
       this.plugin.settings.useSvgSmiles = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(renderSec).setName("ChemDraw ACS 1996 Style (Ketcher)").setDesc("Applies the classic ACS Document 1996 drawing settings.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useAcsSettings).onChange(async (value) => {
+    new import_obsidian.Setting(renderSec).setName("ChemDraw ACS 1996 Style (Ketcher)").setDesc("Applies the classic ACS Document 1996 drawing settings.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useAcsSettings).onChange(async (value) => {
       this.plugin.settings.useAcsSettings = value;
       await this.plugin.saveSettings();
     }));
     const themeOptions = { "light": "Light", "dark": "Dark", "oldschool": "Oldschool (B&W)", "solarized": "Solarized Light", "solarized-dark": "Solarized Dark", "matrix": "Matrix", "cyberpunk": "Cyberpunk" };
-    new import_obsidian2.Setting(renderSec).setName("Themes").setDesc("Light and Dark mode rendering themes.").addDropdown((dropdown) => dropdown.addOptions(themeOptions).setValue(this.plugin.settings.lightTheme).onChange(async (value) => {
+    new import_obsidian.Setting(renderSec).setName("Themes").setDesc("Light and Dark mode rendering themes.").addDropdown((dropdown) => dropdown.addOptions(themeOptions).setValue(this.plugin.settings.lightTheme).onChange(async (value) => {
       this.plugin.settings.lightTheme = value;
       await this.plugin.saveSettings();
     })).addDropdown((dropdown) => dropdown.addOptions(themeOptions).setValue(this.plugin.settings.darkTheme).onChange(async (value) => {
@@ -570655,26 +567646,26 @@ var ChemEditSettingTab = class extends import_obsidian2.PluginSettingTab {
       await this.plugin.saveSettings();
     }));
     const pasteSec = this.createAccordion(containerEl, "Smart Paste & Inline Embeds", "\u{1F4CB}");
-    new import_obsidian2.Setting(pasteSec).setName("Auto-format pasted SMILES").addToggle((toggle) => toggle.setValue(this.plugin.settings.smartPasteSmiles).onChange(async (value) => {
+    new import_obsidian.Setting(pasteSec).setName("Auto-format pasted SMILES").addToggle((toggle) => toggle.setValue(this.plugin.settings.smartPasteSmiles).onChange(async (value) => {
       this.plugin.settings.smartPasteSmiles = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(pasteSec).setName("Auto-format pasted MOL text").addToggle((toggle) => toggle.setValue(this.plugin.settings.smartPasteMol).onChange(async (value) => {
+    new import_obsidian.Setting(pasteSec).setName("Auto-format pasted MOL text").addToggle((toggle) => toggle.setValue(this.plugin.settings.smartPasteMol).onChange(async (value) => {
       this.plugin.settings.smartPasteMol = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(pasteSec).setName("Supported File Extensions").setDesc("Comma-separated list of extensions that render automatically via ![[file.ext]]").addText((text2) => text2.setPlaceholder("mol, cdxml, ket...").setValue(this.plugin.settings.supportedEmbedExtensions).onChange(async (v8) => {
+    new import_obsidian.Setting(pasteSec).setName("Supported File Extensions").setDesc("Comma-separated list of extensions that render automatically via ![[file.ext]]").addText((text2) => text2.setPlaceholder("mol, cdxml, ket...").setValue(this.plugin.settings.supportedEmbedExtensions).onChange(async (v8) => {
       this.plugin.settings.supportedEmbedExtensions = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(pasteSec).setName("Inline Image Size").setDesc("Max width/height for inline text structures.").addText((text2) => text2.setPlaceholder("Width (150)").setValue(this.plugin.settings.inlineWidth.toString()).onChange(async (v8) => {
+    new import_obsidian.Setting(pasteSec).setName("Inline Image Size").setDesc("Max width/height for inline text structures.").addText((text2) => text2.setPlaceholder("Width (150)").setValue(this.plugin.settings.inlineWidth.toString()).onChange(async (v8) => {
       this.plugin.settings.inlineWidth = parseInt(v8) || 150;
       await this.plugin.saveSettings();
     })).addText((text2) => text2.setPlaceholder("Height (150)").setValue(this.plugin.settings.inlineHeight.toString()).onChange(async (v8) => {
       this.plugin.settings.inlineHeight = parseInt(v8) || 150;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian2.Setting(pasteSec).setName("Inline Prefixes").setDesc("Text prefixes used to trigger inline rendering.").addText((text2) => text2.setPlaceholder("SMILES ($smiles=)").setValue(this.plugin.settings.inlineSmilesPrefix).onChange(async (v8) => {
+    new import_obsidian.Setting(pasteSec).setName("Inline Prefixes").setDesc("Text prefixes used to trigger inline rendering.").addText((text2) => text2.setPlaceholder("SMILES ($smiles=)").setValue(this.plugin.settings.inlineSmilesPrefix).onChange(async (v8) => {
       this.plugin.settings.inlineSmilesPrefix = v8;
       await this.plugin.saveSettings();
     })).addText((text2) => text2.setPlaceholder("Files ($mol=)").setValue(this.plugin.settings.inlineMolPrefix).onChange(async (v8) => {
@@ -570682,22 +567673,22 @@ var ChemEditSettingTab = class extends import_obsidian2.PluginSettingTab {
       await this.plugin.saveSettings();
     }));
     const iconSec = this.createAccordion(containerEl, "Sidebar Ribbon Icons", "\u{1F5C2}\uFE0F");
-    new import_obsidian2.Setting(iconSec).setName("Show LIMS Dashboards Icon").addToggle((toggle) => toggle.setValue(this.plugin.settings.showDashboardRibbonIcon).onChange(async (value) => {
+    new import_obsidian.Setting(iconSec).setName("Show LIMS Dashboards Icon").addToggle((toggle) => toggle.setValue(this.plugin.settings.showDashboardRibbonIcon).onChange(async (value) => {
       this.plugin.settings.showDashboardRibbonIcon = value;
       await this.plugin.saveSettings();
       this.plugin.refreshRibbonIcons();
     }));
-    new import_obsidian2.Setting(iconSec).setName('Show "Create Blank ELN" Icon').addToggle((toggle) => toggle.setValue(this.plugin.settings.showElnRibbonIcon).onChange(async (value) => {
+    new import_obsidian.Setting(iconSec).setName('Show "Create Blank ELN" Icon').addToggle((toggle) => toggle.setValue(this.plugin.settings.showElnRibbonIcon).onChange(async (value) => {
       this.plugin.settings.showElnRibbonIcon = value;
       await this.plugin.saveSettings();
       this.plugin.refreshRibbonIcons();
     }));
-    new import_obsidian2.Setting(iconSec).setName('Show "Take Photo/TLC" Icons').addToggle((toggle) => toggle.setValue(this.plugin.settings.showMediaRibbonIcons).onChange(async (value) => {
+    new import_obsidian.Setting(iconSec).setName('Show "Take Photo/TLC" Icons').addToggle((toggle) => toggle.setValue(this.plugin.settings.showMediaRibbonIcons).onChange(async (value) => {
       this.plugin.settings.showMediaRibbonIcons = value;
       await this.plugin.saveSettings();
       this.plugin.refreshRibbonIcons();
     }));
-    new import_obsidian2.Setting(iconSec).setName("Show Chem Navigator Icon").addToggle((toggle) => toggle.setValue(this.plugin.settings.showNavigatorRibbonIcon).onChange(async (value) => {
+    new import_obsidian.Setting(iconSec).setName("Show Chem Navigator Icon").addToggle((toggle) => toggle.setValue(this.plugin.settings.showNavigatorRibbonIcon).onChange(async (value) => {
       this.plugin.settings.showNavigatorRibbonIcon = value;
       await this.plugin.saveSettings();
       this.plugin.refreshRibbonIcons();
@@ -570711,7 +567702,7 @@ var ChemEditSettingTab = class extends import_obsidian2.PluginSettingTab {
       if (confirm("Are you sure you want to reset all ChemEdit settings to their defaults? This cannot be undone.")) {
         this.plugin.settings = Object.assign({}, DEFAULT_SETTINGS);
         await this.plugin.saveSettings();
-        new import_obsidian2.Notice("ChemEdit settings reset to defaults. Please restart Obsidian.");
+        new import_obsidian.Notice("ChemEdit settings reset to defaults. Please restart Obsidian.");
         this.display();
       }
     };
@@ -570750,7 +567741,7 @@ function buildChemEditAPI(plugin) {
     },
     library: {
       getCompounds: async () => await getCompoundLibrary(plugin),
-      addCompound: async (name, smiles) => await addCompoundToLibrary2(plugin, name, smiles)
+      addCompound: async (name, smiles) => await addCompoundToLibrary(plugin, name, smiles)
     },
     eln: {
       createExperiment: async (code, targetFolder) => await createNewElnExperiment(plugin.app, code, targetFolder || plugin.settings.elnDirectory || "/", plugin.settings.elnSections)
@@ -570758,1925 +567749,9 @@ function buildChemEditAPI(plugin) {
   };
 }
 
-// ChemNavigator.ts
-var import_obsidian7 = require("obsidian");
-init_SharedEln();
-init_ChemDataEngine();
-var CHEM_NAVIGATOR_VIEW_TYPE = "chem-navigator-view";
-var DEFAULT_CONTEXT_LAYOUT = [
-  { id: "preview", title: "\u{1F5BC}\uFE0F Structure Preview", visible: true },
-  { id: "stock", title: "\u{1F4E6} Inventory & Library Check", visible: true },
-  { id: "properties", title: "\u{1F4CA} Properties & MW", visible: true },
-  { id: "actions", title: "\u26A1 Quick Actions", visible: true },
-  { id: "weblinks", title: "\u{1F310} Web Search Links", visible: true },
-  { id: "network", title: "\u{1F578}\uFE0F Sequence Map", visible: true }
-];
-var ChemNavigatorView = class extends import_obsidian7.ItemView {
-  constructor(leaf, plugin) {
-    super(leaf);
-    this.widgets = {};
-    this.widgetContents = {};
-    this.activeTab = "context";
-    this.contextLayout = [];
-    this.isSettingsOpen = false;
-    this.plugin = plugin;
-  }
-  getViewType() {
-    return CHEM_NAVIGATOR_VIEW_TYPE;
-  }
-  getDisplayText() {
-    return "Chem Navigator";
-  }
-  getIcon() {
-    return "flask-conical";
-  }
-  async onOpen() {
-    this.loadLayout();
-    const container = this.containerEl.children[1];
-    container.empty();
-    container.addClass("chem-navigator-view");
-    container.setCssStyles({ padding: "0", display: "flex", flexDirection: "column" });
-    this.headerPanel = container.createDiv();
-    this.headerPanel.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 15px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)", flexShrink: "0", zIndex: "2" });
-    this.headerPanel.createEl("h3", { text: "\u{1F9EA} Chem Navigator" }).setCssStyles({ margin: "0", fontSize: "15px", fontWeight: "700", color: "var(--text-normal)" });
-    const tools2 = this.headerPanel.createDiv();
-    tools2.setCssStyles({ display: "flex", gap: "5px" });
-    const settingsBtn = tools2.createEl("button", { attr: { title: "Configure Context Layout" } });
-    settingsBtn.setCssStyles({ background: "transparent", border: "none", boxShadow: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", justifyContent: "center" });
-    (0, import_obsidian7.setIcon)(settingsBtn, "settings");
-    settingsBtn.onclick = () => this.toggleSettings();
-    const refreshBtn = tools2.createEl("button", { attr: { title: "Refresh Data" } });
-    refreshBtn.setCssStyles({ background: "transparent", border: "none", boxShadow: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", justifyContent: "center" });
-    (0, import_obsidian7.setIcon)(refreshBtn, "refresh-cw");
-    refreshBtn.onclick = () => {
-      void this.renderActiveTab();
-    };
-    this.tabBar = container.createDiv();
-    this.tabBar.setCssStyles({ display: "flex", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)", padding: "0 10px", flexShrink: "0", zIndex: "2" });
-    const tabs = [
-      { id: "context", icon: "microscope", tooltip: "Active Context" },
-      { id: "projects", icon: "folder-tree", tooltip: "Projects Tree" },
-      { id: "library", icon: "library", tooltip: "Compound Library" },
-      { id: "inventory", icon: "package", tooltip: "Inventory" },
-      { id: "search", icon: "search", tooltip: "Vault Search" },
-      { id: "tools", icon: "wrench", tooltip: "Utilities" }
-    ];
-    tabs.forEach((t8) => {
-      const btn = this.tabBar.createEl("button", { attr: { title: t8.tooltip } });
-      btn.setCssStyles({ flex: "1", padding: "10px 0", background: "transparent", border: "none", borderBottom: "2px solid transparent", boxShadow: "none", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", borderRadius: "0", color: "var(--text-muted)", transition: "0.2s" });
-      (0, import_obsidian7.setIcon)(btn, t8.icon);
-      btn.id = `nav-tab-${t8.id}`;
-      btn.onclick = () => {
-        this.activeTab = t8.id;
-        this.updateTabStyles();
-        void this.renderActiveTab();
-      };
-    });
-    this.settingsPanel = container.createDiv();
-    this.settingsPanel.setCssStyles({ display: "none", flexDirection: "column", padding: "15px", background: "var(--background-secondary-alt)", borderBottom: "2px solid var(--interactive-accent)", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.05)", flexShrink: "0", zIndex: "1" });
-    this.contentArea = container.createDiv();
-    this.contentArea.setCssStyles({ flexGrow: "1", overflowY: "auto", padding: "15px", display: "flex", flexDirection: "column", gap: "15px", background: "var(--background-primary)" });
-    this.updateTabStyles();
-    this.contextLayout.forEach((w7) => {
-      const card = document.createElement("div");
-      card.setCssStyles({ display: "flex", flexDirection: "column", background: "var(--background-secondary)", border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "12px", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" });
-      const cardHeader = card.createDiv();
-      cardHeader.setCssStyles({ fontWeight: "700", color: "var(--text-normal)", fontSize: "13px", marginBottom: "8px", borderBottom: "1px solid var(--background-modifier-border)", paddingBottom: "6px" });
-      cardHeader.setText(w7.title);
-      const content4 = card.createDiv();
-      content4.setCssStyles({ display: "flex", flexDirection: "column", gap: "8px" });
-      this.widgets[w7.id] = card;
-      this.widgetContents[w7.id] = content4;
-    });
-    await this.renderActiveTab();
-    this.registerEvent(this.app.workspace.on("file-open", () => {
-      if (this.activeTab === "context") void this.renderActiveTab();
-    }));
-  }
-  // ========================================================================
-  // LAYOUT & SETTINGS (Only applies to Context Tab)
-  // ========================================================================
-  updateTabStyles() {
-    Array.from(this.tabBar.children).forEach((child) => {
-      child.setCssStyles({ borderBottomColor: "transparent", color: "var(--text-muted)" });
-    });
-    const activeBtn = this.tabBar.querySelector(`#nav-tab-${this.activeTab}`);
-    if (activeBtn) {
-      activeBtn.setCssStyles({ borderBottomColor: "var(--interactive-accent)", color: "var(--interactive-accent)" });
-    }
-    const settingsBtn = this.headerPanel.querySelector('button[title="Configure Context Layout"]');
-    if (settingsBtn) {
-      settingsBtn.setCssStyles({ display: this.activeTab === "context" ? "flex" : "none" });
-    }
-    if (this.activeTab !== "context") {
-      this.isSettingsOpen = false;
-      this.settingsPanel.setCssStyles({ display: "none" });
-    }
-  }
-  loadLayout() {
-    try {
-      const saved = window.localStorage.getItem("chemedit-context-layout");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        this.contextLayout = DEFAULT_CONTEXT_LAYOUT.map((def) => {
-          const found = parsed.find((p7) => p7.id === def.id);
-          return found ? { ...def, visible: found.visible } : def;
-        });
-        this.contextLayout.sort((a9, b9) => {
-          const idxA = parsed.findIndex((p7) => p7.id === a9.id);
-          const idxB = parsed.findIndex((p7) => p7.id === b9.id);
-          return (idxA > -1 ? idxA : 99) - (idxB > -1 ? idxB : 99);
-        });
-        return;
-      }
-    } catch (e6) {
-    }
-    this.contextLayout = JSON.parse(JSON.stringify(DEFAULT_CONTEXT_LAYOUT));
-  }
-  saveLayout() {
-    window.localStorage.setItem("chemedit-context-layout", JSON.stringify(this.contextLayout));
-  }
-  applyLayout() {
-    Object.values(this.widgets).forEach((w7) => w7.remove());
-    this.contextLayout.forEach((w7) => {
-      const el2 = this.widgets[w7.id];
-      if (el2 && w7.visible) this.contentArea.appendChild(el2);
-    });
-  }
-  toggleSettings() {
-    this.isSettingsOpen = !this.isSettingsOpen;
-    this.settingsPanel.setCssStyles({ display: this.isSettingsOpen ? "flex" : "none" });
-    if (this.isSettingsOpen) this.renderSettingsUI();
-  }
-  renderSettingsUI() {
-    this.settingsPanel.empty();
-    const header = this.settingsPanel.createDiv();
-    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" });
-    header.createEl("div", { text: "Context Panel Layout" }).setCssStyles({ fontSize: "11px", fontWeight: "bold", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" });
-    const closeBtn = header.createEl("button", { attr: { title: "Close" } });
-    closeBtn.setCssStyles({ background: "transparent", border: "none", padding: "0", boxShadow: "none", cursor: "pointer", height: "16px" });
-    (0, import_obsidian7.setIcon)(closeBtn, "x");
-    closeBtn.onclick = () => this.toggleSettings();
-    this.contextLayout.forEach((w7, i8) => {
-      const row = this.settingsPanel.createDiv();
-      row.setCssStyles({ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px", marginBottom: "6px" });
-      const left4 = row.createDiv();
-      left4.setCssStyles({ display: "flex", alignItems: "center", gap: "8px" });
-      const visBtn = left4.createEl("button", { text: w7.visible ? "\u{1F441}\uFE0F" : "\u{1F6AB}", attr: { title: "Toggle Visibility" } });
-      visBtn.setCssStyles({ padding: "2px 4px", fontSize: "12px", background: "transparent", border: "none", boxShadow: "none" });
-      visBtn.onclick = () => {
-        w7.visible = !w7.visible;
-        this.saveLayout();
-        this.renderSettingsUI();
-        if (this.activeTab === "context") this.applyLayout();
-      };
-      left4.createSpan({ text: w7.title }).setCssStyles({ fontSize: "12px", fontWeight: "500", color: !w7.visible ? "var(--text-muted)" : "var(--text-normal)", textDecoration: !w7.visible ? "line-through" : "none" });
-      const right4 = row.createDiv();
-      right4.setCssStyles({ display: "flex", gap: "4px" });
-      const upBtn = right4.createEl("button", { text: "\u25B2", attr: { disabled: i8 === 0 ? true : void 0 } });
-      upBtn.setCssStyles({ padding: "2px 6px", fontSize: "10px", height: "20px" });
-      upBtn.onclick = () => this.swapWidget(i8, i8 - 1);
-      const dnBtn = right4.createEl("button", { text: "\u25BC", attr: { disabled: i8 === this.contextLayout.length - 1 ? true : void 0 } });
-      dnBtn.setCssStyles({ padding: "2px 6px", fontSize: "10px", height: "20px" });
-      dnBtn.onclick = () => this.swapWidget(i8, i8 + 1);
-    });
-  }
-  swapWidget(idx1, idx2) {
-    const temp = this.contextLayout[idx1];
-    this.contextLayout[idx1] = this.contextLayout[idx2];
-    this.contextLayout[idx2] = temp;
-    this.saveLayout();
-    this.renderSettingsUI();
-    if (this.activeTab === "context") this.applyLayout();
-  }
-  // ========================================================================
-  // TAB ROUTER
-  // ========================================================================
-  async renderActiveTab() {
-    if (!["context", "projects", "library", "inventory", "search", "tools"].includes(this.activeTab)) this.activeTab = "context";
-    if (this.activeTab !== "context") {
-      Object.values(this.widgets).forEach((w7) => w7.remove());
-      this.contentArea.empty();
-    }
-    if (this.activeTab === "context") await this.renderContextTab();
-    else if (this.activeTab === "projects") await this.renderProjectsTab();
-    else if (this.activeTab === "library") await this.renderLibraryTab();
-    else if (this.activeTab === "inventory") await this.renderInventoryTab();
-    else if (this.activeTab === "search") await this.renderSearchTab();
-    else if (this.activeTab === "tools") await this.renderToolsTab();
-  }
-  // ========================================================================
-  // 1. CONTEXT TAB
-  // ========================================================================
-  async renderContextTab() {
-    var _a, _b, _c;
-    this.applyLayout();
-    const file = this.app.workspace.getActiveFile();
-    Object.values(this.widgetContents).forEach((w7) => w7.empty());
-    if (!file || file.extension !== "md") {
-      const placeholder = this.widgetContents["preview"].createDiv({ text: "Open a chemical note to load context." });
-      placeholder.setCssStyles({ padding: "15px", textAlign: "center", color: "var(--text-muted)", fontSize: "12px", fontStyle: "italic" });
-      return;
-    }
-    const chemData = await this.extractChemistryFromNote(file);
-    if (!chemData || chemData.smilesList.length === 0) {
-      const noChem = this.widgetContents["preview"].createDiv();
-      noChem.setCssStyles({ padding: "10px", color: "var(--text-muted)", fontSize: "12px", fontStyle: "italic", display: "flex", alignItems: "center", gap: "6px", border: "1px dashed var(--background-modifier-border)", borderRadius: "8px" });
-      noChem.createSpan({ text: "\u{1F4C4} " }).setCssStyles({ color: "var(--text-accent)" });
-      noChem.createSpan({ text: `${file.basename} (No chemistry)` });
-      return;
-    }
-    const targetSmiles = chemData.smilesList[0];
-    const isEln = chemData.type === "eln";
-    if (this.widgetContents["preview"]) {
-      this.widgetContents["preview"].createDiv({ text: `\u{1F52C} ${chemData.name}` }).setCssStyles({ fontSize: "13px", fontWeight: "bold", color: "var(--text-accent)", textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" });
-      const previewWrapper = this.widgetContents["preview"].createDiv();
-      previewWrapper.setCssStyles({ width: "100%", height: "160px", background: "var(--background-primary)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--background-modifier-border)", boxShadow: "inset 0 0 5px rgba(0,0,0,0.02)" });
-      previewWrapper.createSpan({ text: "\u23F3" });
-      window.requestAnimationFrame(async () => {
-        const renderEl = await this.plugin.api.renderStructure(targetSmiles, 240, 150);
-        previewWrapper.empty();
-        if (renderEl) {
-          renderEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
-          previewWrapper.appendChild(renderEl);
-        } else {
-          previewWrapper.createSpan({ text: "\u274C" });
-        }
-      });
-    }
-    if (this.widgetContents["stock"]) {
-      const body = this.widgetContents["stock"];
-      const checkBtn = body.createEl("button", { text: "\u{1F50D} Check Inventory & Library" });
-      checkBtn.setCssStyles({ width: "100%", fontSize: "11px", padding: "4px", height: "26px" });
-      checkBtn.onclick = async () => {
-        body.empty();
-        body.createSpan({ text: "Checking inventory... \u23F3" }).setCssStyles({ color: "var(--text-muted)", fontSize: "11px" });
-        window.setTimeout(async () => {
-          var _a2;
-          const invFiles = this.getInventoryFiles();
-          let foundInInv = null;
-          for (const f9 of invFiles) {
-            const fm = (_a2 = this.app.metadataCache.getFileCache(f9)) == null ? void 0 : _a2.frontmatter;
-            if (fm && fm.smiles === targetSmiles) {
-              foundInInv = { file: f9, loc: fm.location || "Unknown", amt: fm.amount || "-" };
-              break;
-            }
-          }
-          const lib = await getCompoundLibrary(this.plugin);
-          const foundInLib = lib.find((c10) => c10.smiles === targetSmiles);
-          body.empty();
-          if (foundInInv) {
-            const invStatus = body.createDiv();
-            invStatus.setCssStyles({ fontSize: "12px", color: "var(--text-success)", marginBottom: "4px" });
-            invStatus.createSpan({ text: "\u2705 " });
-            invStatus.createEl("b", { text: "In Inventory" });
-            const locBtn = body.createDiv({ text: `\u{1F4CD} ${foundInInv.loc} | \u2696\uFE0F ${foundInInv.amt}`, attr: { title: "Click to open" } });
-            locBtn.setCssStyles({ fontSize: "11px", color: "var(--text-normal)", cursor: "pointer" });
-            locBtn.onclick = () => this.app.workspace.getLeaf(false).openFile(foundInInv.file);
-          } else {
-            const invStatus = body.createDiv();
-            invStatus.setCssStyles({ fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" });
-            invStatus.createSpan({ text: "\u274C " });
-            invStatus.createEl("b", { text: "Not in Inventory" });
-          }
-          if (foundInLib) {
-            const libStatus = body.createDiv();
-            libStatus.setCssStyles({ fontSize: "12px", color: "var(--text-accent)", marginTop: "6px" });
-            libStatus.createSpan({ text: "\u{1F4DA} " });
-            libStatus.createEl("b", { text: "In Library " });
-            libStatus.createSpan({ text: `(${foundInLib.name})` });
-          } else {
-            const addBtn = body.createEl("button", { text: "+ Add to Library" });
-            addBtn.setCssStyles({ marginTop: "6px", fontSize: "10px", height: "22px", width: "max-content" });
-            addBtn.onclick = () => {
-              void this.plugin.api.library.addCompound(chemData.name, targetSmiles);
-            };
-          }
-        }, 10);
-      };
-    }
-    if (this.widgetContents["properties"]) {
-      const body = this.widgetContents["properties"];
-      const renderPropBox = async (title, smiles) => {
-        if (!smiles) return;
-        const box = body.createDiv();
-        box.setCssStyles({ background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px", padding: "8px 12px", fontSize: "11px", marginBottom: "4px" });
-        const props2 = ChemDataEngine.getPropertiesFromSmiles(smiles.split(" |")[0].trim());
-        const mwProps = await calculateMwOffline(smiles, this.plugin);
-        const header = box.createDiv();
-        header.setCssStyles({ fontWeight: "700", color: "var(--text-accent)", marginBottom: "6px", borderBottom: "1px solid var(--background-modifier-border)", paddingBottom: "4px", display: "flex", justifyContent: "space-between" });
-        header.createSpan({ text: title });
-        const createRow = (label, value) => {
-          const r12 = box.createDiv();
-          r12.setCssStyles({ display: "flex", justifyContent: "space-between", marginBottom: "2px" });
-          r12.createSpan({ text: label }).setCssStyles({ color: "var(--text-muted)" });
-          r12.createSpan({ text: value }).setCssStyles({ fontWeight: "600", color: "var(--text-normal)" });
-        };
-        createRow("Formula:", mwProps.formula);
-        createRow("Exact Mass:", mwProps.mw.toFixed(2));
-        if (props2 && props2.logp) {
-          createRow("LogP:", props2.logp.toFixed(2));
-          createRow("TPSA:", props2.tpsa.toFixed(2));
-          createRow("H-Bond (D/A):", `${props2.hbd} / ${props2.hba}`);
-          if (props2.alerts && props2.alerts !== "None") {
-            const alertBox = box.createDiv({ text: `\u26A0\uFE0F ${props2.alerts}` });
-            alertBox.setCssStyles({ marginTop: "6px", padding: "4px", background: "#fde0df", border: "1px solid #f40724", borderRadius: "4px", color: "#f40724", fontWeight: "bold", textAlign: "center" });
-          }
-        }
-      };
-      if (isEln && ((_c = (_b = (_a = chemData.data) == null ? void 0 : _a.reactants) == null ? void 0 : _b[0]) == null ? void 0 : _c.smiles)) await renderPropBox("Ref. Reactant", chemData.data.reactants[0].smiles);
-      if (targetSmiles) await renderPropBox(isEln ? "Ref. Product" : "Structure Info", targetSmiles);
-    }
-    if (this.widgetContents["actions"]) {
-      const body = this.widgetContents["actions"];
-      const actionGrid = body.createDiv();
-      actionGrid.setCssStyles({ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" });
-      const makeBtn = (text2, onClick, fullWidth = false) => {
-        const b9 = actionGrid.createEl("button", { text: text2 });
-        b9.setCssStyles({ fontSize: "11px", padding: "4px", height: "26px", borderRadius: "4px" });
-        if (fullWidth) b9.style.gridColumn = "span 2";
-        b9.onclick = onClick;
-      };
-      makeBtn("\u{1F4CB} Copy SMILES", () => {
-        void navigator.clipboard.writeText(targetSmiles);
-        new import_obsidian7.Notice("Copied!");
-      });
-      makeBtn("\u270F\uFE0F Edit Structure", () => {
-        this.plugin.api.ketcher.openEditor(targetSmiles, "smiles", async (newData) => {
-          const fileContent = await this.app.vault.read(file);
-          const newContent = fileContent.replace(targetSmiles, newData);
-          await this.app.vault.modify(file, newContent);
-          void this.renderActiveTab();
-        });
-      });
-      const findBtn = actionGrid.createEl("button", { text: "\u{1F50D} Find in Vault" });
-      findBtn.setCssStyles({ gridColumn: "span 2", fontSize: "11px", padding: "4px", height: "26px", borderRadius: "4px", background: "var(--interactive-accent)", color: "var(--text-on-accent)", border: "none" });
-      findBtn.onclick = () => {
-        var _a2;
-        const searchPlugin = (_a2 = this.app.internalPlugins) == null ? void 0 : _a2.getPluginById("global-search");
-        if (searchPlugin && searchPlugin.instance) searchPlugin.instance.openGlobalSearch(`"${targetSmiles}"`);
-      };
-    }
-    if (this.widgetContents["weblinks"]) {
-      const body = this.widgetContents["weblinks"];
-      const webGrid = body.createDiv();
-      webGrid.setCssStyles({ display: "flex", gap: "10px", flexWrap: "wrap", background: "var(--background-secondary-alt)", padding: "8px", borderRadius: "6px", border: "1px solid var(--background-modifier-border)" });
-      const makeWebLink = (text2, urlTemplate) => {
-        if (!urlTemplate) return;
-        const a9 = webGrid.createEl("a", { text: text2, href: "#" });
-        a9.setCssStyles({ fontSize: "11px", fontWeight: "500", color: "var(--text-accent)", textDecoration: "none" });
-        a9.onmouseover = () => a9.style.textDecoration = "underline";
-        a9.onmouseout = () => a9.style.textDecoration = "none";
-        a9.onclick = (e6) => {
-          e6.preventDefault();
-          window.open(urlTemplate.replace(/\{\{smiles\}\}/gi, encodeURIComponent(targetSmiles)), "_blank");
-        };
-      };
-      makeWebLink("PubChem", this.plugin.settings.contextUrl1);
-      makeWebLink("MolPort", this.plugin.settings.contextUrl2);
-      makeWebLink("NMRium", this.plugin.settings.contextUrl3);
-    }
-    if (this.widgetContents["network"]) {
-      const body = this.widgetContents["network"];
-      if (isEln && chemData.data) {
-        body.empty();
-        body.createDiv({ text: "Scanning pathway... \u23F3" }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", textAlign: "center" });
-        const currentFilePath = file.path;
-        window.setTimeout(async () => {
-          var _a2, _b2, _c2;
-          if (((_a2 = this.app.workspace.getActiveFile()) == null ? void 0 : _a2.path) !== currentFilePath) return;
-          try {
-            const connections = await this.buildFullSequence(file, chemData.data);
-            if (((_b2 = this.app.workspace.getActiveFile()) == null ? void 0 : _b2.path) !== currentFilePath) return;
-            this.renderVerticalSequenceMap(body, connections.sequence, connections.samestep, file, chemData.data);
-          } catch (e6) {
-            if (((_c2 = this.app.workspace.getActiveFile()) == null ? void 0 : _c2.path) === currentFilePath) {
-              body.empty();
-              body.createDiv({ text: "Error scanning map." }).setCssStyles({ textAlign: "center", color: "var(--text-error)", fontSize: "11px" });
-            }
-          }
-        }, 150);
-      } else {
-        body.empty();
-        body.createDiv({ text: "Requires an ELN experiment block." }).setCssStyles({ padding: "10px", textAlign: "center", color: "var(--text-muted)", fontSize: "11px", fontStyle: "italic" });
-      }
-    }
-  }
-  // ========================================================================
-  // FAST SEQUENCE ENGINE (Fortified & Directory Constrained)
-  // ========================================================================
-  // OPTIMIZED: Only checks files inside the ELN directory, or falls back to fast cache check
-  getElnFiles() {
-    const elnDir = this.plugin.settings.elnDirectory;
-    return this.app.vault.getMarkdownFiles().filter((f9) => {
-      var _a, _b;
-      if (elnDir && !f9.path.startsWith(elnDir)) return false;
-      const cache2 = this.app.metadataCache.getFileCache(f9);
-      if (!cache2) return false;
-      const fmTags = ((_a = cache2.frontmatter) == null ? void 0 : _a.tags) || [];
-      const hasFmTag = Array.isArray(fmTags) ? fmTags.includes("experiment") : fmTags === "experiment";
-      const hasInlineTag = (_b = cache2.tags) == null ? void 0 : _b.some((t8) => t8.tag.toLowerCase().includes("experiment"));
-      return hasFmTag || hasInlineTag || elnDir && f9.path.startsWith(elnDir);
-    });
-  }
-  // OPTIMIZED: Only checks frontmatter cache, NO file reads!
-  getInventoryFiles() {
-    return this.app.vault.getMarkdownFiles().filter((f9) => {
-      var _a, _b;
-      const cache2 = this.app.metadataCache.getFileCache(f9);
-      if (!cache2) return false;
-      const fmTags = ((_a = cache2.frontmatter) == null ? void 0 : _a.tags) || [];
-      const hasFmTag = Array.isArray(fmTags) ? fmTags.includes("inventory") : fmTags === "inventory";
-      const hasInlineTag = (_b = cache2.tags) == null ? void 0 : _b.some((t8) => t8.tag.toLowerCase().includes("inventory"));
-      const inFolder = f9.path.toLowerCase().includes("/inventory/") || f9.path.toLowerCase().startsWith("inventory/");
-      return hasFmTag || hasInlineTag || inFolder;
-    });
-  }
-  async buildFullSequence(currentFile, currentExpData) {
-    var _a, _b, _c, _d, _e2, _f, _g2, _h, _i2, _j, _k, _l3, _m, _n2, _o2, _p, _q, _r2, _s2, _t9;
-    const files = this.getElnFiles();
-    const allExp = [];
-    const normalize3 = (s8) => (s8 == null ? void 0 : s8.split(" |")[0].trim()) || "";
-    const { parseYaml: parseYaml2 } = require("obsidian");
-    for (const f9 of files) {
-      if (f9.path === currentFile.path) continue;
-      const content4 = await this.app.vault.cachedRead(f9);
-      const elnMatch = content4.match(/```eln\s*\n([\s\S]*?)\n```/);
-      if (!elnMatch) continue;
-      try {
-        const safeSource = elnMatch[1].replace(/smiles:\s*(.*)$/gm, (m9, p1) => {
-          let s8 = p1.trim();
-          if (!s8) return m9;
-          const cMatch = s8.match(/(\s+#.*)$/);
-          if (cMatch) s8 = s8.substring(0, s8.length - cMatch[1].length).trim();
-          if (s8.startsWith('"') && s8.endsWith('"') || s8.startsWith("'") && s8.endsWith("'")) s8 = s8.substring(1, s8.length - 1);
-          return `smiles: '${s8.replace(/\\"/g, '"').replace(/'/g, "''")}'`;
-        });
-        const data = parseYaml2(safeSource);
-        const limitingR = normalize3(((_b = (_a = data.reactants) == null ? void 0 : _a.find((r12) => r12.is_limiting)) == null ? void 0 : _b.smiles) || ((_d = (_c = data.reactants) == null ? void 0 : _c[0]) == null ? void 0 : _d.smiles));
-        const mainP = normalize3((_f = (_e2 = data.products) == null ? void 0 : _e2[0]) == null ? void 0 : _f.smiles);
-        if (limitingR || mainP) {
-          allExp.push({
-            file: f9,
-            code: data.code || f9.basename,
-            rSmi: limitingR,
-            pSmi: mainP,
-            yieldNum: parseFloat((_h = (_g2 = data.products) == null ? void 0 : _g2[0]) == null ? void 0 : _h.yield) || 0,
-            yieldStr: ((_j = (_i2 = data.products) == null ? void 0 : _i2[0]) == null ? void 0 : _j.yield) ? `${data.products[0].yield}%` : "-"
-          });
-        }
-      } catch (e6) {
-      }
-    }
-    const rSmi = normalize3(((_l3 = (_k = currentExpData == null ? void 0 : currentExpData.reactants) == null ? void 0 : _k.find((r12) => r12.is_limiting)) == null ? void 0 : _l3.smiles) || ((_n2 = (_m = currentExpData == null ? void 0 : currentExpData.reactants) == null ? void 0 : _m[0]) == null ? void 0 : _n2.smiles));
-    const pSmi = normalize3((_p = (_o2 = currentExpData == null ? void 0 : currentExpData.products) == null ? void 0 : _o2[0]) == null ? void 0 : _p.smiles);
-    const currentExp = {
-      file: currentFile,
-      code: (currentExpData == null ? void 0 : currentExpData.code) || currentFile.basename,
-      rSmi,
-      pSmi,
-      yieldStr: ((_r2 = (_q = currentExpData == null ? void 0 : currentExpData.products) == null ? void 0 : _q[0]) == null ? void 0 : _r2.yield) ? `${currentExpData.products[0].yield}%` : "-",
-      yieldNum: parseFloat((_t9 = (_s2 = currentExpData == null ? void 0 : currentExpData.products) == null ? void 0 : _s2[0]) == null ? void 0 : _t9.yield) || 0
-    };
-    allExp.push(currentExp);
-    const upstream = [];
-    let curr = currentExp;
-    while (curr && curr.rSmi) {
-      const parents = allExp.filter((e6) => e6.pSmi === curr.rSmi && e6.file.path !== curr.file.path);
-      if (parents.length === 0) break;
-      parents.sort((a9, b9) => b9.yieldNum - a9.yieldNum);
-      const bestParent = parents[0];
-      if (upstream.find((e6) => e6.file.path === bestParent.file.path)) break;
-      upstream.push(bestParent);
-      curr = bestParent;
-    }
-    const downstream = [];
-    curr = currentExp;
-    while (curr && curr.pSmi) {
-      const children3 = allExp.filter((e6) => e6.rSmi === curr.pSmi && e6.file.path !== curr.file.path);
-      if (children3.length === 0) break;
-      children3.sort((a9, b9) => b9.yieldNum - a9.yieldNum);
-      const bestChild = children3[0];
-      if (downstream.find((e6) => e6.file.path === bestChild.file.path)) break;
-      downstream.push(bestChild);
-      curr = bestChild;
-    }
-    const sequence = [...upstream.reverse(), currentExp, ...downstream];
-    const samestep = allExp.filter((e6) => e6.rSmi === currentExp.rSmi && e6.pSmi === currentExp.pSmi && e6.file.path !== currentFile.path);
-    samestep.sort((a9, b9) => b9.yieldNum - a9.yieldNum);
-    return { sequence, samestep };
-  }
-  renderVerticalSequenceMap(container, sequence, samestep, currentFile, currentExpData) {
-    var _a, _b, _c, _d;
-    container.empty();
-    container.createDiv({ text: `${sequence.length} Step Sequence` }).setCssStyles({ fontSize: "11px", fontWeight: "bold", color: "var(--text-muted)", textAlign: "center", marginBottom: "10px" });
-    const mapWrapper = container.createDiv();
-    mapWrapper.setCssStyles({ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" });
-    const drawArrowDown = (parent) => {
-      const arr = parent.createDiv();
-      arr.setCssStyles({ display: "flex", flexDirection: "column", alignItems: "center", margin: "2px 0" });
-      arr.createDiv().setCssStyles({ height: "15px", width: "2px", background: "var(--background-modifier-border)" });
-      arr.createDiv().setCssStyles({ width: "0", height: "0", borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderTop: "6px solid var(--background-modifier-border)" });
-    };
-    if (sequence.length === 1 && sequence[0].file.path === currentFile.path) {
-      const reactantSmi = ((_b = (_a = currentExpData.reactants) == null ? void 0 : _a.find((r12) => r12.is_limiting)) == null ? void 0 : _b.smiles) || ((_d = (_c = currentExpData.reactants) == null ? void 0 : _c[0]) == null ? void 0 : _d.smiles);
-      if (reactantSmi) {
-        const rNode = mapWrapper.createDiv();
-        rNode.setCssStyles({ width: "110px", background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "5px", display: "flex", flexDirection: "column", alignItems: "center" });
-        rNode.createDiv({ text: "Starting Material" }).setCssStyles({ fontSize: "9px", fontWeight: "bold", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: "4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%", textAlign: "center" });
-        const rPrev = rNode.createDiv();
-        rPrev.setCssStyles({ width: "90px", height: "60px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-secondary)", borderRadius: "4px" });
-        rPrev.createSpan({ text: "\u23F3" });
-        window.requestAnimationFrame(async () => {
-          const rEl = await this.plugin.api.renderStructure(reactantSmi, 90, 60);
-          rPrev.empty();
-          if (rEl) {
-            rEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
-            rPrev.appendChild(rEl);
-          } else rPrev.createSpan({ text: "\u274C" });
-        });
-        drawArrowDown(mapWrapper);
-      }
-    }
-    sequence.forEach((exp, index) => {
-      const isActive = exp.file.path === currentFile.path;
-      const borderColor2 = isActive ? "var(--interactive-accent)" : "var(--background-modifier-border)";
-      const bgColor = isActive ? "var(--background-primary-alt)" : "var(--background-primary)";
-      const shadow = isActive ? "0 4px 12px rgba(22, 119, 130, 0.15)" : "0 1px 3px rgba(0,0,0,0.02)";
-      const node2 = mapWrapper.createDiv();
-      node2.setCssStyles({ width: "140px", background: bgColor, border: `2px solid ${borderColor2}`, borderRadius: "8px", padding: "8px", display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", transition: "transform 0.2s", boxShadow: shadow });
-      const nHeader = node2.createDiv();
-      nHeader.setCssStyles({ display: "flex", justifyContent: "space-between", width: "100%", marginBottom: "6px", alignItems: "center" });
-      if (isActive) {
-        nHeader.createDiv({ text: `Step ${index + 1} (Current)` }).setCssStyles({ fontSize: "9px", fontWeight: "bold", color: "var(--interactive-accent)", textTransform: "uppercase" });
-      } else {
-        nHeader.createDiv({ text: `Step ${index + 1}` }).setCssStyles({ fontSize: "9px", fontWeight: "bold", color: "var(--text-muted)", textTransform: "uppercase" });
-      }
-      const subHeader = node2.createDiv();
-      subHeader.setCssStyles({ display: "flex", justifyContent: "space-between", width: "100%", marginBottom: "4px" });
-      subHeader.createDiv({ text: exp.code }).setCssStyles({ fontSize: "11px", fontWeight: "bold", color: "var(--text-normal)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" });
-      if (exp.yieldStr && exp.yieldStr !== "-") {
-        subHeader.createDiv({ text: exp.yieldStr }).setCssStyles({ fontSize: "10px", fontWeight: "bold", color: "var(--text-success)" });
-      }
-      const preview2 = node2.createDiv();
-      preview2.setCssStyles({ width: "120px", height: "80px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-secondary)", borderRadius: "4px", border: "1px solid var(--background-modifier-border)" });
-      preview2.createSpan({ text: "\u23F3" });
-      window.requestAnimationFrame(async () => {
-        const renderEl = await this.plugin.api.renderStructure(exp.pSmi, 120, 80);
-        preview2.empty();
-        if (renderEl) {
-          renderEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
-          preview2.appendChild(renderEl);
-        } else preview2.createSpan({ text: "\u274C" });
-      });
-      node2.onmouseover = () => node2.style.transform = "scale(1.03)";
-      node2.onmouseout = () => node2.style.transform = "scale(1)";
-      node2.onclick = () => {
-        if (!isActive) this.app.workspace.getLeaf(false).openFile(exp.file);
-      };
-      if (index < sequence.length - 1) drawArrowDown(mapWrapper);
-    });
-    if (samestep.length > 0) {
-      const ssHeader = container.createDiv({ text: `\u{1F504} Optimization Variants (${samestep.length})` });
-      ssHeader.setCssStyles({ marginTop: "25px", borderTop: "1px dashed var(--background-modifier-border)", paddingTop: "15px", fontSize: "11px", color: "var(--text-muted)", fontWeight: "bold" });
-      const variantList = container.createDiv();
-      variantList.setCssStyles({ display: "flex", flexDirection: "column", gap: "4px", marginTop: "8px" });
-      samestep.forEach((item) => {
-        const row = variantList.createDiv();
-        row.setCssStyles({ display: "flex", justifyContent: "space-between", padding: "6px 10px", background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px", cursor: "pointer", transition: "0.2s", fontSize: "11px" });
-        row.createEl("span", { text: item.code }).setCssStyles({ fontWeight: "600", color: "var(--text-normal)" });
-        row.createEl("span", { text: item.yieldStr }).setCssStyles({ fontWeight: "bold", color: "var(--text-success)" });
-        row.onmouseover = () => {
-          row.style.borderColor = "var(--interactive-accent)";
-          row.style.transform = "translateX(2px)";
-        };
-        row.onmouseout = () => {
-          row.style.borderColor = "var(--background-modifier-border)";
-          row.style.transform = "translateX(0)";
-        };
-        row.onclick = () => this.app.workspace.getLeaf(false).openFile(item.file);
-      });
-    }
-  }
-  // ========================================================================
-  // TAB: PROJECTS (Optimized for Directory)
-  // ========================================================================
-  async renderProjectsTab() {
-    const treeContainer = this.contentArea.createDiv();
-    treeContainer.setCssStyles({ display: "flex", flexDirection: "column", gap: "10px", overflowY: "auto" });
-    const files = this.getElnFiles();
-    const projects = /* @__PURE__ */ new Map();
-    for (const file of files) {
-      let projName = "Unassigned";
-      const fileContent = await this.app.vault.cachedRead(file);
-      const pMatch = fileContent.match(/project:\s*(.+)/);
-      if (pMatch && pMatch[1].trim()) projName = pMatch[1].trim();
-      if (!projects.has(projName)) projects.set(projName, []);
-      projects.get(projName).push(file);
-    }
-    if (projects.size === 0) {
-      const noProj = treeContainer.createDiv({ text: "No ELN experiments found in your ELN Directory setting." });
-      noProj.setCssStyles({ color: "var(--text-muted)", fontSize: "12px", fontStyle: "italic", padding: "20px", border: "1px dashed var(--background-modifier-border)", borderRadius: "8px", textAlign: "center" });
-      return;
-    }
-    const sortedProjects = Array.from(projects.keys()).sort((a9, b9) => a9 === "Unassigned" ? 1 : b9 === "Unassigned" ? -1 : a9.localeCompare(b9));
-    for (const proj of sortedProjects) {
-      const expList = projects.get(proj);
-      const projWrapper = treeContainer.createDiv();
-      projWrapper.setCssStyles({ border: "1px solid var(--background-modifier-border)", borderRadius: "6px", background: "var(--background-primary)", overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" });
-      const projHeader = projWrapper.createDiv();
-      projHeader.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "var(--background-secondary)", cursor: "pointer" });
-      projHeader.createDiv({ text: `\u{1F4C1} ${proj}` }).setCssStyles({ fontSize: "13px", fontWeight: "bold", color: "var(--text-normal)" });
-      const projTools = projHeader.createDiv();
-      projTools.setCssStyles({ display: "flex", gap: "5px" });
-      const mapBtn = projTools.createEl("button", { text: "\u{1F5FA}\uFE0F Map", attr: { title: "Generate Synthesis Map" } });
-      mapBtn.setCssStyles({ padding: "2px 6px", height: "20px", fontSize: "10px", background: "transparent", border: "1px solid var(--background-modifier-border)", boxShadow: "none" });
-      const listContainer = projWrapper.createDiv();
-      listContainer.setCssStyles({ display: "none", flexDirection: "column", padding: "5px", borderTop: "1px solid var(--background-modifier-border)" });
-      projHeader.onclick = (e6) => {
-        if (e6.target.tagName.toLowerCase() === "button") return;
-        listContainer.style.display = listContainer.style.display === "none" ? "flex" : "none";
-      };
-      mapBtn.onclick = async () => {
-        const safeName = proj === "Unassigned" ? "All" : proj.replace(/[\\/:"*?<>|]/g, "_");
-        const filePath = `${this.plugin.settings.elnDirectory || ""}/${safeName}_Dashboard.md`.replace(/^\//, "");
-        if (this.app.vault.getAbstractFileByPath(filePath)) {
-          new import_obsidian7.Notice(`Dashboard already exists at ${filePath}`);
-          this.app.workspace.getLeaf(false).openFile(this.app.vault.getAbstractFileByPath(filePath));
-          return;
-        }
-        const content4 = `---
-tags: [dashboard]
----
-# ${proj} - Synthesis Dashboard
-
-\`\`\`synthesis-map
-path: ${this.plugin.settings.elnDirectory || ""}
-project: ${proj === "Unassigned" ? "" : proj}
-\`\`\`
-`;
-        const newFile = await this.app.vault.create(filePath, content4);
-        this.app.workspace.getLeaf(false).openFile(newFile);
-      };
-      expList.sort((a9, b9) => a9.basename.localeCompare(b9.basename)).forEach((f9) => {
-        const item = listContainer.createDiv({ text: `\u{1F4C4} ${f9.basename}` });
-        item.setCssStyles({ padding: "4px 8px", fontSize: "12px", color: "var(--text-muted)", cursor: "pointer", borderRadius: "4px" });
-        item.onmouseover = () => item.style.backgroundColor = "var(--background-modifier-hover)";
-        item.onmouseout = () => item.style.backgroundColor = "transparent";
-        item.onclick = () => this.app.workspace.getLeaf(false).openFile(f9);
-      });
-    }
-  }
-  // ========================================================================
-  // TAB: LIBRARY (Optimized Single File Read)
-  // ========================================================================
-  async renderLibraryTab() {
-    const header = this.contentArea.createDiv();
-    header.setCssStyles({ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "10px" });
-    const topActions = header.createDiv();
-    topActions.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center" });
-    topActions.createEl("span", { text: "Search or Edit Library:" }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", fontWeight: "bold" });
-    const editLibBtn = topActions.createEl("button", { text: "\u{1F4DD} Edit File" });
-    editLibBtn.setCssStyles({ fontSize: "11px", padding: "4px 8px", borderRadius: "4px", height: "24px" });
-    editLibBtn.onclick = () => {
-      var _a;
-      const libPath = (_a = this.plugin.settings) == null ? void 0 : _a.libraryFilePath;
-      if (!libPath) {
-        new import_obsidian7.Notice("Library file path not set in settings.");
-        return;
-      }
-      const file = this.app.vault.getAbstractFileByPath(libPath);
-      if (file instanceof import_obsidian7.TFile) this.app.workspace.getLeaf(false).openFile(file);
-      else new import_obsidian7.Notice("Library file not found.");
-    };
-    const searchInp = header.createEl("input", { type: "search", placeholder: "Search reagents..." });
-    searchInp.setCssStyles({ width: "100%", fontSize: "12px", padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--background-modifier-border)" });
-    const grid2 = this.contentArea.createDiv();
-    grid2.setCssStyles({ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "15px", paddingBottom: "20px" });
-    const loadingMsg = grid2.createDiv({ text: "Loading..." });
-    loadingMsg.setCssStyles({ color: "var(--text-muted)", fontSize: "12px", textAlign: "center", gridColumn: "1/-1" });
-    const lib = await getCompoundLibrary(this.plugin);
-    grid2.empty();
-    const cards = [];
-    lib.forEach((c10) => {
-      const card = grid2.createDiv();
-      card.setCssStyles({ background: "var(--background-secondary)", border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "8px", display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", transition: "transform 0.2s, border-color 0.2s", boxShadow: "0 2px 6px rgba(0,0,0,0.02)", position: "relative" });
-      const trashBtn = card.createEl("button", { text: "\u{1F5D1}\uFE0F", attr: { title: "Remove from Library" } });
-      trashBtn.setCssStyles({ position: "absolute", top: "4px", right: "4px", background: "var(--background-secondary-alt)", border: "1px solid var(--background-modifier-border)", borderRadius: "4px", padding: "2px 4px", fontSize: "10px", display: "none" });
-      card.onmouseover = () => {
-        card.style.borderColor = "var(--interactive-accent)";
-        card.style.transform = "translateY(-2px)";
-        trashBtn.style.display = "block";
-      };
-      card.onmouseout = () => {
-        card.style.borderColor = "var(--background-modifier-border)";
-        card.style.transform = "translateY(0)";
-        trashBtn.style.display = "none";
-      };
-      trashBtn.onclick = async (e6) => {
-        var _a;
-        e6.stopPropagation();
-        const path2 = (_a = this.plugin.settings) == null ? void 0 : _a.libraryFilePath;
-        const file = this.app.vault.getAbstractFileByPath(path2);
-        if (file instanceof import_obsidian7.TFile) {
-          const content4 = await this.app.vault.read(file);
-          const lines = content4.split("\n");
-          const newLines = lines.filter((l8) => !(l8.includes(c10.smiles) && l8.includes(c10.name)));
-          await this.app.vault.modify(file, newLines.join("\n"));
-          new import_obsidian7.Notice(`Removed ${c10.name}`);
-          void this.renderActiveTab();
-        }
-      };
-      const preview2 = card.createDiv();
-      preview2.setCssStyles({ width: "100px", height: "80px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-primary)", borderRadius: "4px" });
-      preview2.createSpan({ text: "\u23F3" });
-      window.requestAnimationFrame(async () => {
-        const el2 = await this.plugin.api.renderStructure(c10.smiles, 100, 80);
-        preview2.empty();
-        if (el2) {
-          el2.style.maxWidth = "100%";
-          el2.style.maxHeight = "100%";
-          preview2.appendChild(el2);
-        } else preview2.createSpan({ text: "\u274C" });
-      });
-      const cardTitle = card.createDiv({ text: c10.name, attr: { title: c10.name } });
-      cardTitle.setCssStyles({ fontSize: "11px", fontWeight: "600", textAlign: "center", marginTop: "8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", color: "var(--text-normal)" });
-      card.onclick = () => {
-        void navigator.clipboard.writeText(c10.smiles);
-        new import_obsidian7.Notice(`Copied ${c10.name} SMILES!`);
-      };
-      cards.push({ el: card, text: `${c10.name} ${c10.smiles}`.toLowerCase() });
-    });
-    if (cards.length === 0) {
-      const emptyMsg = grid2.createSpan({ text: "Library empty." });
-      emptyMsg.setCssStyles({ color: "var(--text-muted)", fontSize: "12px", fontStyle: "italic", gridColumn: "1/-1", textAlign: "center" });
-    }
-    searchInp.addEventListener("input", (e6) => {
-      const query = e6.target.value.toLowerCase();
-      cards.forEach((c10) => {
-        c10.el.style.display = c10.text.includes(query) ? "flex" : "none";
-      });
-    });
-  }
-  // ========================================================================
-  // TAB: INVENTORY (Optimized Memory Cache Only)
-  // ========================================================================
-  async renderInventoryTab() {
-    const header = this.contentArea.createDiv();
-    header.setCssStyles({ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "10px" });
-    const searchInp = header.createEl("input", { type: "search", placeholder: "Search stock (name, location, CAS)..." });
-    searchInp.setCssStyles({ width: "100%", fontSize: "12px", padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--background-modifier-border)" });
-    const list = this.contentArea.createDiv();
-    list.setCssStyles({ display: "flex", flexDirection: "column", gap: "8px" });
-    const invFiles = this.getInventoryFiles();
-    const renderList = (query) => {
-      list.empty();
-      let count = 0;
-      for (const f9 of invFiles) {
-        const cache2 = this.app.metadataCache.getFileCache(f9);
-        const fm = cache2 == null ? void 0 : cache2.frontmatter;
-        const name = (fm == null ? void 0 : fm.name) || f9.basename;
-        const loc = (fm == null ? void 0 : fm.location) || "Unknown Location";
-        const amt = (fm == null ? void 0 : fm.amount) || "-";
-        const cas = (fm == null ? void 0 : fm.cas) || "";
-        const searchStr = `${name} ${loc} ${cas}`.toLowerCase();
-        if (query && !searchStr.includes(query)) continue;
-        if (count > 100) break;
-        count++;
-        const item = list.createDiv();
-        item.setCssStyles({ display: "flex", flexDirection: "column", padding: "10px", background: "var(--background-secondary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px", cursor: "pointer", fontSize: "11px", transition: "0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.02)" });
-        item.onmouseover = () => item.style.borderColor = "var(--interactive-accent)";
-        item.onmouseout = () => item.style.borderColor = "var(--background-modifier-border)";
-        item.onclick = () => this.app.workspace.getLeaf(false).openFile(f9);
-        item.createDiv({ text: name }).setCssStyles({ fontWeight: "700", fontSize: "13px", color: "var(--text-accent)", marginBottom: "4px" });
-        const metaRow = item.createDiv();
-        metaRow.setCssStyles({ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--text-muted)" });
-        metaRow.createSpan({ text: `\u{1F4CD} ${loc}` });
-        metaRow.createSpan({ text: `\u2696\uFE0F ${amt}` }).setCssStyles({ fontWeight: "bold", color: "var(--text-normal)" });
-      }
-      if (count === 0) {
-        const noInv = list.createSpan({ text: "No inventory found. Create notes inside an Inventory folder or add `tags: [inventory]`." });
-        noInv.setCssStyles({ color: "var(--text-muted)", fontSize: "12px", fontStyle: "italic" });
-      }
-    };
-    searchInp.oninput = (e6) => renderList(e6.target.value.toLowerCase());
-    renderList("");
-  }
-  // ========================================================================
-  // TAB: SEARCH (Vault Text & Structure Search - FIX: ALL FILES)
-  // ========================================================================
-  async renderSearchTab() {
-    const header = this.contentArea.createDiv();
-    header.setCssStyles({ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "10px" });
-    const textInp = header.createEl("input", { type: "search", placeholder: "Search the ENTIRE vault..." });
-    textInp.setCssStyles({ width: "100%", fontSize: "12px", padding: "8px 12px", borderRadius: "6px", border: "1px solid var(--background-modifier-border)" });
-    const exactBtn = header.createEl("button", { text: "\u2B21 Structure Match (Entire Vault)", cls: "mod-cta" });
-    exactBtn.setCssStyles({ width: "100%", height: "32px", fontSize: "11px" });
-    const resultsDiv = this.contentArea.createDiv();
-    resultsDiv.setCssStyles({ display: "flex", flexDirection: "column", gap: "6px", overflowY: "auto", paddingBottom: "20px" });
-    const performSearch = async (mode, query) => {
-      resultsDiv.empty();
-      const loadingSpan = resultsDiv.createDiv();
-      loadingSpan.setCssStyles({ textAlign: "center", fontSize: "12px", color: "var(--text-accent)", marginTop: "20px" });
-      loadingSpan.createSpan({ text: "Scanning entire vault... \u23F3" });
-      loadingSpan.createEl("br");
-      loadingSpan.createSpan({ text: "(Large vaults may take a few seconds)" }).setCssStyles({ fontSize: "10px", color: "var(--text-muted)" });
-      const files = this.app.vault.getMarkdownFiles();
-      const matches = [];
-      for (const f9 of files) {
-        const chemData = await this.extractChemistryFromNote(f9);
-        if (!chemData) continue;
-        let isMatch = false;
-        if (mode === "text") {
-          const searchStr = `${f9.basename} ${chemData.name} ${chemData.smilesList.join(" ")}`.toLowerCase();
-          if (searchStr.includes(query.toLowerCase())) isMatch = true;
-        } else if (mode === "exact") {
-          const queryCanonical = this.plugin.api.data.molToSmiles(query) || query;
-          for (const s8 of chemData.smilesList) {
-            if (s8.includes(query) || this.plugin.api.data.molToSmiles(s8) === queryCanonical && queryCanonical !== "") {
-              isMatch = true;
-              break;
-            }
-          }
-        }
-        if (isMatch) matches.push({ file: f9, name: chemData.name, type: chemData.type });
-      }
-      resultsDiv.empty();
-      if (matches.length === 0) {
-        const noMatch = resultsDiv.createDiv({ text: "No matches found." });
-        noMatch.setCssStyles({ textAlign: "center", fontSize: "12px", color: "var(--text-muted)", marginTop: "20px" });
-      } else {
-        const matchHeader = resultsDiv.createDiv({ text: `Found ${matches.length} matching notes:` });
-        matchHeader.setCssStyles({ fontSize: "11px", fontWeight: "bold", color: "var(--text-success)", marginBottom: "8px" });
-        matches.forEach((m9) => {
-          const item = resultsDiv.createDiv();
-          item.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px", background: "var(--background-secondary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px", cursor: "pointer", transition: "0.2s" });
-          const nameSpan = item.createSpan({ text: m9.name });
-          nameSpan.setCssStyles({ fontWeight: "600", fontSize: "12px", color: "var(--text-normal)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "160px" });
-          const badgeColor = m9.type === "eln" ? "var(--text-accent)" : m9.type === "inventory" ? "var(--text-warning)" : "var(--text-muted)";
-          const typeSpan = item.createSpan({ text: m9.type.toUpperCase() });
-          typeSpan.setCssStyles({ color: badgeColor, fontSize: "9px", fontWeight: "bold", padding: "2px 6px", borderRadius: "4px", border: "1px solid var(--background-modifier-border)", background: "var(--background-primary)" });
-          item.onmouseover = () => item.style.borderColor = "var(--interactive-accent)";
-          item.onmouseout = () => item.style.borderColor = "var(--background-modifier-border)";
-          item.onclick = () => this.app.workspace.getLeaf(false).openFile(m9.file);
-        });
-      }
-    };
-    textInp.onkeydown = (e6) => {
-      if (e6.key === "Enter" && textInp.value.trim()) void performSearch("text", textInp.value.trim());
-    };
-    exactBtn.onclick = () => {
-      this.plugin.api.ketcher.openEditor("", "smiles", (q5) => {
-        if (q5) void performSearch("exact", q5);
-      });
-    };
-  }
-  // ========================================================================
-  // TAB: TOOLS (Utilities)
-  // ========================================================================
-  async renderToolsTab() {
-    const header1 = this.contentArea.createEl("h4", { text: "\u{1F6E0}\uFE0F Map Generators" });
-    header1.setCssStyles({ margin: "0 0 10px 0", fontSize: "14px", color: "var(--text-normal)" });
-    const mapBox = this.contentArea.createDiv();
-    mapBox.setCssStyles({ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "15px" });
-    const genPlanBtn = mapBox.createEl("button", { text: "\u{1F3AF} Create New Synthesis Plan", cls: "mod-cta" });
-    genPlanBtn.setCssStyles({ width: "100%", height: "28px", fontSize: "12px" });
-    genPlanBtn.onclick = async () => {
-      const file = await this.app.vault.create(`Synthesis Plan ${window.moment().format("HHmmss")}.md`, `---
-tags: [dashboard]
----
-# New Synthesis Plan
-
-\`\`\`synthesis-plan
-
-\`\`\`
-`);
-      this.app.workspace.getLeaf(false).openFile(file);
-    };
-    const genMapBtn = mapBox.createEl("button", { text: "\u{1F5FA}\uFE0F Create Folder Map Dashboard" });
-    genMapBtn.setCssStyles({ width: "100%", height: "28px", fontSize: "12px" });
-    genMapBtn.onclick = async () => {
-      const folder = this.plugin.settings.elnDirectory || "";
-      const file = await this.app.vault.create(`Synthesis Map ${window.moment().format("HHmmss")}.md`, `---
-tags: [dashboard]
----
-# Synthesis Map
-
-\`\`\`synthesis-map
-path: ${folder}
-\`\`\`
-`);
-      this.app.workspace.getLeaf(false).openFile(file);
-    };
-    const header2 = this.contentArea.createEl("h4", { text: "\u{1F9EE} Calculators" });
-    header2.setCssStyles({ margin: "10px 0", fontSize: "14px", color: "var(--text-normal)" });
-    const resolverBox = this.contentArea.createDiv();
-    resolverBox.setCssStyles({ background: "var(--background-secondary)", border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "12px", marginBottom: "10px" });
-    const rTitle = resolverBox.createDiv({ text: "Name to Structure (Web)" });
-    rTitle.setCssStyles({ fontWeight: "700", fontSize: "12px", marginBottom: "8px", color: "var(--text-accent)" });
-    const nameInp = resolverBox.createEl("input", { type: "text", placeholder: "e.g. Aspirin" });
-    nameInp.setCssStyles({ width: "100%", fontSize: "12px", padding: "6px", borderRadius: "4px", border: "1px solid var(--background-modifier-border)", marginBottom: "8px" });
-    const resolveBtn = resolverBox.createEl("button", { text: "Search" });
-    resolveBtn.setCssStyles({ width: "100%", height: "26px", fontSize: "11px" });
-    const resolveRes = resolverBox.createDiv();
-    resolveRes.setCssStyles({ marginTop: "10px", display: "none", flexDirection: "column", gap: "6px" });
-    resolveBtn.onclick = async () => {
-      const name = nameInp.value.trim();
-      if (!name) return;
-      resolveBtn.innerText = "Searching...";
-      try {
-        let smi = "";
-        const fetcher = async (url2) => {
-          const r12 = await (0, import_obsidian7.requestUrl)(url2);
-          return r12.status === 200 ? r12 : null;
-        };
-        try {
-          const res = await fetcher(`https://opsin.ch.cam.ac.uk/opsin/${encodeURIComponent(name)}.smi`);
-          if (res) smi = res.text.trim();
-        } catch (e6) {
-        }
-        if (!smi) {
-          try {
-            const res = await fetcher(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(name)}/smiles`);
-            if (res) smi = res.text.trim();
-          } catch (e6) {
-          }
-        }
-        if (!smi) {
-          try {
-            const res = await fetcher(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(name)}/property/IsomericSMILES/JSON`);
-            if (res) smi = res.json.PropertyTable.Properties[0].IsomericSMILES;
-          } catch (e6) {
-          }
-        }
-        if (smi) {
-          resolveRes.style.display = "flex";
-          resolveRes.empty();
-          const preview2 = resolveRes.createDiv();
-          preview2.setCssStyles({ width: "100%", height: "120px", background: "var(--background-primary)", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 0 4px rgba(0,0,0,0.05)" });
-          window.requestAnimationFrame(async () => {
-            const el2 = await this.plugin.api.renderStructure(smi, 200, 100);
-            if (el2) {
-              el2.style.maxWidth = "100%";
-              el2.style.maxHeight = "100%";
-              preview2.appendChild(el2);
-            }
-          });
-          const btns = resolveRes.createDiv();
-          btns.setCssStyles({ display: "flex", gap: "8px" });
-          const cpyBtn = btns.createEl("button", { text: "\u{1F4CB} Copy SMILES" });
-          cpyBtn.setCssStyles({ flex: "1", height: "24px", fontSize: "10px" });
-          cpyBtn.onclick = () => {
-            void navigator.clipboard.writeText(smi);
-            new import_obsidian7.Notice("Copied!");
-          };
-          const addBtn = btns.createEl("button", { text: "\u{1F4DA} Add to Lib" });
-          addBtn.setCssStyles({ flex: "1", height: "24px", fontSize: "10px" });
-          addBtn.onclick = () => {
-            void this.plugin.api.library.addCompound(name, smi);
-          };
-        } else {
-          new import_obsidian7.Notice("Not found.");
-        }
-      } catch (e6) {
-        new import_obsidian7.Notice("Search failed.");
-      }
-      resolveBtn.innerText = "Search";
-    };
-    nameInp.onkeydown = (e6) => {
-      if (e6.key === "Enter") resolveBtn.click();
-    };
-    const calcBox = this.contentArea.createDiv();
-    calcBox.setCssStyles({ background: "var(--background-secondary)", border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "12px" });
-    const cTitle = calcBox.createDiv({ text: "Quick Calculator (Offline)" });
-    cTitle.setCssStyles({ fontWeight: "700", fontSize: "12px", marginBottom: "8px", color: "var(--text-accent)" });
-    const smiInp = calcBox.createEl("input", { type: "text", placeholder: "Paste SMILES here..." });
-    smiInp.setCssStyles({ width: "100%", fontSize: "12px", padding: "6px", borderRadius: "4px", border: "1px solid var(--background-modifier-border)", marginBottom: "8px" });
-    const calcRes = calcBox.createDiv();
-    calcRes.setCssStyles({ fontSize: "11px", color: "var(--text-normal)", display: "flex", flexDirection: "column", gap: "4px" });
-    smiInp.oninput = async () => {
-      const smi = smiInp.value.trim();
-      calcRes.empty();
-      if (!smi) return;
-      calcRes.createSpan({ text: "Calculating..." }).setCssStyles({ color: "var(--text-muted)" });
-      const mwProps = await calculateMwOffline(smi, this.plugin);
-      const oclProps = ChemDataEngine.getPropertiesFromSmiles(smi.split(" |")[0].trim());
-      calcRes.empty();
-      if (mwProps && mwProps.mw > 0) {
-        const r1 = calcRes.createDiv();
-        r1.setCssStyles({ display: "flex", justifyContent: "space-between" });
-        r1.createSpan({ text: "Formula:" }).setCssStyles({ color: "var(--text-muted)" });
-        r1.createEl("b", { text: mwProps.formula });
-        const r22 = calcRes.createDiv();
-        r22.setCssStyles({ display: "flex", justifyContent: "space-between" });
-        r22.createSpan({ text: "Exact Mass:" }).setCssStyles({ color: "var(--text-muted)" });
-        r22.createEl("b", { text: mwProps.mw.toFixed(3) });
-        if (oclProps && oclProps.logp) {
-          const r32 = calcRes.createDiv();
-          r32.setCssStyles({ display: "flex", justifyContent: "space-between" });
-          r32.createSpan({ text: "LogP:" }).setCssStyles({ color: "var(--text-muted)" });
-          r32.createEl("b", { text: oclProps.logp.toFixed(2) });
-          const r42 = calcRes.createDiv();
-          r42.setCssStyles({ display: "flex", justifyContent: "space-between" });
-          r42.createSpan({ text: "TPSA:" }).setCssStyles({ color: "var(--text-muted)" });
-          r42.createEl("b", { text: oclProps.tpsa.toFixed(2) });
-        }
-      } else {
-        calcRes.createSpan({ text: "Invalid SMILES" }).setCssStyles({ color: "var(--text-error)" });
-      }
-    };
-  }
-  // ========================================================================
-  // HELPER: EXTRACT CHEMISTRY
-  // ========================================================================
-  async extractChemistryFromNote(file) {
-    var _a, _b;
-    const content4 = await this.app.vault.cachedRead(file);
-    const smilesList = [];
-    let name = file.basename;
-    let type3 = "note";
-    let expData = null;
-    const elnMatch = content4.match(/```eln\s*\n([\s\S]*?)\n```/);
-    if (elnMatch) {
-      type3 = "eln";
-      try {
-        const { parseYaml: parseYaml2 } = require("obsidian");
-        const safeSource = elnMatch[1].replace(/smiles:\s*(.*)$/gm, (m9, p1) => {
-          let s8 = p1.trim();
-          if (!s8) return m9;
-          const cMatch = s8.match(/(\s+#.*)$/);
-          if (cMatch) s8 = s8.substring(0, s8.length - cMatch[1].length).trim();
-          if (s8.startsWith('"') && s8.endsWith('"') || s8.startsWith("'") && s8.endsWith("'")) s8 = s8.substring(1, s8.length - 1);
-          return `smiles: '${s8.replace(/\\"/g, '"').replace(/'/g, "''")}'`;
-        });
-        expData = parseYaml2(safeSource);
-        if (expData.code) name = expData.code;
-        if (expData.reactants) expData.reactants.forEach((r12) => {
-          if (r12.smiles) smilesList.push(r12.smiles);
-        });
-        if (expData.products) expData.products.forEach((p7) => {
-          if (p7.smiles) smilesList.push(p7.smiles);
-        });
-      } catch (e6) {
-      }
-    } else {
-      const smiMatch = content4.match(/```smiles\s*\n([\s\S]*?)\n```/g);
-      if (smiMatch) {
-        type3 = "smiles";
-        smiMatch.forEach((block) => {
-          const s8 = block.replace(/```smiles|```/g, "").trim();
-          if (s8) smilesList.push(s8);
-        });
-      }
-      const cache2 = this.app.metadataCache.getFileCache(file);
-      if ((_a = cache2 == null ? void 0 : cache2.frontmatter) == null ? void 0 : _a.smiles) {
-        type3 = ((_b = cache2.frontmatter.tags) == null ? void 0 : _b.includes("inventory")) ? "inventory" : "library";
-        smilesList.push(cache2.frontmatter.smiles);
-      }
-    }
-    if (smilesList.length > 0) return { name, type: type3, smilesList, data: expData };
-    return null;
-  }
-};
-
-// SharedPathway.ts
-var import_obsidian8 = require("obsidian");
-init_SharedEln();
-var PATH_COLORS = [
-  "#4e79a7",
-  "#f28e2c",
-  "#e15759",
-  "#76b7b2",
-  "#59a14f",
-  "#edc949",
-  "#af7aa1",
-  "#ff9da7",
-  "#9c755f",
-  "#bab0ab"
-];
-var SynthesisMapRenderer = class {
-  constructor(plugin) {
-    this.plugin = plugin;
-  }
-  async renderMap(source, el2, ctx) {
-    var _a, _b, _c, _d, _e2, _f, _g2, _h, _i2, _j, _k, _l3, _m, _n2, _o2, _p, _q, _r2, _s2;
-    const pathLine = source.split("\n").find((l8) => l8.trim().startsWith("path:"));
-    let folderPath = pathLine ? pathLine.replace("path:", "").trim() : "";
-    const projectLine = source.split("\n").find((l8) => l8.trim().startsWith("project:"));
-    const targetProject = projectLine ? projectLine.replace("project:", "").trim() : "";
-    if (!folderPath) {
-      const activeFile = this.plugin.app.workspace.getActiveFile();
-      if (activeFile && activeFile.parent) folderPath = activeFile.parent.path === "/" ? "" : activeFile.parent.path;
-    }
-    const folder = folderPath === "" ? this.plugin.app.vault.getRoot() : this.plugin.app.vault.getAbstractFileByPath(folderPath);
-    if (!folder || !("children" in folder)) {
-      const err = el2.createDiv();
-      err.setText(`\u26A0\uFE0F Folder not found: ${folderPath || "Root Vault"}`);
-      err.addClass("color-text-error");
-      return;
-    }
-    const files = folder.children.filter((f9) => f9 instanceof import_obsidian8.TFile && f9.extension.toLowerCase() === "md");
-    const mapTitle = targetProject ? `\u{1F5FA}\uFE0F Synthesis Map: ${targetProject}` : "\u{1F5FA}\uFE0F Synthesis Map";
-    const wrapper2 = this.createBaseWrapper(el2, folderPath, mapTitle, false, ctx);
-    const container = wrapper2.querySelector(".chem-pathway-grid");
-    container.setCssStyles({ flexDirection: "column", alignItems: "stretch", gap: "15px" });
-    let renderedCount = 0;
-    for (const file of files) {
-      const exp = await this.fetchChemicalData(file);
-      if (!exp || exp.type !== "eln") continue;
-      if (targetProject && ((_a = exp.data) == null ? void 0 : _a.project) !== targetProject) continue;
-      const reactantSmi = ((_d = (_c = (_b = exp.data) == null ? void 0 : _b.reactants) == null ? void 0 : _c[0]) == null ? void 0 : _d.smiles) || "";
-      const productSmi = ((_g2 = (_f = (_e2 = exp.data) == null ? void 0 : _e2.products) == null ? void 0 : _f[0]) == null ? void 0 : _g2.smiles) || "";
-      const yieldNum = parseFloat((_j = (_i2 = (_h = exp.data) == null ? void 0 : _h.products) == null ? void 0 : _i2[0]) == null ? void 0 : _j.yield);
-      const yieldStr = isNaN(yieldNum) ? "N/A" : `${yieldNum}%`;
-      const code = ((_k = exp.data) == null ? void 0 : _k.code) || file.basename;
-      if (!reactantSmi && !productSmi) continue;
-      const color5 = PATH_COLORS[renderedCount % PATH_COLORS.length];
-      renderedCount++;
-      const rowWrapper = container.createDiv();
-      rowWrapper.setCssStyles({ display: "flex", flexDirection: "row", flexWrap: "nowrap", alignItems: "center", justifyContent: "flex-start", gap: "25px", width: "100%", padding: "15px 25px", background: `linear-gradient(90deg, ${color5}11, var(--background-primary) 30%)`, border: "1px solid var(--background-modifier-border)", borderLeft: `5px solid ${color5}`, borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" });
-      if (reactantSmi) this.drawChemicalNode(rowWrapper, reactantSmi, ((_n2 = (_m = (_l3 = exp.data) == null ? void 0 : _l3.reactants) == null ? void 0 : _m[0]) == null ? void 0 : _n2.name) || "Starting Material", null, null, null, void 0, false, void 0, void 0, color5);
-      const arrowWrapper = rowWrapper.createDiv({ cls: "chem-exp-node" });
-      arrowWrapper.setAttribute("data-search", `${code} ${productSmi} ${reactantSmi} ${((_o2 = exp.data) == null ? void 0 : _o2.project) || ""}`.toLowerCase());
-      arrowWrapper.setCssStyles({ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s ease", padding: "15px", borderRadius: "6px", border: "1px solid transparent", minWidth: "100px" });
-      const badgeColor = yieldNum >= 80 ? "var(--text-success)" : yieldNum <= 30 ? "var(--text-error)" : "var(--text-warning)";
-      const codeDiv = arrowWrapper.createDiv();
-      codeDiv.setText(code);
-      codeDiv.setCssStyles({ fontSize: "11px", color: "var(--text-accent)", fontWeight: "700", background: "var(--background-primary)", padding: "4px 10px", borderRadius: "12px", border: "1px solid var(--background-modifier-border)", boxShadow: "0 1px 2px rgba(0,0,0,0.05)", textAlign: "center" });
-      const arrowDiv = arrowWrapper.createDiv();
-      arrowDiv.setText("\u27F6");
-      arrowDiv.setCssStyles({ fontSize: "20px", color: color5, lineHeight: "1", margin: "8px 0", textAlign: "center" });
-      const yieldDiv = arrowWrapper.createDiv();
-      yieldDiv.setText(yieldStr);
-      yieldDiv.setCssStyles({ fontSize: "12px", color: badgeColor, fontWeight: "800", textAlign: "center" });
-      if ((_p = exp.data) == null ? void 0 : _p.project) {
-        const projDiv = arrowWrapper.createDiv();
-        projDiv.setText(exp.data.project);
-        projDiv.setCssStyles({ fontSize: "9px", color: "var(--text-muted)", textTransform: "uppercase", marginTop: "6px", letterSpacing: "0.5px" });
-      }
-      arrowWrapper.onmouseover = () => {
-        arrowWrapper.setCssStyles({ backgroundColor: "var(--background-modifier-hover)", borderColor: "var(--interactive-accent)", transform: "scale(1.02)" });
-      };
-      arrowWrapper.onmouseout = () => {
-        arrowWrapper.setCssStyles({ backgroundColor: "transparent", borderColor: "transparent", transform: "scale(1)" });
-      };
-      arrowWrapper.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
-      if (productSmi) this.drawChemicalNode(rowWrapper, productSmi, ((_s2 = (_r2 = (_q = exp.data) == null ? void 0 : _q.products) == null ? void 0 : _r2[0]) == null ? void 0 : _s2.name) || "Product", null, null, null, void 0, false, void 0, void 0, color5);
-    }
-    if (renderedCount === 0) {
-      container.empty();
-      const msg = container.createSpan({ cls: "color-text-muted" });
-      msg.setText("No experiments found matching these criteria.");
-      msg.setCssStyles({ padding: "20px", fontStyle: "italic" });
-    }
-    this.attachSearchLogic(wrapper2);
-  }
-  async renderPlan(source, el2, ctx) {
-    var _a;
-    const lines = source.split("\n").map((l8) => l8.trim()).filter((l8) => l8.length > 0 && !l8.startsWith("path:") && !l8.startsWith("project:"));
-    const projectLine = source.split("\n").find((l8) => l8.trim().startsWith("project:"));
-    const targetProject = projectLine ? projectLine.replace("project:", "").trim() : "";
-    const mapTitle = targetProject ? `\u{1F3AF} Synthesis Plan: ${targetProject}` : "\u{1F3AF} Synthesis Plan";
-    const nodes = /* @__PURE__ */ new Map();
-    const edges = [];
-    for (const line4 of lines) {
-      const tokens = line4.split(/\s*(?:->|=>)\s*/).filter((t8) => t8.trim().length > 0);
-      let prevId = null;
-      for (const token2 of tokens) {
-        const rawToken = token2.trim();
-        const linkMatch = rawToken.match(/\[\[(.*?)\]\]/);
-        let currentId = rawToken;
-        if (!nodes.has(currentId)) {
-          let type3 = "text";
-          let label = rawToken;
-          let smiles = "";
-          let data = null;
-          if (linkMatch) {
-            const cleanName = linkMatch[1].split("|")[0].trim();
-            const alias = linkMatch[1].includes("|") ? linkMatch[1].split("|")[1].trim() : null;
-            let file = this.plugin.app.metadataCache.getFirstLinkpathDest(cleanName, ctx.sourcePath);
-            if (!file) file = this.plugin.app.vault.getMarkdownFiles().find((f9) => f9.basename === cleanName || f9.name === cleanName);
-            if (file) {
-              const exp = await this.fetchChemicalData(file);
-              if (exp && exp.smiles) {
-                type3 = exp.type;
-                smiles = exp.smiles;
-                data = exp.data;
-                label = alias ? alias : exp.type === "eln" ? ((_a = exp.data) == null ? void 0 : _a.code) || file.basename : file.basename;
-                currentId = file.path;
-              } else {
-                label = `[No Structure: ${cleanName}]`;
-              }
-            } else {
-              label = `[Missing Note: ${cleanName}]`;
-            }
-          } else if (rawToken.includes("|")) {
-            const parts = rawToken.split("|");
-            type3 = "smiles";
-            smiles = parts[0].trim();
-            label = parts[1].trim();
-          } else {
-            const isSmiles = /^[A-Za-z0-9@+\-\[\]\(\)\\\/=#%\.]+$/.test(rawToken) && /[A-Za-z]/.test(rawToken);
-            if (isSmiles) {
-              type3 = "smiles";
-              smiles = rawToken;
-              label = rawToken.length > 15 ? `${rawToken.substring(0, 12)}...` : rawToken;
-            } else {
-              type3 = "text";
-              label = rawToken;
-            }
-          }
-          if (!nodes.has(currentId)) nodes.set(currentId, { id: currentId, type: type3, smiles, label, data, rank: 0, rawToken });
-        }
-        if (prevId) edges.push({ source: prevId, target: currentId });
-        prevId = currentId;
-      }
-    }
-    await this.renderDAG(el2, nodes, edges, "", mapTitle, ctx, true);
-  }
-  async renderDAG(el2, nodes, edges, folderPath, titleText, ctx, isInteractive = false) {
-    let changed = true;
-    let loops = 0;
-    while (changed && loops < 100) {
-      changed = false;
-      edges.forEach((edge) => {
-        const sNode = nodes.get(edge.source);
-        const tNode = nodes.get(edge.target);
-        if (sNode && tNode && sNode.rank >= tNode.rank) {
-          tNode.rank = sNode.rank + 1;
-          changed = true;
-        }
-      });
-      loops++;
-    }
-    let cIdx = 0;
-    nodes.forEach((n8) => {
-      if (n8.rank === 0) {
-        n8.color = PATH_COLORS[cIdx % PATH_COLORS.length];
-        cIdx++;
-      }
-    });
-    changed = true;
-    loops = 0;
-    while (changed && loops < 100) {
-      changed = false;
-      edges.forEach((e6) => {
-        const sNode = nodes.get(e6.source);
-        const tNode = nodes.get(e6.target);
-        if (sNode && tNode && sNode.color) {
-          e6.color = sNode.color;
-          if (!tNode.color) {
-            tNode.color = sNode.color;
-            changed = true;
-          }
-        }
-      });
-      loops++;
-    }
-    nodes.forEach((n8) => {
-      if (!n8.color) {
-        n8.color = PATH_COLORS[cIdx % PATH_COLORS.length];
-        cIdx++;
-      }
-    });
-    const wrapper2 = this.createBaseWrapper(el2, folderPath, titleText, isInteractive, ctx);
-    const scrollArea = wrapper2.querySelector(".chem-pathway-grid");
-    scrollArea.setCssStyles({ position: "relative", padding: "60px 80px" });
-    if (nodes.size === 0) {
-      scrollArea.empty();
-      const emptyMsg = scrollArea.createDiv();
-      emptyMsg.setText("Empty canvas. Use tools above or type connections (e.g., [[EXP-01]] -> C1=CC=CC=C1).");
-      emptyMsg.setCssStyles({ padding: "20px", color: "var(--text-muted)", fontStyle: "italic" });
-      return;
-    }
-    const graphContainer = scrollArea.createDiv();
-    graphContainer.setCssStyles({ display: "flex", flexDirection: "row", gap: "80px", minWidth: "max-content", position: "relative" });
-    const svgOverlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svgOverlay.setAttribute("style", "position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;");
-    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-    PATH_COLORS.forEach((c10) => {
-      const hex3 = c10.replace("#", "");
-      const marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
-      marker.setAttribute("id", `arrow-${hex3}`);
-      marker.setAttribute("viewBox", "0 0 10 10");
-      marker.setAttribute("refX", "8");
-      marker.setAttribute("refY", "5");
-      marker.setAttribute("markerWidth", "5");
-      marker.setAttribute("markerHeight", "5");
-      marker.setAttribute("orient", "auto-start-reverse");
-      const path2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path2.setAttribute("d", "M 0 2 L 8 5 L 0 8 z");
-      path2.setAttribute("fill", c10);
-      marker.appendChild(path2);
-      defs.appendChild(marker);
-    });
-    svgOverlay.appendChild(defs);
-    graphContainer.appendChild(svgOverlay);
-    const columns = [];
-    nodes.forEach((n8) => {
-      if (!columns[n8.rank]) columns[n8.rank] = [];
-      columns[n8.rank].push(n8);
-    });
-    for (const col of columns) {
-      if (!col) continue;
-      const colDiv = graphContainer.createDiv();
-      colDiv.setCssStyles({ display: "flex", flexDirection: "column", gap: "40px", justifyContent: "center", zIndex: "1" });
-      for (const node2 of col) {
-        if (node2.type === "eln") {
-          this.drawExperimentNode(colDiv, node2, isInteractive, ctx, el2, node2.color);
-        } else if (node2.type === "text") {
-          const nodeEl = colDiv.createDiv({ cls: "chem-exp-node" });
-          nodeEl.setAttribute("data-id", node2.id);
-          nodeEl.setCssStyles({ display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg, ${node2.color}11, var(--background-primary))`, border: "1px solid var(--background-modifier-border)", borderLeft: `4px solid ${node2.color}`, borderRadius: "12px", padding: "15px 25px", minWidth: "100px", fontWeight: "600", fontSize: "14px", color: "var(--text-normal)", textAlign: "center", wordBreak: "break-word", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", zIndex: "2", position: "relative", transition: "transform 0.2s" });
-          nodeEl.setText(node2.label);
-          node2.el = nodeEl;
-          if (isInteractive) this.attachMindMapInteractions(nodeEl, node2, ctx, el2, graphContainer, svgOverlay);
-        } else {
-          this.drawChemicalNode(colDiv, node2.smiles, node2.label, node2.rawToken || null, ctx, el2, node2, isInteractive, graphContainer, svgOverlay, node2.color);
-        }
-      }
-    }
-    const drawLines2 = () => {
-      svgOverlay.setAttribute("style", `position: absolute; top: 0; left: 0; width: ${graphContainer.scrollWidth}px; height: ${graphContainer.scrollHeight}px; pointer-events: none; z-index: 0;`);
-      Array.from(svgOverlay.querySelectorAll("path.chem-edge")).forEach((e6) => e6.remove());
-      const getRelativePos = (element) => {
-        let x25 = 0, y9 = 0;
-        let curr = element;
-        while (curr && curr !== graphContainer) {
-          x25 += curr.offsetLeft;
-          y9 += curr.offsetTop;
-          curr = curr.offsetParent;
-        }
-        return { x: x25, y: y9, w: element.offsetWidth, h: element.offsetHeight };
-      };
-      edges.forEach((edge) => {
-        const sNode = nodes.get(edge.source);
-        const tNode = nodes.get(edge.target);
-        if ((sNode == null ? void 0 : sNode.el) && (tNode == null ? void 0 : tNode.el)) {
-          const sPos = getRelativePos(sNode.el);
-          const tPos = getRelativePos(tNode.el);
-          const startX = sPos.x + sPos.w;
-          const startY = sPos.y + sPos.h / 2;
-          const endX = tPos.x - 8;
-          const endY = tPos.y + tPos.h / 2;
-          const dx = Math.max(Math.abs(endX - startX) * 0.5, 40);
-          const pathD = `M ${startX} ${startY} C ${startX + dx} ${startY}, ${endX - dx} ${endY}, ${endX} ${endY}`;
-          const path2 = document.createElementNS("http://www.w3.org/2000/svg", "path");
-          path2.setAttribute("class", "chem-edge");
-          path2.setAttribute("d", pathD);
-          path2.setAttribute("fill", "none");
-          path2.setAttribute("stroke", edge.color || "var(--text-muted)");
-          path2.setAttribute("stroke-width", "2.5");
-          path2.setAttribute("stroke-linecap", "round");
-          if (edge.color) path2.setAttribute("marker-end", `url(#arrow-${edge.color.replace("#", "")})`);
-          svgOverlay.appendChild(path2);
-        }
-      });
-    };
-    window.setTimeout(drawLines2, 100);
-    new ResizeObserver(() => drawLines2()).observe(wrapper2);
-    this.attachSearchLogic(wrapper2);
-  }
-  attachMindMapInteractions(nodeEl, node2, ctx, el2, graphContainer, svgOverlay) {
-    const toolOverlay = nodeEl.createDiv();
-    toolOverlay.setCssStyles({ position: "absolute", right: "-110px", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", gap: "4px", opacity: "0", transition: "opacity 0.2s", zIndex: "10" });
-    nodeEl.addEventListener("mouseenter", () => toolOverlay.setCssStyles({ opacity: "1" }));
-    nodeEl.addEventListener("mouseleave", () => toolOverlay.setCssStyles({ opacity: "0" }));
-    const dragHandle = toolOverlay.createDiv({ attr: { title: "Drag to connect" } });
-    dragHandle.setCssStyles({ width: "16px", height: "16px", background: node2.color || "var(--interactive-accent)", border: "3px solid var(--background-primary)", borderRadius: "50%", cursor: "crosshair", pointerEvents: "auto", boxShadow: "0 2px 4px rgba(0,0,0,0.2)" });
-    const branchStructBtn = toolOverlay.createEl("button", { attr: { title: "Add Structure Branch" } });
-    branchStructBtn.setCssStyles({ width: "24px", height: "24px", padding: "0", background: "var(--interactive-accent)", border: "none", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--text-on-accent)", fontSize: "12px", boxShadow: "0 2px 6px rgba(0,0,0,0.15)" });
-    branchStructBtn.appendText("\u2B21");
-    branchStructBtn.createSpan({ text: "+" }).setCssStyles({ fontSize: "8px" });
-    branchStructBtn.onclick = (e6) => {
-      e6.stopPropagation();
-      this.plugin.openKetcherModal("", "smiles", (newData) => {
-        this.updateMarkdownBlock(ctx, el2, null, `
-${node2.rawToken} -> ${newData}`);
-      });
-    };
-    const branchTextBtn = toolOverlay.createEl("button", { attr: { title: "Add Text Branch" } });
-    branchTextBtn.setCssStyles({ width: "24px", height: "24px", padding: "0", background: "var(--background-secondary-alt)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--text-normal)", fontSize: "11px", fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" });
-    branchTextBtn.appendText("T");
-    branchTextBtn.createSpan({ text: "+" }).setCssStyles({ fontSize: "8px" });
-    branchTextBtn.onclick = (e6) => {
-      e6.stopPropagation();
-      new TextPromptModal(this.plugin.app, "Add Text Note", "Enter text for the new branch", "", (txt) => {
-        this.updateMarkdownBlock(ctx, el2, null, `
-${node2.rawToken} -> ${txt}`);
-      }).open();
-    };
-    const editBtn = toolOverlay.createEl("button", { attr: { title: "Edit or Delete Node" } });
-    editBtn.setCssStyles({ width: "24px", height: "24px", padding: "0", background: "var(--background-secondary-alt)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--text-normal)", fontSize: "12px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" });
-    editBtn.appendText("\u270F\uFE0F");
-    editBtn.onclick = (e6) => {
-      e6.stopPropagation();
-      new TextPromptModal(this.plugin.app, "Edit Node", "Change the link/text. Clear the input to delete this node.", node2.rawToken || "", (newVal) => {
-        this.updateMarkdownNodeText(ctx, el2, node2.rawToken, newVal);
-      }).open();
-    };
-    let isDragging = false;
-    let tempPath = null;
-    const getRelativeMousePos = (e6) => {
-      const rect = graphContainer.getBoundingClientRect();
-      return { x: e6.clientX - rect.left + graphContainer.scrollLeft, y: e6.clientY - rect.top + graphContainer.scrollTop };
-    };
-    const onMouseMove = (e6) => {
-      if (!isDragging) return;
-      const mousePos = getRelativeMousePos(e6);
-      let sx = 0, sy = 0;
-      let curr = nodeEl;
-      while (curr && curr !== graphContainer) {
-        sx += curr.offsetLeft;
-        sy += curr.offsetTop;
-        curr = curr.offsetParent;
-      }
-      sx += nodeEl.offsetWidth;
-      sy += nodeEl.offsetHeight / 2;
-      const dx = Math.max(Math.abs(mousePos.x - sx) * 0.5, 30);
-      const d10 = `M ${sx} ${sy} C ${sx + dx} ${sy}, ${mousePos.x - dx} ${mousePos.y}, ${mousePos.x} ${mousePos.y}`;
-      if (tempPath) tempPath.setAttribute("d", d10);
-    };
-    const onMouseUp = (e6) => {
-      var _a;
-      if (!isDragging) return;
-      isDragging = false;
-      if (tempPath) {
-        tempPath.remove();
-        tempPath = null;
-      }
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-      toolOverlay.setCssStyles({ display: "none" });
-      const targetEl = (_a = document.elementFromPoint(e6.clientX, e6.clientY)) == null ? void 0 : _a.closest(".chem-exp-node");
-      toolOverlay.setCssStyles({ display: "flex" });
-      if (targetEl && targetEl !== nodeEl) {
-        const targetRawToken = targetEl.getAttribute("data-token") || targetEl.getAttribute("data-id");
-        if (targetRawToken && node2.rawToken) {
-          this.updateMarkdownBlock(ctx, el2, null, `
-${node2.rawToken} -> ${targetRawToken}`);
-          new import_obsidian8.Notice("Connected!");
-        }
-      }
-    };
-    dragHandle.addEventListener("mousedown", (e6) => {
-      e6.preventDefault();
-      e6.stopPropagation();
-      isDragging = true;
-      tempPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      tempPath.setAttribute("fill", "none");
-      tempPath.setAttribute("stroke", node2.color || "var(--interactive-accent)");
-      tempPath.setAttribute("stroke-width", "3");
-      tempPath.setAttribute("stroke-dasharray", "5,5");
-      tempPath.setAttribute("marker-end", `url(#arrow-${(node2.color || "").replace("#", "")})`);
-      svgOverlay.appendChild(tempPath);
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-    });
-  }
-  updateMarkdownBlock(ctx, el2, oldText, newText) {
-    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
-    if (!view) return;
-    let info = ctx.getSectionInfo(el2);
-    if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
-    if (!info) return;
-    const editor4 = view.editor;
-    const lines = editor4.getValue().split("\n");
-    if (oldText && oldText !== newText) {
-      for (let i8 = info.lineStart; i8 <= info.lineEnd; i8++) {
-        if (lines[i8].includes(oldText)) {
-          lines[i8] = lines[i8].replace(oldText, newText);
-          break;
-        }
-      }
-    } else if (!oldText) {
-      lines.splice(info.lineEnd, 0, newText);
-    }
-    editor4.setValue(lines.join("\n"));
-  }
-  updateMarkdownNodeText(ctx, el2, oldToken, newToken) {
-    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
-    if (!view) return;
-    let info = ctx.getSectionInfo(el2);
-    if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
-    if (!info) return;
-    const editor4 = view.editor;
-    const lines = editor4.getValue().split("\n");
-    for (let i8 = info.lineStart; i8 <= info.lineEnd; i8++) {
-      if (lines[i8].includes(oldToken)) {
-        if (newToken === "") {
-          let line4 = lines[i8].replace(oldToken, "");
-          line4 = line4.replace(/(->|=>|-)\s*(->|=>|-)/g, "$1");
-          line4 = line4.replace(/^\s*(->|=>|-)\s*/, "");
-          line4 = line4.replace(/\s*(->|=>|-)\s*$/, "");
-          if (line4.trim() === "") lines.splice(i8, 1);
-          else lines[i8] = line4;
-        } else {
-          lines[i8] = lines[i8].replace(oldToken, newToken);
-        }
-        editor4.setValue(lines.join("\n"));
-        break;
-      }
-    }
-  }
-  createBaseWrapper(parent, folderPath, titleText, isInteractive = false, ctx) {
-    const wrapper2 = parent.createDiv({ cls: "chem-pathway-wrapper" });
-    wrapper2.setCssStyles({ border: "1px solid var(--background-modifier-border)", borderRadius: "12px", background: "var(--background-primary)", overflow: "hidden", marginTop: "10px", boxShadow: "0 4px 15px rgba(0,0,0,0.02)" });
-    const toolbar = wrapper2.createDiv();
-    toolbar.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 18px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)", flexWrap: "wrap", gap: "10px", zIndex: "10", position: "relative" });
-    const h32 = toolbar.createEl("h3", { text: titleText });
-    h32.setCssStyles({ margin: "0", fontSize: "16px", fontWeight: "700", color: "var(--text-normal)", display: "flex", alignItems: "center", gap: "8px" });
-    const tools2 = toolbar.createDiv();
-    tools2.setCssStyles({ display: "flex", gap: "8px", alignItems: "center" });
-    if (isInteractive && ctx) {
-      const addSmiBtn = tools2.createEl("button", { text: "\u2B21 Add Structure" });
-      addSmiBtn.setCssStyles({ height: "28px", fontSize: "11px", padding: "0 12px", borderRadius: "4px", fontWeight: "600" });
-      addSmiBtn.onclick = () => {
-        this.plugin.openKetcherModal("", "smiles", (newData) => {
-          this.updateMarkdownBlock(ctx, wrapper2, null, `
-${newData}`);
-        });
-      };
-      const addTxtBtn = tools2.createEl("button", { text: "\u{1F4DD} Add Note" });
-      addTxtBtn.setCssStyles({ height: "28px", fontSize: "11px", padding: "0 12px", borderRadius: "4px", fontWeight: "600" });
-      addTxtBtn.onclick = () => {
-        new TextPromptModal(this.plugin.app, "Add Note Node", "Enter text for the new node", "", (txt) => {
-          this.updateMarkdownBlock(ctx, wrapper2, null, `
-${txt}`);
-        }).open();
-      };
-      const addElnBtn = tools2.createEl("button", { text: "\u{1F9EA} Add ELN", cls: "mod-cta" });
-      addElnBtn.setCssStyles({ height: "28px", fontSize: "11px", padding: "0 12px", borderRadius: "4px", fontWeight: "600" });
-      addElnBtn.onclick = () => {
-        var _a, _b;
-        const activeFile = this.plugin.app.workspace.getActiveFile();
-        const targetFolder = folderPath || (((_a = activeFile == null ? void 0 : activeFile.parent) == null ? void 0 : _a.path) === "/" ? "" : (_b = activeFile == null ? void 0 : activeFile.parent) == null ? void 0 : _b.path) || "";
-        new CreateExperimentModal(this.plugin.app, this.plugin, this.plugin.settings.elnPrefix, targetFolder, async (expCode) => {
-          this.updateMarkdownBlock(ctx, wrapper2, null, `
-[[${expCode}]]`);
-          await this.plugin.api.eln.createExperiment(expCode, targetFolder);
-        }).open();
-      };
-    }
-    const searchInp = tools2.createEl("input", { type: "search", cls: "chem-pathway-search", placeholder: "Search nodes..." });
-    searchInp.setCssStyles({ width: "140px", padding: "6px 12px", fontSize: "12px", borderRadius: "4px", border: "1px solid var(--background-modifier-border)" });
-    const grid2 = wrapper2.createDiv({ cls: "chem-pathway-grid" });
-    grid2.setCssStyles({ padding: "20px", overflowX: "auto", display: "flex", flexDirection: "row", alignItems: "center" });
-    return wrapper2;
-  }
-  drawChemicalNode(parent, smiles, label, rawToken, ctx, el2, nodeObj, isInteractive = false, graphContainer, svgOverlay, color5) {
-    const bgGrad = color5 ? `linear-gradient(135deg, ${color5}11, var(--background-primary))` : "var(--background-secondary)";
-    const borderL = color5 ? `4px solid ${color5}` : `1px solid var(--background-modifier-border)`;
-    const box = parent.createDiv({ cls: "chem-exp-node" });
-    box.setAttribute("data-search", `${label} ${smiles}`.toLowerCase());
-    if (nodeObj) box.setAttribute("data-id", nodeObj.id);
-    else box.setAttribute("data-id", smiles);
-    if (rawToken) box.setAttribute("data-token", rawToken);
-    else box.setAttribute("data-token", smiles);
-    box.setCssStyles({ display: "flex", flexDirection: "column", alignItems: "center", background: bgGrad, border: "1px solid var(--background-modifier-border)", borderLeft: borderL, borderRadius: "12px", padding: "12px", width: "140px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", position: "relative", transition: "transform 0.2s", zIndex: "2" });
-    if (nodeObj) nodeObj.el = box;
-    const preview2 = box.createDiv();
-    preview2.setCssStyles({ width: "120px", height: "90px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-primary)", borderRadius: "6px", boxShadow: "inset 0 0 4px rgba(0,0,0,0.02)" });
-    preview2.createSpan({ text: "\u23F3" });
-    const labelDiv = box.createDiv();
-    labelDiv.setText(label);
-    labelDiv.setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-normal)", textAlign: "center", marginTop: "8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" });
-    if (rawToken && ctx && el2) {
-      box.setCssStyles({ cursor: "pointer" });
-      box.title = "Double-click to edit Structure/Name";
-      box.onmouseover = () => {
-        box.setCssStyles({ transform: "translateY(-2px)" });
-      };
-      box.onmouseout = () => {
-        box.setCssStyles({ transform: "translateY(0)" });
-      };
-      box.addEventListener("dblclick", (e6) => {
-        e6.stopPropagation();
-        this.plugin.openKetcherModal(smiles, "smiles", (newData) => {
-          const replacement = label !== "Structure" ? `${newData}|${label}` : newData;
-          this.updateMarkdownNodeText(ctx, el2, rawToken, replacement);
-        });
-      });
-    }
-    if (isInteractive && nodeObj && graphContainer && svgOverlay) {
-      this.attachMindMapInteractions(box, nodeObj, ctx, el2, graphContainer, svgOverlay);
-    }
-    window.requestAnimationFrame(async () => {
-      const renderEl = await this.plugin.api.renderStructure(smiles, 120, 90);
-      preview2.empty();
-      if (renderEl) {
-        renderEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
-        preview2.appendChild(renderEl);
-      } else preview2.createSpan({ text: "\u274C" });
-    });
-  }
-  drawExperimentNode(parent, node2, isInteractive = false, ctx, el2, color5) {
-    var _a, _b, _c, _d, _e2;
-    const yieldNum = parseFloat((_c = (_b = (_a = node2.data) == null ? void 0 : _a.products) == null ? void 0 : _b[0]) == null ? void 0 : _c.yield);
-    const yieldStr = isNaN(yieldNum) ? "N/A" : `${yieldNum}%`;
-    const badgeColor = yieldNum >= 80 ? "var(--text-success)" : yieldNum <= 30 ? "var(--text-error)" : "var(--text-warning)";
-    const bgGrad = color5 ? `linear-gradient(135deg, ${color5}11, var(--background-primary))` : "var(--background-primary)";
-    const borderL = color5 ? `4px solid ${color5}` : `1px solid var(--background-modifier-border)`;
-    const nodeEl = parent.createDiv({ cls: "chem-exp-node" });
-    nodeEl.setAttribute("data-search", `${node2.label} ${node2.smiles} ${((_d = node2.data) == null ? void 0 : _d.project) || ""}`.toLowerCase());
-    nodeEl.setAttribute("data-id", node2.id);
-    if (node2.rawToken) nodeEl.setAttribute("data-token", node2.rawToken);
-    nodeEl.setCssStyles({ display: "flex", flexDirection: "column", alignItems: "center", background: bgGrad, border: "1px solid var(--background-modifier-border)", borderLeft: borderL, borderRadius: "12px", padding: "12px", width: "140px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", position: "relative", transition: "transform 0.2s", zIndex: "2" });
-    node2.el = nodeEl;
-    const header = nodeEl.createDiv();
-    header.setCssStyles({ display: "flex", justifyContent: "space-between", width: "100%", marginBottom: "8px", alignItems: "center" });
-    const lbl = header.createDiv();
-    lbl.setText(node2.label);
-    lbl.setCssStyles({ fontSize: "11px", fontWeight: "700", color: color5 || "var(--text-accent)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" });
-    const b9 = header.createDiv();
-    b9.setText(yieldStr);
-    b9.setCssStyles({ fontSize: "10px", fontWeight: "800", color: badgeColor, background: "var(--background-secondary-alt)", padding: "2px 6px", borderRadius: "4px", border: "1px solid var(--background-modifier-border)" });
-    this.attachHoverActions(nodeEl, node2.id, node2.label, node2.data);
-    if (isInteractive && ctx && el2) {
-      const graphContainer = el2.querySelector(".chem-pathway-grid");
-      const svgOverlay = el2.querySelector("svg");
-      if (graphContainer && svgOverlay) this.attachMindMapInteractions(nodeEl, node2, ctx, el2, graphContainer, svgOverlay);
-    }
-    const preview2 = nodeEl.createDiv();
-    preview2.setCssStyles({ width: "120px", height: "90px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-primary)", borderRadius: "6px", boxShadow: "inset 0 0 4px rgba(0,0,0,0.02)" });
-    preview2.createSpan({ text: "\u23F3" });
-    if ((_e2 = node2.data) == null ? void 0 : _e2.project) {
-      const pj = nodeEl.createDiv();
-      pj.setText(node2.data.project);
-      pj.setCssStyles({ fontSize: "9px", color: "var(--text-muted)", textTransform: "uppercase", marginTop: "6px", letterSpacing: "0.5px", width: "100%", textAlign: "center" });
-    }
-    window.requestAnimationFrame(async () => {
-      const renderEl = await this.plugin.api.renderStructure(node2.smiles, 120, 90);
-      preview2.empty();
-      if (renderEl) {
-        renderEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
-        preview2.appendChild(renderEl);
-      } else preview2.createSpan({ text: "\u274C" });
-    });
-  }
-  attachHoverActions(nodeEl, filePath, code, data) {
-    const overlay = nodeEl.createDiv();
-    overlay.setCssStyles({ position: "absolute", inset: "0", background: "rgba(0,0,0,0.7)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", opacity: "0", transition: "opacity 0.2s", backdropFilter: "blur(2px)", zIndex: "5" });
-    nodeEl.addEventListener("mouseenter", () => {
-      overlay.setCssStyles({ opacity: "1" });
-      nodeEl.setCssStyles({ transform: "translateY(-2px)" });
-    });
-    nodeEl.addEventListener("mouseleave", () => {
-      overlay.setCssStyles({ opacity: "0" });
-      nodeEl.setCssStyles({ transform: "translateY(0)" });
-    });
-    const openBtn = overlay.createEl("button", { text: "\u{1F441}\uFE0F", attr: { title: "Open Note" } });
-    openBtn.setCssStyles({ padding: "5px", background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" });
-    openBtn.onclick = () => {
-      const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
-      if (file instanceof import_obsidian8.TFile) this.plugin.app.workspace.getLeaf(false).openFile(file);
-    };
-    const cloneBtn = overlay.createEl("button", { text: "\u{1F5D0}", attr: { title: "Clone Exp" } });
-    cloneBtn.setCssStyles({ padding: "5px", background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" });
-    cloneBtn.onclick = () => {
-      const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
-      if (file instanceof import_obsidian8.TFile) new CloneExperimentModal(this.plugin.app, this.plugin, code, file, data).open();
-    };
-  }
-  attachSearchLogic(wrapper2) {
-    const searchInput = wrapper2.querySelector(".chem-pathway-search");
-    const nodes = wrapper2.querySelectorAll(".chem-exp-node");
-    searchInput.addEventListener("input", (e6) => {
-      const query = e6.target.value.toLowerCase();
-      nodes.forEach((node2) => {
-        const text2 = node2.getAttribute("data-search") || "";
-        if (text2.includes(query)) {
-          node2.style.opacity = "1";
-          node2.style.filter = "none";
-        } else {
-          node2.style.opacity = "0.3";
-          node2.style.filter = "grayscale(100%)";
-        }
-      });
-    });
-  }
-  async fetchChemicalData(file) {
-    var _a, _b, _c, _d, _e2;
-    const content4 = await this.plugin.app.vault.cachedRead(file);
-    const elnMatch = content4.match(/```eln\s*\n([\s\S]*?)\n```/);
-    if (elnMatch) {
-      try {
-        const { parseYaml: parseYaml2 } = require("obsidian");
-        const safeSource = elnMatch[1].replace(/smiles:\s*(.*)$/gm, (m9, p1) => {
-          let s8 = p1.trim();
-          if (!s8) return m9;
-          const cMatch = s8.match(/(\s+#.*)$/);
-          if (cMatch) s8 = s8.substring(0, s8.length - cMatch[1].length).trim();
-          if (s8.startsWith('"') && s8.endsWith('"') || s8.startsWith("'") && s8.endsWith("'")) s8 = s8.substring(1, s8.length - 1);
-          return `smiles: '${s8.replace(/\\"/g, '"').replace(/'/g, "''")}'`;
-        });
-        const data = parseYaml2(safeSource);
-        const smiles = ((_b = (_a = data.products) == null ? void 0 : _a[0]) == null ? void 0 : _b.smiles) || ((_d = (_c = data.reactants) == null ? void 0 : _c[0]) == null ? void 0 : _d.smiles);
-        if (smiles) return { type: "eln", smiles, data };
-      } catch (e6) {
-      }
-    }
-    const smiMatch = content4.match(/```smiles\s*\n([\s\S]*?)\n```/);
-    if (smiMatch && smiMatch[1].trim()) return { type: "smiles", smiles: smiMatch[1].trim() };
-    const cache2 = this.plugin.app.metadataCache.getFileCache(file);
-    if ((_e2 = cache2 == null ? void 0 : cache2.frontmatter) == null ? void 0 : _e2.smiles) return { type: "smiles", smiles: cache2.frontmatter.smiles };
-    return null;
-  }
-};
-var TextPromptModal = class extends import_obsidian8.Modal {
-  constructor(app, title, desc2, initialVal, onSubmit) {
-    super(app);
-    this.title = title;
-    this.desc = desc2;
-    this.initialVal = initialVal;
-    this.onSubmit = onSubmit;
-  }
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.createEl("h3", { text: this.title });
-    contentEl.createEl("p", { text: this.desc, cls: "color-text-muted" }).setCssStyles({ fontSize: "12px", marginBottom: "10px" });
-    const inp = contentEl.createEl("input", { type: "text", value: this.initialVal });
-    inp.setCssStyles({ width: "100%", marginBottom: "15px" });
-    inp.onkeydown = (e6) => {
-      if (e6.key === "Enter") {
-        this.onSubmit(inp.value.trim());
-        this.close();
-      }
-    };
-    const btn = contentEl.createEl("button", { text: "Save", cls: "mod-cta" });
-    btn.setCssStyles({ float: "right" });
-    btn.onclick = () => {
-      this.onSubmit(inp.value.trim());
-      this.close();
-    };
-    window.setTimeout(() => {
-      inp.focus();
-      inp.select();
-    }, 50);
-  }
-  onClose() {
-    this.contentEl.empty();
-  }
-};
-
 // main.ts
 init_SharedEln();
 init_SharedMedia();
-
-// SharedGallery.ts
-var import_obsidian9 = require("obsidian");
-var SharedGalleryRenderer = class {
-  constructor(plugin) {
-    this.plugin = plugin;
-  }
-  async renderChemGallery(source, el2, ctx) {
-    const match2 = source.match(/path:\s*['"]?(.*?)['"]?(?:\n|$)/);
-    const folderPath = match2 ? match2[1].trim() : "";
-    if (!folderPath) {
-      const err = document.createElement("div");
-      err.textContent = "\u26A0\uFE0F Please specify a folder path (e.g., path: Molecules/)";
-      err.className = "color-text-error";
-      el2.appendChild(err);
-      return;
-    }
-    const folder = this.plugin.app.vault.getAbstractFileByPath(folderPath);
-    if (!folder || !("children" in folder)) {
-      const err = document.createElement("div");
-      err.textContent = `\u26A0\uFE0F Folder not found: ${folderPath}`;
-      err.className = "color-text-error";
-      el2.appendChild(err);
-      return;
-    }
-    const validExts = ["mol", "cdxml", "sdf", "rxn", "ket", "smi", "smiles", "md"];
-    const files = folder.children.filter((f9) => f9 instanceof import_obsidian9.TFile && validExts.includes(f9.extension.toLowerCase()));
-    if (files.length === 0) {
-      const err = document.createElement("div");
-      err.textContent = "No supported files found in this folder.";
-      err.className = "color-text-muted";
-      el2.appendChild(err);
-      return;
-    }
-    const header = document.createElement("div");
-    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", flexWrap: "wrap", gap: "10px" });
-    const countLabel = document.createElement("div");
-    countLabel.textContent = `Loading...`;
-    countLabel.setCssStyles({ fontSize: "13px", color: "var(--text-muted)", fontWeight: "500" });
-    header.appendChild(countLabel);
-    const searchInput = document.createElement("input");
-    searchInput.type = "search";
-    searchInput.placeholder = "Search name or SMILES...";
-    searchInput.setCssStyles({ width: "250px", padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--background-modifier-border)", background: "var(--background-primary)" });
-    header.appendChild(searchInput);
-    el2.appendChild(header);
-    const container = document.createElement("div");
-    container.className = "chem-gallery-container";
-    container.setCssStyles({ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "15px", padding: "5px 0" });
-    el2.appendChild(container);
-    const cards = [];
-    let renderCount = 0;
-    for (const file of files) {
-      let dataToRender = "";
-      let renderFormat = file.extension.toLowerCase();
-      let searchableText = file.name.toLowerCase();
-      if (renderFormat === "md") {
-        const content4 = await this.plugin.app.vault.cachedRead(file);
-        const blockMatch = content4.match(/```smiles\s*\n([\s\S]*?)\n```/);
-        const prefix2 = this.plugin.settings.inlineSmilesPrefix || "$smiles=";
-        const escapedPrefix = prefix2.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-        const inlineRegex = new RegExp(`${escapedPrefix}([^\\s]+)`);
-        const inlineMatch = content4.match(inlineRegex);
-        if (blockMatch) {
-          dataToRender = blockMatch[1].trim();
-        } else if (inlineMatch) {
-          dataToRender = inlineMatch[1].trim();
-        } else {
-          continue;
-        }
-        renderFormat = "smiles";
-        searchableText += " " + dataToRender.toLowerCase();
-      } else {
-        dataToRender = await this.plugin.app.vault.read(file);
-        if (renderFormat === "smi") renderFormat = "smiles";
-        if (renderFormat === "smiles") searchableText += " " + dataToRender.toLowerCase();
-      }
-      renderCount++;
-      const card = document.createElement("div");
-      card.className = "chem-gallery-card";
-      card.setCssStyles({ border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "10px", display: "flex", flexDirection: "column", alignItems: "center", backgroundColor: "var(--background-primary)", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", transition: "border-color 0.2s ease" });
-      card.onmouseover = () => card.setCssStyles({ borderColor: "var(--interactive-accent)" });
-      card.onmouseout = () => card.setCssStyles({ borderColor: "var(--background-modifier-border)" });
-      const previewWrapper = document.createElement("div");
-      previewWrapper.setCssStyles({ width: "100%", height: "100px", display: "flex", justifyContent: "center", alignItems: "center" });
-      const pText = document.createElement("span");
-      pText.textContent = "\u23F3 Loading...";
-      pText.className = "color-text-muted";
-      pText.setCssStyles({ fontSize: "12px" });
-      previewWrapper.appendChild(pText);
-      card.appendChild(previewWrapper);
-      const label = document.createElement("div");
-      label.textContent = file.name;
-      label.setCssStyles({ fontSize: "12px", marginTop: "10px", textAlign: "center", wordBreak: "break-word", color: "var(--text-normal)", fontWeight: "500" });
-      if (file.extension.toLowerCase() === "md") {
-        label.setCssStyles({ color: "var(--text-accent)" });
-      }
-      card.appendChild(label);
-      container.appendChild(card);
-      cards.push({ el: card, text: searchableText });
-      card.onclick = async () => {
-        if (file.extension.toLowerCase() === "md") {
-          this.plugin.app.workspace.getLeaf(false).openFile(file);
-        } else {
-          const freshData = await this.plugin.app.vault.read(file);
-          this.plugin.openKetcherForFile(file, freshData, renderFormat, previewWrapper);
-        }
-      };
-      window.requestAnimationFrame(async () => {
-        const originalW = this.plugin.settings.width;
-        const originalH = this.plugin.settings.height;
-        this.plugin.settings.width = 120;
-        this.plugin.settings.height = 100;
-        try {
-          const previewEl = await this.plugin.renderMoleculeToPreview(dataToRender, renderFormat, false);
-          previewWrapper.empty();
-          if (previewEl) {
-            previewEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
-            previewWrapper.appendChild(previewEl);
-          } else {
-            const err = document.createElement("span");
-            err.textContent = "\u274C Error";
-            previewWrapper.appendChild(err);
-          }
-        } catch (e6) {
-          previewWrapper.empty();
-          const err = document.createElement("span");
-          err.textContent = "\u274C Error";
-          previewWrapper.appendChild(err);
-        } finally {
-          this.plugin.settings.width = originalW;
-          this.plugin.settings.height = originalH;
-        }
-      });
-    }
-    countLabel.textContent = `${renderCount} molecules`;
-    searchInput.addEventListener("input", (e6) => {
-      const query = e6.target.value.toLowerCase();
-      let visibleCount = 0;
-      cards.forEach((c10) => {
-        if (c10.text.includes(query)) {
-          c10.el.setCssStyles({ display: "flex" });
-          visibleCount++;
-        } else {
-          c10.el.setCssStyles({ display: "none" });
-        }
-      });
-      countLabel.textContent = `${visibleCount} / ${renderCount} molecules`;
-    });
-  }
-};
-
-// main.ts
-init_SharedBase();
-init_ChemDataEngine();
 init_SharedContextMenu();
 
 // ChemUtils.ts
@@ -572705,7 +567780,7 @@ function extractDataFromSvg(svgStr) {
 }
 
 // KetcherModals.ts
-var import_obsidian10 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 var import_react25 = __toESM(require_react());
 var import_react_dom6 = __toESM(require_react_dom());
 var createRoot2 = null;
@@ -572715,7 +567790,7 @@ try {
 } catch (e6) {
   createRoot2 = null;
 }
-var KetcherModal = class extends import_obsidian10.Modal {
+var KetcherModal = class extends import_obsidian5.Modal {
   constructor(plugin, initialData, format3, onSave) {
     super(plugin.app);
     this.ketcherInstance = null;
@@ -572765,7 +567840,7 @@ var KetcherModal = class extends import_obsidian10.Modal {
     const cancelBtn = btnContainer.createEl("button", { text: "Cancel" });
     const doSave = async (formatToGet) => {
       if (!this.ketcherInstance || !this.ketcherInstance.editor && !this.ketcherInstance.server) {
-        new import_obsidian10.Notice("Ketcher is still initializing...");
+        new import_obsidian5.Notice("Ketcher is still initializing...");
         return;
       }
       try {
@@ -572840,17 +567915,17 @@ var KetcherModal = class extends import_obsidian10.Modal {
           if (err.message && err.message.toLowerCase().includes("reaction")) {
             resultData = await this.ketcherInstance.getKet();
             finalFormat = "ket";
-            new import_obsidian10.Notice("Reactions cannot be saved in this format. Automatically upgraded to .KET format.");
+            new import_obsidian5.Notice("Reactions cannot be saved in this format. Automatically upgraded to .KET format.");
             if (this.isSavingAsFile) this.isSavingAsFile = this.isSavingAsFile.replace(/\.[a-zA-Z0-9]+$/i, ".ket");
           } else {
             resultData = await this.ketcherInstance.getKet();
             finalFormat = "ket";
-            new import_obsidian10.Notice(`Export to requested format failed. Saved as .ket instead to prevent data loss.`);
+            new import_obsidian5.Notice(`Export to requested format failed. Saved as .ket instead to prevent data loss.`);
             if (this.isSavingAsFile) this.isSavingAsFile = this.isSavingAsFile.replace(/\.[a-zA-Z0-9]+$/i, ".ket");
           }
         }
         if (!resultData) {
-          new import_obsidian10.Notice("Failed to generate structure data. Format may not be supported.");
+          new import_obsidian5.Notice("Failed to generate structure data. Format may not be supported.");
           return;
         }
         if (this.isSavingAsFile) {
@@ -572871,17 +567946,19 @@ var KetcherModal = class extends import_obsidian10.Modal {
         }
         this.close();
       } catch (e6) {
-        new import_obsidian10.Notice("Error saving from Ketcher: " + (e6.message || e6));
+        new import_obsidian5.Notice("Error saving from Ketcher: " + (e6.message || e6));
       }
     };
-    saveBtn.onclick = () => doSave(this.format);
+    saveBtn.onclick = () => {
+      void doSave(this.format);
+    };
     saveFileBtn.onclick = () => {
       new SaveFileModal(this.plugin.app, (filename, selectedFormat) => {
         let safeName = filename.trim().replace(/\.(mol|cdxml|ket|sdf|rxn|svg|fasta|sequence|idt|helm|biln)$/i, "");
         const ext = selectedFormat === "ketcher.svg" ? "svg" : selectedFormat;
         safeName += "." + ext;
         this.isSavingAsFile = safeName;
-        doSave(selectedFormat);
+        void doSave(selectedFormat);
       }).open();
     };
     cancelBtn.onclick = () => this.close();
@@ -572916,7 +567993,7 @@ var KetcherModal = class extends import_obsidian10.Modal {
     this.plugin.bootHeadlessKetcher();
   }
 };
-var SaveFileModal = class extends import_obsidian10.Modal {
+var SaveFileModal = class extends import_obsidian5.Modal {
   constructor(app, onSubmit) {
     super(app);
     this.filename = "";
@@ -572926,17 +568003,17 @@ var SaveFileModal = class extends import_obsidian10.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.createEl("h3", { text: "Save as File..." });
-    new import_obsidian10.Setting(contentEl).setName("Filename").setDesc("Enter a name for the new chemical file.").addText((text2) => text2.setPlaceholder("molecule").onChange((value) => {
+    new import_obsidian5.Setting(contentEl).setName("Filename").setDesc("Enter a name for the new chemical file.").addText((text2) => text2.setPlaceholder("molecule").onChange((value) => {
       this.filename = value;
     }).inputEl.addEventListener("keypress", (e6) => {
       if (e6.key === "Enter" && this.filename) {
         this.submit();
       }
     }));
-    new import_obsidian10.Setting(contentEl).setName("Format").setDesc("Select the file format to save as.").addDropdown((drop) => drop.addOption("mol", ".mol (MDL Molfile)").addOption("cdxml", ".cdxml (ChemDraw)").addOption("ket", ".ket (Ketcher Native)").addOption("rxn", ".rxn (MDL Rxnfile)").addOption("sdf", ".sdf (Structure Data)").addOption("fasta", ".fasta (FASTA Sequence)").addOption("sequence", ".sequence (Raw Sequence)").addOption("idt", ".idt (IDT Sequence)").addOption("helm", ".helm (HELM Macromolecule)").addOption("biln", ".biln (BILN Macromolecule)").addOption("ketcher.svg", ".svg (Ketcher SVG)").setValue("mol").onChange((value) => {
+    new import_obsidian5.Setting(contentEl).setName("Format").setDesc("Select the file format to save as.").addDropdown((drop) => drop.addOption("mol", ".mol (MDL Molfile)").addOption("cdxml", ".cdxml (ChemDraw)").addOption("ket", ".ket (Ketcher Native)").addOption("rxn", ".rxn (MDL Rxnfile)").addOption("sdf", ".sdf (Structure Data)").addOption("fasta", ".fasta (FASTA Sequence)").addOption("sequence", ".sequence (Raw Sequence)").addOption("idt", ".idt (IDT Sequence)").addOption("helm", ".helm (HELM Macromolecule)").addOption("biln", ".biln (BILN Macromolecule)").addOption("ketcher.svg", ".svg (Ketcher SVG)").setValue("mol").onChange((value) => {
       this.format = value;
     }));
-    new import_obsidian10.Setting(contentEl).addButton((btn) => btn.setButtonText("Save File").setCta().onClick(() => this.submit()));
+    new import_obsidian5.Setting(contentEl).addButton((btn) => btn.setButtonText("Save File").setCta().onClick(() => this.submit()));
     window.setTimeout(() => {
       const input = contentEl.querySelector('input[type="text"]');
       if (input) input.focus();
@@ -572947,7 +568024,7 @@ var SaveFileModal = class extends import_obsidian10.Modal {
       this.onSubmit(this.filename, this.format);
       this.close();
     } else {
-      new import_obsidian10.Notice("Please enter a filename.");
+      new import_obsidian5.Notice("Please enter a filename.");
     }
   }
   onClose() {
@@ -572956,9 +568033,9 @@ var SaveFileModal = class extends import_obsidian10.Modal {
 };
 
 // ChemFileView.ts
-var import_obsidian11 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 var CHEM_FILE_VIEW_TYPE = "chem-file-view";
-var ChemFileView = class extends import_obsidian11.TextFileView {
+var ChemFileView = class extends import_obsidian6.TextFileView {
   constructor(leaf, plugin) {
     super(leaf);
     this.plugin = plugin;
@@ -572983,7 +568060,7 @@ var ChemFileView = class extends import_obsidian11.TextFileView {
     const wrapper2 = container.createDiv();
     wrapper2.setCssStyles({ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", cursor: "pointer" });
     wrapper2.title = "Double-click to edit";
-    wrapper2.createDiv({ cls: "color-text-muted", text: "Loading preview..." });
+    wrapper2.createDiv({ text: "Loading preview...", cls: "color-text-muted" });
     const format3 = ((_a = this.file) == null ? void 0 : _a.extension) === "cdxml" ? "cdxml" : "mol";
     window.requestAnimationFrame(async () => {
       const previewEl = await this.plugin.renderMoleculeToPreview(data, format3);
@@ -572997,11 +568074,11 @@ var ChemFileView = class extends import_obsidian11.TextFileView {
     wrapper2.ondblclick = () => {
       new KetcherModal(this.plugin, this.data, format3, async (newData, isFile, newFormat) => {
         if (isFile) {
-          new import_obsidian11.Notice(`Saved as new file: ${newData}`);
+          new import_obsidian6.Notice(`Saved as new file: ${newData}`);
           return;
         }
         if (newFormat && newFormat !== format3) {
-          new import_obsidian11.Notice(`Format was upgraded to ${newFormat}. Please rename the file extension!`);
+          new import_obsidian6.Notice(`Format was upgraded to ${newFormat}. Please rename the file extension!`);
         }
         this.data = newData;
         this.requestSave();
@@ -573018,7 +568095,7 @@ var ChemFileView = class extends import_obsidian11.TextFileView {
 // LivePreview.ts
 var import_state = require("@codemirror/state");
 var import_view = require("@codemirror/view");
-var import_obsidian12 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 var ChemInlineWidget = class extends import_view.WidgetType {
   constructor(data, type3, plugin) {
     super();
@@ -573032,61 +568109,44 @@ var ChemInlineWidget = class extends import_view.WidgetType {
   toDOM() {
     const wrapper2 = document.createElement("span");
     wrapper2.className = "chem-inline-widget";
-    wrapper2.setCssStyles({ display: "inline-block", verticalAlign: "middle", cursor: "pointer", margin: "0 4px" });
-    const loadingSpan = document.createElement("span");
-    loadingSpan.textContent = "\u23F3";
-    wrapper2.appendChild(loadingSpan);
+    Object.assign(wrapper2.style, { display: "inline-block", verticalAlign: "middle", cursor: "pointer", margin: "0 4px" });
+    wrapper2.textContent = "\u23F3";
     window.requestAnimationFrame(async () => {
       if (this.type === "smiles") {
         const el2 = await this.plugin.renderMoleculeToPreview(this.data, "smiles", true);
-        wrapper2.empty();
+        wrapper2.textContent = "";
         if (el2) wrapper2.appendChild(el2);
-        else {
-          const err = document.createElement("span");
-          err.textContent = "\u274C";
-          wrapper2.appendChild(err);
-        }
+        else wrapper2.textContent = "\u274C";
       } else {
         const cleanName = this.data.replace("[[", "").replace("]]", "");
         const file = this.plugin.app.metadataCache.getFirstLinkpathDest(cleanName, "");
-        if (file && file instanceof import_obsidian12.TFile) {
+        if (file && file instanceof import_obsidian7.TFile) {
           const format3 = file.extension.toLowerCase();
           const fileData = await this.plugin.app.vault.read(file);
           if (format3 === "svg") {
             const extracted = extractDataFromSvg(fileData);
             if (extracted) {
-              wrapper2.empty();
+              wrapper2.textContent = "";
               const svgContainer = document.createElement("span");
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(this.plugin.namespaceSvgIds(fileData), "image/svg+xml");
-              const svgNode3 = doc.documentElement;
-              if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
-                svgNode3.setCssStyles({ width: `${this.plugin.settings.inlineWidth}px`, height: `${this.plugin.settings.inlineHeight}px` });
-                svgContainer.appendChild(svgNode3);
+              svgContainer.innerHTML = this.plugin.namespaceSvgIds(fileData);
+              const svgNode3 = svgContainer.querySelector("svg");
+              if (svgNode3) {
+                svgNode3.style.width = `${this.plugin.settings.inlineWidth}px`;
+                svgNode3.style.height = `${this.plugin.settings.inlineHeight}px`;
               }
               wrapper2.appendChild(svgContainer);
               return;
             } else {
-              wrapper2.empty();
-              const err = document.createElement("span");
-              err.textContent = "\u274C";
-              wrapper2.appendChild(err);
+              wrapper2.textContent = "\u274C";
               return;
             }
           }
           const el2 = await this.plugin.renderMoleculeToPreview(fileData, format3, true);
-          wrapper2.empty();
+          wrapper2.textContent = "";
           if (el2) wrapper2.appendChild(el2);
-          else {
-            const err = document.createElement("span");
-            err.textContent = "\u274C";
-            wrapper2.appendChild(err);
-          }
+          else wrapper2.textContent = "\u274C";
         } else {
-          wrapper2.empty();
-          const err = document.createElement("span");
-          err.textContent = "\u274C";
-          wrapper2.appendChild(err);
+          wrapper2.textContent = "\u274C";
         }
       }
     });
@@ -573113,7 +568173,7 @@ function buildLivePreviewPlugin(plugin) {
       for (let { from: from2, to: to2 } of view.visibleRanges) {
         const text2 = view.state.doc.sliceString(from2, to2);
         let match2;
-        const escapeRegex = (s8) => s8.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+        const escapeRegex = (s8) => s8.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
         const regexSrc = [];
         if (prefixSmiles) regexSrc.push(`(?:${escapeRegex(prefixSmiles)}[^\\s]+)`);
         if (prefixMol) regexSrc.push(`(?:${escapeRegex(prefixMol)}[^\\s]+)`);
@@ -573149,1987 +568209,6 @@ function buildLivePreviewPlugin(plugin) {
   }, { decorations: (v8) => v8.decorations });
 }
 
-// ScriptEngine.ts
-var import_obsidian13 = require("obsidian");
-var ChemScriptEngine = class {
-  constructor(plugin) {
-    this.registeredCommandIds = [];
-    this.plugin = plugin;
-    this.app = plugin.app;
-  }
-  async loadScripts() {
-    this.registeredCommandIds.forEach((id5) => {
-      const fullId = `chemedit:${id5}`;
-      if (this.app.commands.removeCommand) this.app.commands.removeCommand(fullId);
-      else {
-        delete this.app.commands.commands[fullId];
-        delete this.app.commands.editorCommands[fullId];
-      }
-    });
-    this.registeredCommandIds = [];
-    const folderPath = this.plugin.settings.scriptsFolder;
-    if (!folderPath) return;
-    const folderExists = await this.app.vault.adapter.exists(folderPath);
-    if (!folderExists) return;
-    const folder = this.app.vault.getAbstractFileByPath(folderPath);
-    if (!folder || !("children" in folder)) return;
-    const files = folder.children.filter((f9) => f9 instanceof import_obsidian13.TFile && f9.extension === "js");
-    for (const file of files) {
-      const cleanName = file.basename;
-      const commandId = `script-${cleanName.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
-      this.plugin.addCommand({
-        id: commandId,
-        name: `Run Script: ${cleanName}`,
-        editorCallback: async (editor4, view) => {
-          await this.executeScript(file, editor4, view);
-        }
-      });
-      this.registeredCommandIds.push(commandId);
-    }
-  }
-  async executeScript(file, editor4, view) {
-    try {
-      const code = await this.app.vault.read(file);
-      const AsyncFunction = Object.getPrototypeOf(async function() {
-      }).constructor;
-      const fn3 = new AsyncFunction("app", "plugin", "api", "editor", "view", "Notice", "requestUrl", code);
-      await fn3(this.app, this.plugin, this.plugin.api, editor4, view, import_obsidian13.Notice, import_obsidian13.requestUrl);
-    } catch (err) {
-      new import_obsidian13.Notice(`\u274C ChemEdit Script Error: ${err.message}`);
-      console.error(err);
-    }
-  }
-};
-
-// ElnDashboard.ts
-var import_obsidian14 = require("obsidian");
-init_SharedEln();
-init_SharedBase();
-var ELN_DASHBOARD_VIEW_TYPE = "chem-eln-dashboard";
-var ElnDashboardView = class extends import_obsidian14.ItemView {
-  constructor(leaf, plugin) {
-    super(leaf);
-    this.allEntries = [];
-    this.currentFilter = "All";
-    this.searchQuery = "";
-    this.plugin = plugin;
-    this.observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const el2 = entry.target;
-          const smiles = el2.dataset.smiles;
-          if (smiles && !el2.dataset.rendered) {
-            el2.dataset.rendered = "true";
-            this.plugin.api.renderStructure(smiles, 280, 110).then((renderEl) => {
-              el2.empty();
-              if (renderEl) {
-                renderEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
-                el2.appendChild(renderEl);
-              } else {
-                el2.createSpan({ text: "Invalid Structure", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
-              }
-            });
-          }
-        }
-      });
-    }, { root: null, rootMargin: "150px", threshold: 0.1 });
-  }
-  getViewType() {
-    return ELN_DASHBOARD_VIEW_TYPE;
-  }
-  getDisplayText() {
-    return "ELN Dashboard";
-  }
-  getIcon() {
-    return "book-open";
-  }
-  async onOpen() {
-    var _a;
-    const container = this.containerEl.children[1];
-    container.empty();
-    container.addClass("chem-eln-dashboard-view");
-    container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
-    const header = container.createDiv();
-    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const titleArea = header.createDiv();
-    titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
-    renderLimsNav(titleArea, "eln", this.plugin);
-    titleArea.createEl("h2", { text: "Laboratory Notebook" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
-    titleArea.createEl("span", { text: "Manage and track all your chemical experiments" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
-    const newBtn = header.createEl("button", { text: "+ New Experiment", cls: "mod-cta" });
-    newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
-    newBtn.onclick = () => {
-      var _a2;
-      const currentDir = (_a2 = window.localStorage.getItem("chem-eln-dir")) != null ? _a2 : this.plugin.settings.elnDirectory || "/";
-      new CreateExperimentModal(this.app, this.plugin, this.plugin.settings.elnPrefix, currentDir, async (expCode) => {
-        await createNewElnExperiment(this.app, expCode, currentDir, this.plugin.settings.elnSections);
-        void this.loadExperiments();
-      }).open();
-    };
-    this.toolbarEl = container.createDiv();
-    this.toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const leftTools = this.toolbarEl.createDiv();
-    leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center" });
-    const filterTabs = leftTools.createDiv();
-    filterTabs.setCssStyles({ display: "flex", gap: "8px" });
-    const tabs = ["All", "Planned", "Running", "Completed", "Failed"];
-    tabs.forEach((t8) => {
-      const btn = filterTabs.createEl("button", { text: t8 });
-      btn.setCssStyles({ borderRadius: "20px", padding: "4px 16px", fontSize: "12px", fontWeight: "600", border: `1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}`, background: this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)", color: this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)", boxShadow: "none" });
-      btn.onclick = () => {
-        this.currentFilter = t8;
-        this.renderToolbar();
-        this.applyFilters();
-      };
-    });
-    const dirWrap = leftTools.createDiv();
-    dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" });
-    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
-    const dirInp = dirWrap.createEl("input", { type: "text", value: (_a = window.localStorage.getItem("chem-eln-dir")) != null ? _a : this.plugin.settings.elnDirectory || "" });
-    dirInp.placeholder = "e.g. ELN/2026";
-    dirInp.setCssStyles({ width: "140px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
-    dirInp.onchange = (e6) => {
-      window.localStorage.setItem("chem-eln-dir", e6.target.value.trim());
-      void this.loadExperiments();
-    };
-    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search reference, project..." });
-    searchInp.setCssStyles({ width: "280px", fontSize: "13px", borderRadius: "6px" });
-    searchInp.oninput = (e6) => {
-      this.searchQuery = e6.target.value.toLowerCase();
-      this.applyFilters();
-    };
-    const tableContainer = container.createDiv();
-    tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
-    const table = tableContainer.createEl("table");
-    table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "left", fontSize: "13px" });
-    const thead = table.createEl("thead");
-    thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
-    const tr2 = thead.createEl("tr");
-    const cols = [
-      { name: "Reference", width: "120px" },
-      { name: "Reaction Scheme", width: "320px" },
-      { name: "Project", width: "150px" },
-      { name: "Yield", width: "80px" },
-      { name: "Last Edited", width: "120px" },
-      { name: "Status", width: "120px" }
-    ];
-    cols.forEach((c10) => {
-      tr2.createEl("th", { text: c10.name }).setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", width: c10.width });
-    });
-    this.tableBodyEl = table.createEl("tbody");
-    await this.loadExperiments();
-    let refreshTimeout;
-    const requestRefresh = () => {
-      window.clearTimeout(refreshTimeout);
-      refreshTimeout = window.setTimeout(() => void this.loadExperiments(), 2e3);
-    };
-    this.registerEvent(this.app.vault.on("modify", requestRefresh));
-    this.registerEvent(this.app.vault.on("create", requestRefresh));
-    this.registerEvent(this.app.vault.on("delete", requestRefresh));
-  }
-  renderToolbar() {
-    const btns = this.toolbarEl.querySelectorAll("button");
-    btns.forEach((btn) => {
-      const isMatch = btn.innerText === this.currentFilter;
-      btn.setCssStyles({
-        background: isMatch ? "var(--interactive-accent)" : "var(--background-primary)",
-        color: isMatch ? "var(--text-on-accent)" : "var(--text-muted)",
-        borderColor: isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)"
-      });
-    });
-  }
-  async loadExperiments() {
-    var _a, _b, _c, _d, _e2;
-    const { parseYaml: parseYaml2 } = require("obsidian");
-    const files = this.app.vault.getMarkdownFiles();
-    const entries = [];
-    const targetDir = (_a = window.localStorage.getItem("chem-eln-dir")) != null ? _a : this.plugin.settings.elnDirectory || "";
-    for (const file of files) {
-      const inFolder = !targetDir || file.path.startsWith(targetDir);
-      const cache2 = this.app.metadataCache.getFileCache(file);
-      const fmTags = ((_b = cache2 == null ? void 0 : cache2.frontmatter) == null ? void 0 : _b.tags) || [];
-      const isTagged = Array.isArray(fmTags) ? fmTags.includes("experiment") : fmTags === "experiment";
-      if (!inFolder && !isTagged) continue;
-      const hasCodeBlock = (_c = cache2 == null ? void 0 : cache2.sections) == null ? void 0 : _c.some((s8) => s8.type === "code");
-      if (!hasCodeBlock) continue;
-      const content4 = await this.app.vault.cachedRead(file);
-      const elnMatch = content4.match(/```eln\s*\n([\s\S]*?)\n```/);
-      if (elnMatch) {
-        try {
-          const safeSource = elnMatch[1].replace(/smiles:\s*(.*)$/gm, (m9, p1) => {
-            let s8 = p1.trim();
-            if (!s8) return m9;
-            const cMatch = s8.match(/(\s+#.*)$/);
-            if (cMatch) s8 = s8.substring(0, s8.length - cMatch[1].length).trim();
-            if (s8.startsWith('"') && s8.endsWith('"') || s8.startsWith("'") && s8.endsWith("'")) s8 = s8.substring(1, s8.length - 1);
-            return `smiles: '${s8.replace(/\\"/g, '"').replace(/'/g, "''")}'`;
-          });
-          const data = parseYaml2(safeSource);
-          const rs3 = (data.reactants || []).map((r12) => r12.smiles).filter(Boolean).join(".");
-          const ps2 = (data.products || []).map((p7) => p7.smiles).filter(Boolean).join(".");
-          const rxnSmiles = rs3 || ps2 ? `${rs3}>>${ps2}` : "";
-          const code = data.code || file.basename;
-          const project = data.project || "Unassigned";
-          entries.push({
-            file,
-            code,
-            project,
-            status: data.status || "Planned",
-            date: data.date || window.moment(file.stat.mtime).format("MMM D, YYYY"),
-            yieldStr: ((_e2 = (_d = data.products) == null ? void 0 : _d[0]) == null ? void 0 : _e2.yield) ? `${data.products[0].yield}%` : "-",
-            rxnSmiles,
-            timestamp: file.stat.mtime,
-            searchText: `${code} ${project} ${data.status || ""}`.toLowerCase()
-          });
-        } catch (e6) {
-        }
-      }
-    }
-    this.allEntries = entries.sort((a9, b9) => b9.timestamp - a9.timestamp);
-    this.buildTableDOM();
-    this.applyFilters();
-  }
-  buildTableDOM() {
-    const fragment2 = document.createDocumentFragment();
-    this.observer.disconnect();
-    if (this.allEntries.length === 0) {
-      const emptyTr = document.createElement("tr");
-      const emptyTd = document.createElement("td");
-      emptyTd.setAttribute("colspan", "6");
-      emptyTd.textContent = "No experiments found. Create notes tagged with [experiment].";
-      emptyTd.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
-      emptyTr.appendChild(emptyTd);
-      fragment2.appendChild(emptyTr);
-    } else {
-      this.allEntries.forEach((e6) => {
-        const tr2 = document.createElement("tr");
-        tr2.setCssStyles({ cursor: "pointer", transition: "background 0.2s" });
-        e6.rowEl = tr2;
-        tr2.onmouseover = () => tr2.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
-        tr2.onmouseout = () => tr2.setCssStyles({ backgroundColor: "transparent" });
-        tr2.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-        const tdCode = document.createElement("td");
-        tdCode.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-        const codeDiv = document.createElement("div");
-        codeDiv.textContent = e6.code;
-        codeDiv.setCssStyles({ fontWeight: "700", color: "var(--text-accent)" });
-        tdCode.appendChild(codeDiv);
-        tr2.appendChild(tdCode);
-        const tdScheme = document.createElement("td");
-        tdScheme.setCssStyles({ padding: "10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-        const schemeWrap = document.createElement("div");
-        schemeWrap.setAttribute("data-smiles", e6.rxnSmiles);
-        schemeWrap.setCssStyles({ width: "280px", height: "90px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px" });
-        if (e6.rxnSmiles) {
-          const s8 = document.createElement("span");
-          s8.textContent = "\u23F3 Loading...";
-          s8.setCssStyles({ color: "var(--text-muted)", fontSize: "11px" });
-          schemeWrap.appendChild(s8);
-          this.observer.observe(schemeWrap);
-        } else {
-          const s8 = document.createElement("span");
-          s8.textContent = "No Structure";
-          s8.setCssStyles({ color: "var(--text-muted)", fontSize: "11px" });
-          schemeWrap.appendChild(s8);
-        }
-        tdScheme.appendChild(schemeWrap);
-        tr2.appendChild(tdScheme);
-        const tdProj = document.createElement("td");
-        tdProj.textContent = e6.project;
-        tdProj.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", color: "var(--text-normal)" });
-        tr2.appendChild(tdProj);
-        const yColor = e6.yieldStr !== "-" ? parseFloat(e6.yieldStr) >= 80 ? "var(--text-success)" : "var(--text-normal)" : "var(--text-muted)";
-        const tdYield = document.createElement("td");
-        tdYield.textContent = e6.yieldStr;
-        tdYield.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", fontWeight: "600", color: yColor });
-        tr2.appendChild(tdYield);
-        const tdDate = document.createElement("td");
-        tdDate.textContent = e6.date;
-        tdDate.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", color: "var(--text-muted)" });
-        tr2.appendChild(tdDate);
-        const tdStatus = document.createElement("td");
-        tdStatus.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-        let bg = "var(--background-primary)", color5 = "var(--text-muted)", border3 = "var(--background-modifier-border)";
-        if (e6.status === "Completed") {
-          color5 = "var(--text-success)";
-          border3 = "var(--text-success)";
-        } else if (e6.status === "Running") {
-          color5 = "var(--text-warning)";
-          border3 = "var(--text-warning)";
-        } else if (e6.status === "Failed") {
-          color5 = "var(--text-error)";
-          border3 = "var(--text-error)";
-        } else if (e6.status === "Planned") {
-          color5 = "var(--text-accent)";
-          border3 = "var(--text-accent)";
-        }
-        const statDiv = document.createElement("div");
-        statDiv.textContent = e6.status.toUpperCase();
-        statDiv.setCssStyles({ display: "inline-block", padding: "4px 10px", borderRadius: "12px", fontSize: "10px", fontWeight: "700", color: color5, border: `1px solid ${border3}`, background: bg });
-        tdStatus.appendChild(statDiv);
-        tr2.appendChild(tdStatus);
-        fragment2.appendChild(tr2);
-      });
-    }
-    this.tableBodyEl.empty();
-    this.tableBodyEl.appendChild(fragment2);
-  }
-  applyFilters() {
-    this.allEntries.forEach((e6) => {
-      if (!e6.rowEl) return;
-      const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
-      const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
-      e6.rowEl.setCssStyles({ display: matchFilter && matchSearch ? "" : "none" });
-    });
-  }
-  async onClose() {
-    this.observer.disconnect();
-  }
-};
-
-// InventoryDashboard.ts
-var import_obsidian15 = require("obsidian");
-init_SharedBase();
-var INVENTORY_DASHBOARD_VIEW_TYPE = "chem-inventory-dashboard";
-var InventoryDashboardView = class extends import_obsidian15.ItemView {
-  constructor(leaf, plugin) {
-    super(leaf);
-    this.allEntries = [];
-    this.currentFilter = "All";
-    this.searchQuery = "";
-    this.plugin = plugin;
-    this.observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const el2 = entry.target;
-          const smiles = el2.dataset.smiles;
-          if (smiles && !el2.dataset.rendered) {
-            el2.dataset.rendered = "true";
-            this.plugin.api.renderStructure(smiles, 120, 100).then((renderEl) => {
-              el2.empty();
-              if (renderEl) {
-                renderEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
-                el2.appendChild(renderEl);
-              } else {
-                el2.createSpan({ text: "Invalid", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
-              }
-            });
-          }
-        }
-      });
-    }, { root: null, rootMargin: "150px", threshold: 0.1 });
-  }
-  getViewType() {
-    return INVENTORY_DASHBOARD_VIEW_TYPE;
-  }
-  getDisplayText() {
-    return "Chemical Inventory";
-  }
-  getIcon() {
-    return "package";
-  }
-  async onOpen() {
-    const container = this.containerEl.children[1];
-    container.empty();
-    container.addClass("chem-inventory-dashboard-view");
-    container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
-    const header = container.createDiv();
-    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const titleArea = header.createDiv();
-    titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
-    renderLimsNav(titleArea, "inventory", this.plugin);
-    titleArea.createEl("h2", { text: "Chemical Inventory" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
-    titleArea.createEl("span", { text: "Track reagents, locations, and stock levels" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
-    const newBtn = header.createEl("button", { text: "+ Add Item", cls: "mod-cta" });
-    newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
-    newBtn.onclick = () => {
-      const folder = window.localStorage.getItem("chem-inv-dir") || "Inventory";
-      new AddInventoryModal(this.app, this.plugin, folder, () => {
-        void this.loadInventory();
-      }).open();
-    };
-    this.toolbarEl = container.createDiv();
-    this.toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const leftTools = this.toolbarEl.createDiv();
-    leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center" });
-    const filterTabs = leftTools.createDiv();
-    filterTabs.setCssStyles({ display: "flex", gap: "8px" });
-    const tabs = ["All", "Available", "Checked Out"];
-    tabs.forEach((t8) => {
-      const btn = filterTabs.createEl("button", { text: t8 });
-      btn.setCssStyles({ borderRadius: "20px", padding: "4px 16px", fontSize: "12px", fontWeight: "600", border: `1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}`, background: this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)", color: this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)", boxShadow: "none" });
-      btn.onclick = () => {
-        this.currentFilter = t8;
-        this.renderToolbar();
-        this.applyFilters();
-      };
-    });
-    const dirWrap = leftTools.createDiv();
-    dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" });
-    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
-    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-inv-dir") || "Inventory" });
-    dirInp.setCssStyles({ width: "120px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
-    dirInp.onchange = (e6) => {
-      window.localStorage.setItem("chem-inv-dir", e6.target.value.trim());
-      void this.loadInventory();
-    };
-    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search name, CAS, location..." });
-    searchInp.setCssStyles({ width: "280px", fontSize: "13px", borderRadius: "6px" });
-    searchInp.oninput = (e6) => {
-      this.searchQuery = e6.target.value.toLowerCase();
-      this.applyFilters();
-    };
-    const tableContainer = container.createDiv();
-    tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
-    const table = tableContainer.createEl("table");
-    table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "left", fontSize: "13px" });
-    const thead = table.createEl("thead");
-    thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
-    const tr2 = thead.createEl("tr");
-    const cols = [
-      { name: "Structure", width: "140px" },
-      { name: "Item Details", width: "250px" },
-      { name: "Location & Stock", width: "150px" },
-      { name: "Status", width: "120px" },
-      { name: "Actions", width: "120px" }
-    ];
-    cols.forEach((c10) => {
-      const th = tr2.createEl("th", { text: c10.name });
-      th.setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", width: c10.width });
-    });
-    this.tableBodyEl = table.createEl("tbody");
-    await this.loadInventory();
-    let refreshTimeout;
-    const requestRefresh = () => {
-      window.clearTimeout(refreshTimeout);
-      refreshTimeout = window.setTimeout(() => void this.loadInventory(), 2e3);
-    };
-    this.registerEvent(this.app.vault.on("modify", requestRefresh));
-    this.registerEvent(this.app.vault.on("create", requestRefresh));
-    this.registerEvent(this.app.vault.on("delete", requestRefresh));
-  }
-  renderToolbar() {
-    const btns = this.toolbarEl.querySelectorAll("button");
-    btns.forEach((btn) => {
-      const isMatch = btn.innerText === this.currentFilter;
-      btn.setCssStyles({ background: isMatch ? "var(--interactive-accent)" : "var(--background-primary)", color: isMatch ? "var(--text-on-accent)" : "var(--text-muted)", borderColor: isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)" });
-    });
-  }
-  async loadInventory() {
-    var _a;
-    const targetDir = window.localStorage.getItem("chem-inv-dir") || "Inventory";
-    const files = this.app.vault.getMarkdownFiles();
-    const entries = [];
-    for (const file of files) {
-      const inFolder = targetDir && file.path.startsWith(targetDir);
-      const cache2 = this.app.metadataCache.getFileCache(file);
-      const fm = cache2 == null ? void 0 : cache2.frontmatter;
-      const fmTags = (fm == null ? void 0 : fm.tags) || [];
-      const isTagged = Array.isArray(fmTags) ? fmTags.includes("inventory") : fmTags === "inventory";
-      if (!inFolder && !isTagged) continue;
-      let smiles = (fm == null ? void 0 : fm.smiles) || "";
-      if (!smiles) {
-        const hasCodeBlock = (_a = cache2 == null ? void 0 : cache2.sections) == null ? void 0 : _a.some((s8) => s8.type === "code");
-        if (hasCodeBlock) {
-          const content4 = await this.app.vault.cachedRead(file);
-          const blockMatch = content4.match(/```smiles\s*\n([\s\S]*?)\n```/);
-          if (blockMatch) smiles = blockMatch[1].trim();
-        }
-      }
-      const name = (fm == null ? void 0 : fm.name) || file.basename;
-      const cas = (fm == null ? void 0 : fm.cas) || "";
-      const supplier = (fm == null ? void 0 : fm.supplier) || "-";
-      const location2 = (fm == null ? void 0 : fm.location) || "Unassigned";
-      entries.push({
-        file,
-        name,
-        smiles,
-        cas,
-        supplier,
-        location: location2,
-        amount: (fm == null ? void 0 : fm.amount) || "-",
-        status: (fm == null ? void 0 : fm.status) || "Available",
-        checkedOutBy: (fm == null ? void 0 : fm.checked_out_by) || "",
-        lastUpdated: (fm == null ? void 0 : fm.last_updated) || "-",
-        timestamp: file.stat.mtime,
-        searchText: `${name} ${cas} ${supplier} ${location2}`.toLowerCase()
-      });
-    }
-    this.allEntries = entries.sort((a9, b9) => a9.name.localeCompare(b9.name));
-    this.buildTableDOM();
-    this.applyFilters();
-  }
-  buildTableDOM() {
-    this.tableBodyEl.empty();
-    this.observer.disconnect();
-    if (this.allEntries.length === 0) {
-      const tr2 = this.tableBodyEl.createEl("tr");
-      const td = tr2.createEl("td", { text: "No inventory items found. Add items to an Inventory folder or use tags: [inventory]." });
-      td.setAttribute("colspan", "5");
-      td.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
-      return;
-    }
-    this.allEntries.forEach((e6) => {
-      const tr2 = this.tableBodyEl.createEl("tr");
-      tr2.setCssStyles({ transition: "background 0.2s" });
-      e6.rowEl = tr2;
-      tr2.onmouseover = () => tr2.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
-      tr2.onmouseout = () => tr2.setCssStyles({ backgroundColor: "transparent" });
-      const tdStruct = tr2.createEl("td");
-      tdStruct.setCssStyles({ padding: "10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      const structWrap = tdStruct.createDiv();
-      structWrap.setAttribute("data-smiles", e6.smiles);
-      structWrap.setCssStyles({ width: "120px", height: "100px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px", cursor: "pointer" });
-      structWrap.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-      if (e6.smiles) {
-        structWrap.createSpan({ text: "\u23F3 Loading...", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
-        this.observer.observe(structWrap);
-      } else {
-        structWrap.createSpan({ text: "No Structure", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
-      }
-      const tdDetails = tr2.createEl("td");
-      tdDetails.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      const nameEl = tdDetails.createDiv({ text: e6.name });
-      nameEl.setCssStyles({ fontWeight: "700", color: "var(--text-accent)", fontSize: "14px", marginBottom: "6px", cursor: "pointer" });
-      nameEl.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-      if (e6.cas) tdDetails.createDiv({ text: `CAS: ${e6.cas}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", marginBottom: "2px" });
-      tdDetails.createDiv({ text: `Supplier: ${e6.supplier}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)" });
-      const tdLoc = tr2.createEl("td");
-      tdLoc.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      tdLoc.createDiv({ text: `\u{1F4CD} ${e6.location}` }).setCssStyles({ fontSize: "13px", color: "var(--text-normal)", fontWeight: "500", marginBottom: "4px" });
-      tdLoc.createDiv({ text: `\u2696\uFE0F ${e6.amount}` }).setCssStyles({ fontSize: "12px", color: "var(--text-muted)" });
-      const tdStatus = tr2.createEl("td");
-      tdStatus.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      const isAvail = e6.status === "Available";
-      const color5 = isAvail ? "var(--text-success)" : "var(--text-warning)";
-      const border3 = isAvail ? "var(--text-success)" : "var(--text-warning)";
-      const statSpan = tdStatus.createDiv({ text: e6.status.toUpperCase() });
-      statSpan.setCssStyles({ display: "inline-block", padding: "4px 10px", borderRadius: "12px", fontSize: "10px", fontWeight: "700", color: color5, border: `1px solid ${border3}`, background: "var(--background-primary)", marginBottom: "4px" });
-      if (!isAvail && e6.checkedOutBy) {
-        tdStatus.createDiv({ text: `\u{1F464} ${e6.checkedOutBy}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" });
-      }
-      const tdActions = tr2.createEl("td");
-      tdActions.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      const actContainer = tdActions.createDiv();
-      actContainer.setCssStyles({ display: "flex", flexDirection: "column", gap: "6px" });
-      const toggleBtn = actContainer.createEl("button", { text: isAvail ? "\u{1F4E4} Check Out" : "\u{1F4E5} Return" });
-      toggleBtn.setCssStyles({ fontSize: "11px", padding: "4px", height: "26px", width: "100%" });
-      toggleBtn.onclick = async () => {
-        const newStatus = isAvail ? "Checked Out" : "Available";
-        const user = newStatus === "Checked Out" ? "Current User" : "";
-        await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
-          fm.status = newStatus;
-          fm.checked_out_by = user;
-          fm.last_updated = window.moment().format("YYYY-MM-DD");
-        });
-        new import_obsidian15.Notice(`${e6.name} is now ${newStatus}`);
-      };
-      const qrBtn = actContainer.createEl("button", { text: "\u{1F5A8}\uFE0F Label" });
-      qrBtn.setCssStyles({ fontSize: "11px", padding: "4px", height: "26px", width: "100%" });
-      qrBtn.onclick = () => {
-        new QrCodeModal(this.app, e6.file).open();
-      };
-    });
-  }
-  applyFilters() {
-    this.allEntries.forEach((e6) => {
-      if (!e6.rowEl) return;
-      const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
-      const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
-      e6.rowEl.setCssStyles({ display: matchFilter && matchSearch ? "" : "none" });
-    });
-  }
-  async onClose() {
-    this.observer.disconnect();
-  }
-};
-
-// EquipmentDashboard.ts
-var import_obsidian16 = require("obsidian");
-init_SharedBase();
-var EQUIPMENT_DASHBOARD_VIEW_TYPE = "chem-equipment-dashboard";
-var EquipmentDashboardView = class extends import_obsidian16.ItemView {
-  constructor(leaf, plugin) {
-    super(leaf);
-    this.allEntries = [];
-    this.currentFilter = "All";
-    this.searchQuery = "";
-    this.plugin = plugin;
-  }
-  getViewType() {
-    return EQUIPMENT_DASHBOARD_VIEW_TYPE;
-  }
-  getDisplayText() {
-    return "Lab Equipment";
-  }
-  getIcon() {
-    return "microscope";
-  }
-  async onOpen() {
-    const container = this.containerEl.children[1];
-    container.empty();
-    container.addClass("chem-equipment-dashboard-view");
-    container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
-    const header = container.createDiv();
-    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const titleArea = header.createDiv();
-    titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
-    renderLimsNav(titleArea, "equipment", this.plugin);
-    titleArea.createEl("h2", { text: "Lab Equipment" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
-    titleArea.createEl("span", { text: "Track instrument bookings, manuals, and maintenance logs" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
-    const newBtn = header.createEl("button", { text: "+ Add Instrument", cls: "mod-cta" });
-    newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
-    newBtn.onclick = () => void this.createNewEquipment();
-    this.toolbarEl = container.createDiv();
-    this.toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const leftTools = this.toolbarEl.createDiv();
-    leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center" });
-    const filterTabs = leftTools.createDiv();
-    filterTabs.setCssStyles({ display: "flex", gap: "8px" });
-    const tabs = ["All", "Available", "In Use", "Maintenance"];
-    tabs.forEach((t8) => {
-      const btn = filterTabs.createEl("button", { text: t8 });
-      btn.setCssStyles({ borderRadius: "20px", padding: "4px 16px", fontSize: "12px", fontWeight: "600", border: `1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}`, background: this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)", color: this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)", boxShadow: "none" });
-      btn.onclick = () => {
-        this.currentFilter = t8;
-        this.renderToolbar();
-        this.applyFilters();
-      };
-    });
-    const dirWrap = leftTools.createDiv();
-    dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" });
-    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
-    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-equip-dir") || "Equipment" });
-    dirInp.setCssStyles({ width: "120px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
-    dirInp.onchange = (e6) => {
-      window.localStorage.setItem("chem-equip-dir", e6.target.value.trim());
-      void this.loadEquipment();
-    };
-    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search instrument or location..." });
-    searchInp.setCssStyles({ width: "280px", fontSize: "13px", borderRadius: "6px" });
-    searchInp.oninput = (e6) => {
-      this.searchQuery = e6.target.value.toLowerCase();
-      this.applyFilters();
-    };
-    const tableContainer = container.createDiv();
-    tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
-    const table = tableContainer.createEl("table");
-    table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "left", fontSize: "13px" });
-    const thead = table.createEl("thead");
-    thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
-    const tr2 = thead.createEl("tr");
-    ["Instrument", "Location", "Status", "Maintenance", "Actions"].forEach((c10) => {
-      tr2.createEl("th", { text: c10 }).setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px" });
-    });
-    this.tableBodyEl = table.createEl("tbody");
-    await this.loadEquipment();
-    let refreshTimeout;
-    const requestRefresh = () => {
-      window.clearTimeout(refreshTimeout);
-      refreshTimeout = window.setTimeout(() => void this.loadEquipment(), 2e3);
-    };
-    this.registerEvent(this.app.vault.on("modify", requestRefresh));
-    this.registerEvent(this.app.vault.on("create", requestRefresh));
-    this.registerEvent(this.app.vault.on("delete", requestRefresh));
-  }
-  renderToolbar() {
-    const btns = this.toolbarEl.querySelectorAll("button");
-    btns.forEach((btn) => {
-      const isMatch = btn.innerText === this.currentFilter;
-      btn.setCssStyles({ background: isMatch ? "var(--interactive-accent)" : "var(--background-primary)", color: isMatch ? "var(--text-on-accent)" : "var(--text-muted)", borderColor: isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)" });
-    });
-  }
-  async createNewEquipment() {
-    const targetDir = window.localStorage.getItem("chem-equip-dir") || "Equipment";
-    if (!await this.app.vault.adapter.exists(targetDir)) {
-      await this.app.vault.createFolder(targetDir);
-    }
-    const name = "New Instrument " + window.moment().format("HHmmss");
-    const content4 = `---
-tags: [equipment]
-name: "${name}"
-location: "Unassigned"
-status: "Available"
-booked_by: ""
-next_maintenance: "${window.moment().add(1, "year").format("YYYY-MM-DD")}"
-contact: ""
----
-# ${name}
-
-## \u{1F4D6} Standard Operating Procedure
-1. Turn on the machine...
-
-## \u{1F517} Important Links
-- [Link to PDF Manual]()
-
-## \u{1F6E0}\uFE0F Service Logs
-- **${window.moment().format("YYYY-MM-DD")}:** Added to system.
-`;
-    const file = await this.app.vault.create(`${targetDir}/${name}.md`, content4);
-    this.app.workspace.getLeaf(false).openFile(file);
-    new import_obsidian16.Notice(`Created ${name}`);
-  }
-  async loadEquipment() {
-    var _a;
-    const targetDir = window.localStorage.getItem("chem-equip-dir") || "Equipment";
-    const files = this.app.vault.getMarkdownFiles();
-    const entries = [];
-    for (const file of files) {
-      const inFolder = targetDir && file.path.startsWith(targetDir);
-      const cache2 = this.app.metadataCache.getFileCache(file);
-      const fmTags = ((_a = cache2 == null ? void 0 : cache2.frontmatter) == null ? void 0 : _a.tags) || [];
-      const isTagged = Array.isArray(fmTags) ? fmTags.includes("equipment") : fmTags === "equipment";
-      if (!inFolder && !isTagged) continue;
-      const fm = (cache2 == null ? void 0 : cache2.frontmatter) || {};
-      const name = fm.name || file.basename;
-      const location2 = fm.location || "Unknown";
-      const contact = fm.contact || "";
-      entries.push({
-        file,
-        name,
-        location: location2,
-        status: fm.status || "Available",
-        bookedBy: fm.booked_by || "",
-        nextMaintenance: fm.next_maintenance || "-",
-        contact,
-        searchText: `${name} ${location2} ${contact}`.toLowerCase()
-      });
-    }
-    this.allEntries = entries.sort((a9, b9) => a9.name.localeCompare(b9.name));
-    this.buildTableDOM();
-    this.applyFilters();
-  }
-  buildTableDOM() {
-    this.tableBodyEl.empty();
-    if (this.allEntries.length === 0) {
-      const tr2 = this.tableBodyEl.createEl("tr");
-      const td = tr2.createEl("td", { text: "No equipment found. Create notes in an 'Equipment' folder or use tags: [equipment]." });
-      td.setAttribute("colspan", "5");
-      td.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
-      return;
-    }
-    this.allEntries.forEach((e6) => {
-      const tr2 = this.tableBodyEl.createEl("tr");
-      tr2.setCssStyles({ cursor: "default", transition: "background 0.2s" });
-      e6.rowEl = tr2;
-      tr2.onmouseover = () => tr2.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
-      tr2.onmouseout = () => tr2.setCssStyles({ backgroundColor: "transparent" });
-      const tdName = tr2.createEl("td");
-      tdName.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      const nameLink = tdName.createDiv({ text: `\u{1F52C} ${e6.name}` });
-      nameLink.setCssStyles({ fontWeight: "700", color: "var(--text-accent)", fontSize: "14px", cursor: "pointer", marginBottom: "4px" });
-      nameLink.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-      if (e6.contact) tdName.createDiv({ text: `Contact: ${e6.contact}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)" });
-      const tdLoc = tr2.createEl("td", { text: `\u{1F4CD} ${e6.location}` });
-      tdLoc.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", fontWeight: "500" });
-      const tdStatus = tr2.createEl("td");
-      tdStatus.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      const isAvail = e6.status === "Available";
-      const color5 = isAvail ? "var(--text-success)" : e6.status === "Maintenance" ? "var(--text-error)" : "var(--text-warning)";
-      const statDiv = tdStatus.createDiv({ text: e6.status.toUpperCase() });
-      statDiv.setCssStyles({ display: "inline-block", padding: "4px 10px", borderRadius: "12px", fontSize: "10px", fontWeight: "700", color: color5, border: `1px solid ${color5}`, background: "var(--background-primary)", marginBottom: "4px" });
-      if (e6.bookedBy) tdStatus.createDiv({ text: `\u{1F464} ${e6.bookedBy}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" });
-      const tdMaint = tr2.createEl("td", { text: e6.nextMaintenance });
-      tdMaint.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", color: "var(--text-muted)" });
-      const tdAct = tr2.createEl("td");
-      tdAct.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      const actContainer = tdAct.createDiv();
-      actContainer.setCssStyles({ display: "flex", flexDirection: "column", gap: "6px" });
-      const btn = actContainer.createEl("button", { text: isAvail ? "\u{1F4C5} Book" : "\u2705 Release" });
-      btn.setCssStyles({ fontSize: "11px", padding: "4px", height: "26px", width: "100%" });
-      btn.onclick = async () => {
-        const newStatus = isAvail ? "In Use" : "Available";
-        const user = isAvail ? "Current User" : "";
-        await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
-          fm.status = newStatus;
-          fm.booked_by = user;
-        });
-        new import_obsidian16.Notice(`${e6.name} is now ${newStatus}.`);
-      };
-      if (e6.status !== "Maintenance") {
-        const maintBtn = actContainer.createEl("button", { text: "\u{1F527} Maint." });
-        maintBtn.setCssStyles({ fontSize: "11px", padding: "4px", height: "26px", width: "100%" });
-        maintBtn.onclick = async () => {
-          await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
-            fm.status = "Maintenance";
-            fm.booked_by = "Service Team";
-          });
-          new import_obsidian16.Notice(`${e6.name} set to Maintenance.`);
-        };
-      }
-    });
-  }
-  applyFilters() {
-    this.allEntries.forEach((e6) => {
-      if (!e6.rowEl) return;
-      const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
-      const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
-      e6.rowEl.setCssStyles({ display: matchFilter && matchSearch ? "" : "none" });
-    });
-  }
-  async onClose() {
-  }
-};
-
-// ProtocolsDashboard.ts
-var import_obsidian17 = require("obsidian");
-init_SharedBase();
-var PROTOCOLS_DASHBOARD_VIEW_TYPE = "chem-protocols-dashboard";
-var ProtocolsDashboardView = class extends import_obsidian17.ItemView {
-  constructor(leaf, plugin) {
-    super(leaf);
-    this.allEntries = [];
-    this.currentFilter = "All";
-    this.searchQuery = "";
-    this.plugin = plugin;
-  }
-  getViewType() {
-    return PROTOCOLS_DASHBOARD_VIEW_TYPE;
-  }
-  getDisplayText() {
-    return "Lab Protocols";
-  }
-  getIcon() {
-    return "file-text";
-  }
-  async onOpen() {
-    const container = this.containerEl.children[1];
-    container.empty();
-    container.addClass("chem-protocols-dashboard-view");
-    container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
-    const header = container.createDiv();
-    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const titleArea = header.createDiv();
-    titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
-    renderLimsNav(titleArea, "protocols", this.plugin);
-    titleArea.createEl("h2", { text: "Standard Operating Procedures" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
-    titleArea.createEl("span", { text: "Manage lab methodologies, reaction protocols, and safety rules" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
-    const newBtn = header.createEl("button", { text: "+ New Protocol", cls: "mod-cta" });
-    newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
-    newBtn.onclick = () => void this.createNewProtocol();
-    this.toolbarEl = container.createDiv();
-    this.toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const leftTools = this.toolbarEl.createDiv();
-    leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center" });
-    const filterTabs = leftTools.createDiv();
-    filterTabs.setCssStyles({ display: "flex", gap: "8px" });
-    const tabs = ["All", "Draft", "Approved", "Obsolete"];
-    tabs.forEach((t8) => {
-      const btn = filterTabs.createEl("button", { text: t8 });
-      btn.setCssStyles({ borderRadius: "20px", padding: "4px 16px", fontSize: "12px", fontWeight: "600", border: `1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}`, background: this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)", color: this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)", boxShadow: "none" });
-      btn.onclick = () => {
-        this.currentFilter = t8;
-        this.renderToolbar();
-        this.applyFilters();
-      };
-    });
-    const dirWrap = leftTools.createDiv();
-    dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" });
-    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
-    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-protocols-dir") || "Protocols" });
-    dirInp.setCssStyles({ width: "120px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
-    dirInp.onchange = (e6) => {
-      window.localStorage.setItem("chem-protocols-dir", e6.target.value.trim());
-      void this.loadProtocols();
-    };
-    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search protocol titles, authors..." });
-    searchInp.setCssStyles({ width: "280px", fontSize: "13px", borderRadius: "6px" });
-    searchInp.oninput = (e6) => {
-      this.searchQuery = e6.target.value.toLowerCase();
-      this.applyFilters();
-    };
-    const tableContainer = container.createDiv();
-    tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
-    const table = tableContainer.createEl("table");
-    table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "left", fontSize: "13px" });
-    const thead = table.createEl("thead");
-    thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
-    const tr2 = thead.createEl("tr");
-    ["Protocol Title", "Author", "Status", "Last Reviewed", "Actions"].forEach((c10) => {
-      const th = tr2.createEl("th", { text: c10 });
-      th.setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px" });
-    });
-    this.tableBodyEl = table.createEl("tbody");
-    await this.loadProtocols();
-    let refreshTimeout;
-    const requestRefresh = () => {
-      window.clearTimeout(refreshTimeout);
-      refreshTimeout = window.setTimeout(() => void this.loadProtocols(), 2e3);
-    };
-    this.registerEvent(this.app.vault.on("modify", requestRefresh));
-    this.registerEvent(this.app.vault.on("create", requestRefresh));
-    this.registerEvent(this.app.vault.on("delete", requestRefresh));
-  }
-  renderToolbar() {
-    const btns = this.toolbarEl.querySelectorAll("button");
-    btns.forEach((btn) => {
-      const isMatch = btn.innerText === this.currentFilter;
-      btn.setCssStyles({ background: isMatch ? "var(--interactive-accent)" : "var(--background-primary)", color: isMatch ? "var(--text-on-accent)" : "var(--text-muted)", borderColor: isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)" });
-    });
-  }
-  async createNewProtocol() {
-    const targetDir = window.localStorage.getItem("chem-protocols-dir") || "Protocols";
-    if (!await this.app.vault.adapter.exists(targetDir)) {
-      await this.app.vault.createFolder(targetDir);
-    }
-    const name = "SOP - " + window.moment().format("HHmmss");
-    const content4 = `---
-tags: [protocol]
-title: "${name}"
-author: "Current User"
-status: "Draft"
-last_reviewed: "${window.moment().format("YYYY-MM-DD")}"
----
-# ${name}
-
-## \u26A0\uFE0F Safety Precautions
-- Wear PPE.
-
-## \u{1F9EA} Reagents & Materials
-- 
-
-## \u{1F4DD} Step-by-Step Procedure
-1. 
-`;
-    const file = await this.app.vault.create(`${targetDir}/${name}.md`, content4);
-    this.app.workspace.getLeaf(false).openFile(file);
-  }
-  async loadProtocols() {
-    var _a;
-    const targetDir = window.localStorage.getItem("chem-protocols-dir") || "Protocols";
-    const files = this.app.vault.getMarkdownFiles();
-    const entries = [];
-    for (const file of files) {
-      const inFolder = targetDir && file.path.startsWith(targetDir);
-      const cache2 = this.app.metadataCache.getFileCache(file);
-      const fmTags = ((_a = cache2 == null ? void 0 : cache2.frontmatter) == null ? void 0 : _a.tags) || [];
-      const isTagged = Array.isArray(fmTags) ? fmTags.includes("protocol") || fmTags.includes("sop") : fmTags === "protocol" || fmTags === "sop";
-      if (!inFolder && !isTagged) continue;
-      const fm = (cache2 == null ? void 0 : cache2.frontmatter) || {};
-      const title = fm.title || file.basename;
-      const author = fm.author || "Unknown";
-      entries.push({
-        file,
-        title,
-        author,
-        status: fm.status || "Draft",
-        lastReviewed: fm.last_reviewed || "-",
-        searchText: `${title} ${author} ${fm.status || ""}`.toLowerCase()
-      });
-    }
-    this.allEntries = entries.sort((a9, b9) => a9.title.localeCompare(b9.title));
-    this.buildTableDOM();
-    this.applyFilters();
-  }
-  buildTableDOM() {
-    this.tableBodyEl.empty();
-    if (this.allEntries.length === 0) {
-      const tr2 = this.tableBodyEl.createEl("tr");
-      const td = tr2.createEl("td", { text: "No protocols found. Create a note in a 'Protocols' folder or use tags: [protocol]." });
-      td.setAttribute("colspan", "5");
-      td.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
-      return;
-    }
-    this.allEntries.forEach((e6) => {
-      const tr2 = this.tableBodyEl.createEl("tr");
-      tr2.setCssStyles({ cursor: "default", transition: "background 0.2s" });
-      e6.rowEl = tr2;
-      tr2.onmouseover = () => tr2.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
-      tr2.onmouseout = () => tr2.setCssStyles({ backgroundColor: "transparent" });
-      const tdName = tr2.createEl("td");
-      tdName.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      const nameLink = tdName.createDiv({ text: `\u{1F4C4} ${e6.title}` });
-      nameLink.setCssStyles({ fontWeight: "700", color: "var(--text-accent)", fontSize: "14px", cursor: "pointer" });
-      nameLink.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-      const tdAuthor = tr2.createEl("td", { text: e6.author });
-      tdAuthor.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", fontWeight: "500" });
-      const tdStatus = tr2.createEl("td");
-      tdStatus.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      let color5 = "var(--text-warning)", bg = "var(--background-primary)";
-      if (e6.status === "Approved") color5 = "var(--text-success)";
-      else if (e6.status === "Obsolete") color5 = "var(--text-error)";
-      const statSpan = tdStatus.createDiv({ text: e6.status.toUpperCase() });
-      statSpan.setCssStyles({ display: "inline-block", padding: "4px 10px", borderRadius: "12px", fontSize: "10px", fontWeight: "700", color: color5, border: `1px solid ${color5}`, background: bg });
-      const tdRev = tr2.createEl("td", { text: e6.lastReviewed });
-      tdRev.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", color: "var(--text-muted)" });
-      const tdAct = tr2.createEl("td");
-      tdAct.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      const btn = tdAct.createEl("button", { text: "\u270D\uFE0F Mark Reviewed" });
-      btn.setCssStyles({ fontSize: "11px", padding: "4px 12px", width: "100%" });
-      btn.onclick = async () => {
-        await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
-          fm.last_reviewed = window.moment().format("YYYY-MM-DD");
-          fm.status = "Approved";
-        });
-        new import_obsidian17.Notice(`${e6.title} marked as Reviewed & Approved.`);
-      };
-    });
-  }
-  applyFilters() {
-    this.allEntries.forEach((e6) => {
-      if (!e6.rowEl) return;
-      const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
-      const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
-      e6.rowEl.setCssStyles({ display: matchFilter && matchSearch ? "" : "none" });
-    });
-  }
-  async onClose() {
-  }
-};
-
-// LibraryDashboard.ts
-var import_obsidian18 = require("obsidian");
-init_SharedBase();
-init_SharedEln();
-var LIBRARY_DASHBOARD_VIEW_TYPE = "chem-library-dashboard";
-var LibraryDashboardView = class extends import_obsidian18.ItemView {
-  constructor(leaf, plugin) {
-    super(leaf);
-    this.allEntries = [];
-    this.searchQuery = "";
-    this.plugin = plugin;
-    this.observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const el2 = entry.target;
-          const smiles = el2.dataset.smiles;
-          if (smiles && !el2.dataset.rendered) {
-            el2.dataset.rendered = "true";
-            this.plugin.api.renderStructure(smiles, 120, 100).then((renderEl) => {
-              el2.empty();
-              if (renderEl) {
-                renderEl.style.maxWidth = "100%";
-                renderEl.style.maxHeight = "100%";
-                el2.appendChild(renderEl);
-              } else el2.createSpan({ text: "Invalid", cls: "color-text-muted" });
-            });
-          }
-        }
-      });
-    }, { root: null, rootMargin: "100px", threshold: 0.1 });
-  }
-  getViewType() {
-    return LIBRARY_DASHBOARD_VIEW_TYPE;
-  }
-  getDisplayText() {
-    return "Compounds Library";
-  }
-  getIcon() {
-    return "library";
-  }
-  async onOpen() {
-    const container = this.containerEl.children[1];
-    container.empty();
-    container.addClass("chem-library-dashboard-view");
-    container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
-    const header = container.createDiv();
-    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const titleArea = header.createDiv();
-    titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
-    renderLimsNav(titleArea, "library", this.plugin);
-    titleArea.createEl("h2", { text: "Compounds Library" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
-    titleArea.createEl("span", { text: "Central database of reference structures and building blocks" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
-    const newBtn = header.createEl("button", { text: "+ Add Compound", cls: "mod-cta" });
-    newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
-    newBtn.onclick = () => {
-      this.plugin.api.ketcher.openEditor("", "smiles", async (smiles) => {
-        if (!smiles) return;
-        const name = "Compound_" + window.moment().format("HHmmss");
-        const content4 = `---
-tags: [library]
-name: "${name}"
-smiles: "${smiles}"
----
-# ${name}
-
-\`\`\`smiles
-${smiles}
-\`\`\`
-`;
-        const file = await this.app.vault.create(`Library/${name}.md`, content4);
-        this.app.workspace.getLeaf(false).openFile(file);
-      });
-    };
-    const toolbarEl = container.createDiv();
-    toolbarEl.setCssStyles({ display: "flex", justifyContent: "flex-end", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const searchInp = toolbarEl.createEl("input", { type: "search", placeholder: "Search name, SMILES, or formula..." });
-    searchInp.setCssStyles({ width: "280px", fontSize: "13px", borderRadius: "6px" });
-    searchInp.oninput = (e6) => {
-      this.searchQuery = e6.target.value.toLowerCase();
-      this.renderTable();
-    };
-    const tableContainer = container.createDiv();
-    tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
-    const table = tableContainer.createEl("table");
-    table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "left", fontSize: "13px" });
-    const thead = table.createEl("thead");
-    thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
-    const tr2 = thead.createEl("tr");
-    ["Structure", "Name", "Properties", "SMILES", "Actions"].forEach((c10) => {
-      tr2.createEl("th", { text: c10 }).setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px" });
-    });
-    this.tableBodyEl = table.createEl("tbody");
-    await this.loadLibrary();
-    this.registerEvent(this.app.metadataCache.on("resolved", () => void this.loadLibrary()));
-  }
-  async loadLibrary() {
-    var _a, _b;
-    const files = this.app.vault.getMarkdownFiles();
-    this.allEntries = [];
-    for (const file of files) {
-      const fm = (_a = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter;
-      const isLib = ((_b = fm == null ? void 0 : fm.tags) == null ? void 0 : _b.includes("library")) || file.path.toLowerCase().includes("library/");
-      if (!isLib) continue;
-      let smiles = (fm == null ? void 0 : fm.smiles) || "";
-      if (!smiles) {
-        const content4 = await this.app.vault.cachedRead(file);
-        const blockMatch = content4.match(/```smiles\s*\n([\s\S]*?)\n```/);
-        if (blockMatch) smiles = blockMatch[1].trim();
-      }
-      let mw = (fm == null ? void 0 : fm.mw) || 0;
-      let formula = (fm == null ? void 0 : fm.formula) || "";
-      if (smiles && (!mw || !formula)) {
-        const p7 = await calculateMwOffline(smiles, this.plugin);
-        if (p7) {
-          mw = p7.mw;
-          formula = p7.formula;
-        }
-      }
-      this.allEntries.push({
-        file,
-        name: (fm == null ? void 0 : fm.name) || file.basename,
-        smiles,
-        formula,
-        mw,
-        tags: (fm == null ? void 0 : fm.tags) || []
-      });
-    }
-    this.allEntries.sort((a9, b9) => a9.name.localeCompare(b9.name));
-    this.renderTable();
-  }
-  renderTable() {
-    this.tableBodyEl.empty();
-    this.observer.disconnect();
-    const filtered = this.allEntries.filter((e6) => !this.searchQuery || `${e6.name} ${e6.smiles} ${e6.formula}`.toLowerCase().includes(this.searchQuery));
-    if (filtered.length === 0) {
-      const emptyTr = this.tableBodyEl.createEl("tr");
-      const emptyTd = emptyTr.createEl("td", { text: "No compounds found. Create a note in a 'Library' folder or use tags: [library]." });
-      emptyTd.setAttribute("colspan", "5");
-      emptyTd.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
-      return;
-    }
-    filtered.forEach((e6) => {
-      const tr2 = this.tableBodyEl.createEl("tr");
-      tr2.setCssStyles({ transition: "background 0.2s" });
-      tr2.onmouseover = () => tr2.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
-      tr2.onmouseout = () => tr2.setCssStyles({ backgroundColor: "transparent" });
-      const tdStruct = tr2.createEl("td");
-      tdStruct.setCssStyles({ padding: "10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      const structWrap = tdStruct.createDiv();
-      structWrap.setAttribute("data-smiles", e6.smiles);
-      structWrap.setCssStyles({ width: "120px", height: "100px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px", cursor: "pointer" });
-      structWrap.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-      if (e6.smiles) {
-        structWrap.createSpan({ text: "\u23F3 Loading...", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
-        this.observer.observe(structWrap);
-      } else {
-        structWrap.createSpan({ text: "No Structure", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
-      }
-      const tdName = tr2.createEl("td");
-      tdName.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      const nameDiv = tdName.createDiv({ text: e6.name });
-      nameDiv.setCssStyles({ fontWeight: "700", color: "var(--text-accent)", fontSize: "14px", marginBottom: "4px", cursor: "pointer" });
-      nameDiv.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-      const tdProps = tr2.createEl("td");
-      tdProps.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      tdProps.createDiv({ text: `Formula: ${e6.formula || "-"}` }).setCssStyles({ fontSize: "12px", color: "var(--text-normal)", fontWeight: "600" });
-      tdProps.createDiv({ text: `MW: ${e6.mw ? e6.mw.toFixed(2) : "-"}` }).setCssStyles({ fontSize: "12px", color: "var(--text-muted)" });
-      const tdSmiles = tr2.createEl("td");
-      tdSmiles.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", maxWidth: "200px" });
-      tdSmiles.createEl("code", { text: e6.smiles.length > 30 ? e6.smiles.substring(0, 30) + "..." : e6.smiles }).setCssStyles({ fontSize: "10px", wordBreak: "break-all" });
-      const tdAct = tr2.createEl("td");
-      tdAct.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      const copyBtn = tdAct.createEl("button", { text: "\u{1F4CB} Copy SMILES" });
-      copyBtn.setCssStyles({ fontSize: "11px", padding: "4px 12px", width: "100%", marginBottom: "6px" });
-      copyBtn.onclick = () => {
-        void navigator.clipboard.writeText(e6.smiles);
-        new import_obsidian18.Notice("Copied!");
-      };
-    });
-  }
-  async onClose() {
-    this.observer.disconnect();
-  }
-};
-
-// GalleryDashboard.ts
-var import_obsidian19 = require("obsidian");
-init_SharedBase();
-var GALLERY_DASHBOARD_VIEW_TYPE = "chem-gallery-dashboard";
-var GalleryDashboardView = class extends import_obsidian19.ItemView {
-  constructor(leaf, plugin) {
-    super(leaf);
-    this.searchQuery = "";
-    this.allFiles = [];
-    this.plugin = plugin;
-    this.observer = new IntersectionObserver((entries) => {
-      entries.forEach(async (entry) => {
-        if (entry.isIntersecting) {
-          const el2 = entry.target;
-          if (!el2.dataset.rendered && el2.dataset.index) {
-            el2.dataset.rendered = "true";
-            const idx = parseInt(el2.dataset.index, 10);
-            const item = this.allFiles[idx];
-            if (!item) return;
-            let dataToRender = item.data;
-            if (!dataToRender && item.file.extension.toLowerCase() !== "md") {
-              dataToRender = await this.plugin.app.vault.read(item.file);
-              item.data = dataToRender;
-            }
-            if (dataToRender) {
-              this.plugin.api.renderStructure(dataToRender, 160, 120).then((renderEl) => {
-                el2.empty();
-                if (renderEl) {
-                  renderEl.style.maxWidth = "100%";
-                  renderEl.style.maxHeight = "100%";
-                  el2.appendChild(renderEl);
-                } else {
-                  el2.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">Error</span>`;
-                }
-              });
-            } else {
-              el2.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">Empty</span>`;
-            }
-          }
-        }
-      });
-    }, { root: null, rootMargin: "200px", threshold: 0.1 });
-  }
-  getViewType() {
-    return GALLERY_DASHBOARD_VIEW_TYPE;
-  }
-  getDisplayText() {
-    return "Drawings Gallery";
-  }
-  getIcon() {
-    return "image";
-  }
-  async onOpen() {
-    const container = this.containerEl.children[1];
-    container.empty();
-    container.addClass("chem-gallery-dashboard-view");
-    Object.assign(container.style, { display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
-    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
-    renderLimsNav(titleArea, "gallery", this.plugin);
-    titleArea.createEl("h2", { text: "Drawings Gallery", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
-    titleArea.createEl("span", { text: "Visual overview of all chemical structures across your vault", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
-    const toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const leftTools = toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center;" } });
-    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px;" } });
-    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
-    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-gallery-dir") || "", attr: { placeholder: "Leave empty for entire vault", style: "width: 180px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
-    dirInp.onchange = (e6) => {
-      window.localStorage.setItem("chem-gallery-dir", e6.target.value.trim());
-      this.loadDrawings();
-    };
-    const searchInp = toolbarEl.createEl("input", { type: "search", placeholder: "Search file names...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" } });
-    searchInp.oninput = (e6) => {
-      this.searchQuery = e6.target.value.toLowerCase();
-      this.applyFilters();
-    };
-    this.gridContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 20px 30px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; align-content: start;" } });
-    await this.loadDrawings();
-    const requestRefresh = (0, import_obsidian19.debounce)(() => this.loadDrawings(), 2e3, true);
-    this.registerEvent(this.app.vault.on("modify", requestRefresh));
-    this.registerEvent(this.app.vault.on("create", requestRefresh));
-    this.registerEvent(this.app.vault.on("delete", requestRefresh));
-  }
-  async loadDrawings() {
-    var _a;
-    const targetDir = window.localStorage.getItem("chem-gallery-dir") || "";
-    const files = this.app.vault.getFiles();
-    const validExts = ["mol", "cdxml", "sdf", "rxn", "ket"];
-    const entries = [];
-    for (const file of files) {
-      if (targetDir && !file.path.startsWith(targetDir)) continue;
-      const ext = file.extension.toLowerCase();
-      if (validExts.includes(ext)) {
-        entries.push({ file, ext, data: "", name: file.basename, searchText: file.basename.toLowerCase() });
-      } else if (ext === "md") {
-        const cache2 = this.app.metadataCache.getFileCache(file);
-        const hasCodeBlock = (_a = cache2 == null ? void 0 : cache2.sections) == null ? void 0 : _a.some((s8) => s8.type === "code");
-        if (hasCodeBlock) {
-          const content4 = await this.app.vault.cachedRead(file);
-          const blockMatch = content4.match(/```(smiles|mol)\s*\n([\s\S]*?)\n```/);
-          if (blockMatch && blockMatch[2].trim()) {
-            entries.push({
-              file,
-              ext: blockMatch[1],
-              data: blockMatch[2].trim(),
-              name: file.basename,
-              searchText: file.basename.toLowerCase()
-            });
-          }
-        }
-      }
-    }
-    this.allFiles = entries.sort((a9, b9) => a9.name.localeCompare(b9.name));
-    this.buildGridDOM();
-    this.applyFilters();
-  }
-  buildGridDOM() {
-    const fragment2 = document.createDocumentFragment();
-    this.observer.disconnect();
-    if (this.allFiles.length === 0) {
-      const emptyDiv = document.createElement("div");
-      emptyDiv.style.gridColumn = "1/-1";
-      emptyDiv.style.textAlign = "center";
-      emptyDiv.style.padding = "40px";
-      emptyDiv.style.color = "var(--text-muted)";
-      emptyDiv.style.fontStyle = "italic";
-      emptyDiv.innerText = "No drawings found in the specified directory.";
-      fragment2.appendChild(emptyDiv);
-    } else {
-      this.allFiles.forEach((item, index) => {
-        const card = document.createElement("div");
-        Object.assign(card.style, { background: "var(--background-secondary)", border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "10px", display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", transition: "transform 0.2s, box-shadow 0.2s" });
-        card.onmouseover = () => {
-          card.style.transform = "translateY(-4px)";
-          card.style.boxShadow = "0 6px 12px rgba(0,0,0,0.1)";
-          card.style.borderColor = "var(--interactive-accent)";
-        };
-        card.onmouseout = () => {
-          card.style.transform = "translateY(0)";
-          card.style.boxShadow = "none";
-          card.style.borderColor = "var(--background-modifier-border)";
-        };
-        card.onclick = () => this.app.workspace.getLeaf(false).openFile(item.file);
-        item.cardEl = card;
-        const preview2 = card.createDiv({ attr: { "data-index": index.toString(), style: "width: 100%; height: 120px; display: flex; align-items: center; justify-content: center; background: var(--background-primary); border-radius: 4px; margin-bottom: 10px;" } });
-        preview2.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">\u23F3</span>`;
-        this.observer.observe(preview2);
-        card.createDiv({ text: item.name, attr: { style: "font-size: 12px; font-weight: 600; color: var(--text-normal); text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" } });
-        card.createDiv({ text: item.ext.toUpperCase(), attr: { style: "font-size: 9px; color: var(--text-muted); margin-top: 4px; background: var(--background-primary); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--background-modifier-border);" } });
-        fragment2.appendChild(card);
-      });
-    }
-    this.gridContainer.empty();
-    this.gridContainer.appendChild(fragment2);
-  }
-  // CPU-Free Filtering: Toggles display:none directly on the DOM cards
-  applyFilters() {
-    this.allFiles.forEach((e6) => {
-      if (!e6.cardEl) return;
-      const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
-      e6.cardEl.style.display = matchSearch ? "flex" : "none";
-    });
-  }
-  async onClose() {
-    this.observer.disconnect();
-  }
-};
-
-// CharacterizationDashboard.ts
-var import_obsidian20 = require("obsidian");
-init_SharedBase();
-var CHARACTERIZATION_DASHBOARD_VIEW_TYPE = "chem-characterization-dashboard";
-var CharacterizationDashboardView = class extends import_obsidian20.ItemView {
-  constructor(leaf, plugin) {
-    super(leaf);
-    this.allEntries = [];
-    this.searchQuery = "";
-    this.metricsList = [];
-    this.plugin = plugin;
-    this.observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const el2 = entry.target;
-          const smiles = el2.dataset.smiles;
-          if (smiles && !el2.dataset.rendered) {
-            el2.dataset.rendered = "true";
-            this.plugin.api.renderStructure(smiles, 120, 100).then((renderEl) => {
-              el2.empty();
-              if (renderEl) {
-                renderEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
-                el2.appendChild(renderEl);
-              } else {
-                el2.createSpan({ text: "Invalid", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
-              }
-            });
-          }
-        }
-      });
-    }, { root: null, rootMargin: "150px", threshold: 0.1 });
-  }
-  getViewType() {
-    return CHARACTERIZATION_DASHBOARD_VIEW_TYPE;
-  }
-  getDisplayText() {
-    return "Compound Data Organizer";
-  }
-  getIcon() {
-    return "bar-chart-2";
-  }
-  async onOpen() {
-    const container = this.containerEl.children[1];
-    container.empty();
-    container.addClass("chem-characterization-dashboard-view");
-    container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
-    const header = container.createDiv();
-    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const titleArea = header.createDiv();
-    titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
-    renderLimsNav(titleArea, "data", this.plugin);
-    titleArea.createEl("h2", { text: "Compound Data Organizer" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
-    titleArea.createEl("span", { text: "Track publication readiness and analytical spectra" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
-    const newBtn = header.createEl("button", { text: "+ Add Compound", cls: "mod-cta" });
-    newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
-    newBtn.onclick = () => {
-      const folder = window.localStorage.getItem("chem-char-dir") || "Characterization";
-      void this.createNewEntry(folder);
-    };
-    const toolbarEl = container.createDiv();
-    toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const leftTools = toolbarEl.createDiv();
-    leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center", flexWrap: "wrap" });
-    const dirWrap = leftTools.createDiv();
-    dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px" });
-    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
-    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-char-dir") || "Characterization" });
-    dirInp.setCssStyles({ width: "120px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
-    dirInp.onchange = (e6) => {
-      window.localStorage.setItem("chem-char-dir", e6.target.value.trim());
-      void this.loadData();
-    };
-    const metricWrap = leftTools.createDiv();
-    metricWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px" });
-    const metSpan = metricWrap.createEl("span", { text: "\u2699\uFE0F Metrics (YAML keys):" });
-    metSpan.setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
-    metSpan.title = "Comma separated list of data you want to track.";
-    const metricInp = metricWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-char-metrics") || "hnmr, cnmr, hrms, ir, mp" });
-    metricInp.setCssStyles({ width: "220px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
-    metricInp.onchange = (e6) => {
-      window.localStorage.setItem("chem-char-metrics", e6.target.value.trim());
-      void this.loadData();
-    };
-    const searchInp = toolbarEl.createEl("input", { type: "search", placeholder: "Search compound name..." });
-    searchInp.setCssStyles({ width: "220px", fontSize: "13px", borderRadius: "6px" });
-    searchInp.oninput = (e6) => {
-      this.searchQuery = e6.target.value.toLowerCase();
-      this.applyFilters();
-    };
-    const tableContainer = container.createDiv();
-    tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
-    const table = tableContainer.createEl("table");
-    table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "center", fontSize: "13px" });
-    const thead = table.createEl("thead");
-    thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
-    this.tableHeadTr = thead.createEl("tr");
-    this.tableBodyEl = table.createEl("tbody");
-    await this.loadData();
-    const requestRefresh = (0, import_obsidian20.debounce)(() => {
-      void this.loadData();
-    }, 2e3, true);
-    this.registerEvent(this.app.vault.on("modify", requestRefresh));
-    this.registerEvent(this.app.vault.on("create", requestRefresh));
-    this.registerEvent(this.app.vault.on("delete", requestRefresh));
-  }
-  async createNewEntry(folder) {
-    if (!await this.app.vault.adapter.exists(folder)) await this.app.vault.createFolder(folder);
-    const name = "Compound_" + window.moment().format("HHmmss");
-    let metricsYaml = "";
-    this.metricsList.forEach((m9) => {
-      metricsYaml += `${m9}: false
-`;
-    });
-    const content4 = `---
-tags: [characterization]
-name: "${name}"
-smiles: ""
-${metricsYaml}---
-# ${name}
-
-*Drop spectral data files (PDFs, MNova, images) into this folder and link them above!*
-`;
-    const file = await this.app.vault.create(`${folder}/${name}.md`, content4);
-    this.app.workspace.getLeaf(false).openFile(file);
-  }
-  async loadData() {
-    const targetDir = window.localStorage.getItem("chem-char-dir") || "Characterization";
-    const metricsStr = window.localStorage.getItem("chem-char-metrics") || "hnmr, cnmr, hrms, ir, mp";
-    this.metricsList = metricsStr.split(",").map((s8) => s8.trim().toLowerCase()).filter(Boolean);
-    const files = this.app.vault.getMarkdownFiles();
-    const entries = [];
-    for (const file of files) {
-      const inFolder = targetDir && file.path.startsWith(targetDir);
-      const cache2 = this.app.metadataCache.getFileCache(file);
-      const fm = (cache2 == null ? void 0 : cache2.frontmatter) || {};
-      const fmTags = fm.tags || [];
-      const isTagged = Array.isArray(fmTags) ? fmTags.includes("characterization") || fmTags.includes("compound") : fmTags === "characterization" || fmTags === "compound";
-      if (!inFolder && !isTagged) continue;
-      const smiles = fm.smiles || "";
-      let collectedCount = 0;
-      const metricsData = {};
-      this.metricsList.forEach((m9) => {
-        const val = fm[m9];
-        metricsData[m9] = val;
-        if (val && val !== "false" && val !== false) collectedCount++;
-      });
-      const score = this.metricsList.length > 0 ? Math.round(collectedCount / this.metricsList.length * 100) : 0;
-      const name = fm.name || file.basename;
-      entries.push({
-        file,
-        name,
-        smiles,
-        metricsData,
-        score,
-        timestamp: file.stat.mtime,
-        searchText: name.toLowerCase()
-      });
-    }
-    this.allEntries = entries.sort((a9, b9) => a9.name.localeCompare(b9.name));
-    this.buildTableDOM();
-    this.applyFilters();
-  }
-  buildTableDOM() {
-    this.observer.disconnect();
-    this.tableHeadTr.empty();
-    const formatHeader = (key) => {
-      if (key === "hnmr") return "1H NMR";
-      if (key === "cnmr") return "13C NMR";
-      if (key === "mp") return "M.P.";
-      return key.toUpperCase();
-    };
-    const staticCols = ["Structure", "Compound"];
-    const dynamicCols = this.metricsList.map(formatHeader);
-    const allCols = [...staticCols, ...dynamicCols, "Readiness"];
-    allCols.forEach((c10, i8) => {
-      const th = this.tableHeadTr.createEl("th", { text: c10 });
-      th.setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px" });
-      if (i8 < 2) th.setCssStyles({ textAlign: "left" });
-    });
-    const fragment2 = document.createDocumentFragment();
-    if (this.allEntries.length === 0) {
-      const emptyTr = document.createElement("tr");
-      const emptyTd = document.createElement("td");
-      emptyTd.setAttribute("colspan", allCols.length.toString());
-      emptyTd.textContent = "No compounds found. Click '+ Add Compound' to start.";
-      emptyTd.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
-      emptyTr.appendChild(emptyTd);
-      fragment2.appendChild(emptyTr);
-    } else {
-      this.allEntries.forEach((e6) => {
-        const tr2 = document.createElement("tr");
-        tr2.setCssStyles({ transition: "background 0.2s" });
-        e6.rowEl = tr2;
-        tr2.onmouseover = () => tr2.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
-        tr2.onmouseout = () => tr2.setCssStyles({ backgroundColor: "transparent" });
-        const tdStruct = document.createElement("td");
-        tdStruct.setCssStyles({ padding: "10px", borderBottom: "1px solid var(--background-modifier-border-hover)", textAlign: "left" });
-        const structWrap = document.createElement("div");
-        structWrap.setAttribute("data-smiles", e6.smiles);
-        structWrap.setCssStyles({ width: "120px", height: "100px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px", cursor: "pointer" });
-        structWrap.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-        if (e6.smiles) {
-          const l8 = document.createElement("span");
-          l8.textContent = "\u23F3";
-          l8.setCssStyles({ color: "var(--text-muted)", fontSize: "11px" });
-          structWrap.appendChild(l8);
-          this.observer.observe(structWrap);
-        } else {
-          const l8 = document.createElement("span");
-          l8.textContent = "No Structure";
-          l8.setCssStyles({ color: "var(--text-muted)", fontSize: "11px" });
-          structWrap.appendChild(l8);
-        }
-        tdStruct.appendChild(structWrap);
-        tr2.appendChild(tdStruct);
-        const tdName = document.createElement("td");
-        tdName.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", textAlign: "left" });
-        const nameDiv = document.createElement("div");
-        nameDiv.textContent = e6.name;
-        nameDiv.setCssStyles({ fontWeight: "700", color: "var(--text-accent)", fontSize: "14px", cursor: "pointer" });
-        nameDiv.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-        tdName.appendChild(nameDiv);
-        tr2.appendChild(tdName);
-        this.metricsList.forEach((m9) => {
-          this.createDataCell(tr2, e6.file, m9, e6.metricsData[m9]);
-        });
-        const tdProg = document.createElement("td");
-        tdProg.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-        const pColor = e6.score === 100 ? "var(--text-success)" : e6.score >= 60 ? "var(--text-warning)" : "var(--text-error)";
-        const scoreDiv = document.createElement("div");
-        scoreDiv.textContent = `${e6.score}%`;
-        scoreDiv.setCssStyles({ fontSize: "11px", fontWeight: "bold", marginBottom: "4px", color: pColor });
-        const track = document.createElement("div");
-        track.setCssStyles({ width: "100%", height: "6px", background: "var(--background-modifier-border)", borderRadius: "3px", overflow: "hidden" });
-        const bar = document.createElement("div");
-        bar.setCssStyles({ width: `${e6.score}%`, height: "100%", background: pColor, transition: "width 0.3s" });
-        track.appendChild(bar);
-        tdProg.appendChild(scoreDiv);
-        tdProg.appendChild(track);
-        tr2.appendChild(tdProg);
-        fragment2.appendChild(tr2);
-      });
-    }
-    this.tableBodyEl.empty();
-    this.tableBodyEl.appendChild(fragment2);
-  }
-  createDataCell(tr2, file, key, val) {
-    const td = document.createElement("td");
-    td.setCssStyles({ padding: "10px", borderBottom: "1px solid var(--background-modifier-border-hover)", verticalAlign: "middle" });
-    const isDone = !!val && val !== "false" && val !== false;
-    const isLink = typeof val === "string" && val.includes("[[");
-    const displayStr = isLink ? "\u{1F4C4}" : isDone ? "\u2705" : "\u274C";
-    const color5 = isDone ? isLink ? "var(--text-accent)" : "var(--text-success)" : "var(--text-faint)";
-    const btn = document.createElement("button");
-    btn.textContent = displayStr;
-    btn.title = val ? String(val) : "Missing";
-    btn.setCssStyles({ background: isDone ? "var(--background-primary)" : "transparent", border: `1px solid ${isDone ? color5 : "transparent"}`, borderRadius: "6px", fontSize: "14px", padding: "4px 8px", color: color5, boxShadow: "none", cursor: "pointer" });
-    btn.onclick = (e6) => {
-      const menu = new import_obsidian20.Menu();
-      if (isLink) {
-        menu.addItem((i8) => i8.setTitle(`Extract Link: ${val.replace(/[[\]]/g, "")}`).setIcon("link").onClick(() => {
-          const cleanName = val.replace("[[", "").replace("]]", "");
-          const targetFile = this.app.metadataCache.getFirstLinkpathDest(cleanName, file.path);
-          if (targetFile) this.app.workspace.getLeaf(false).openFile(targetFile);
-          else new import_obsidian20.Notice("Linked file not found.");
-        }));
-        menu.addSeparator();
-      }
-      menu.addItem((i8) => i8.setTitle("Mark as Collected (\u2705)").setIcon("check").onClick(() => void this.app.fileManager.processFrontMatter(file, (fm) => fm[key] = true)));
-      menu.addItem((i8) => i8.setTitle("Link File / Text (\u{1F4C4})").setIcon("paperclip").onClick(() => {
-        new DataPromptModal(this.app, key.toUpperCase(), (val == null ? void 0 : val.toString()) || "", (newVal) => {
-          void this.app.fileManager.processFrontMatter(file, (fm) => fm[key] = newVal);
-        }).open();
-      }));
-      menu.addItem((i8) => i8.setTitle("Mark as Missing (\u274C)").setIcon("cross").onClick(() => void this.app.fileManager.processFrontMatter(file, (fm) => {
-        fm[key] = false;
-      })));
-      menu.showAtMouseEvent(e6);
-    };
-    td.appendChild(btn);
-    tr2.appendChild(td);
-  }
-  applyFilters() {
-    this.allEntries.forEach((e6) => {
-      if (e6.rowEl) e6.rowEl.setCssStyles({ display: !this.searchQuery || e6.searchText.includes(this.searchQuery) ? "" : "none" });
-    });
-  }
-  async onClose() {
-    this.observer.disconnect();
-  }
-};
-var DataPromptModal = class extends import_obsidian20.Modal {
-  constructor(app, keyName, initialVal, onSubmit) {
-    super(app);
-    this.keyName = keyName;
-    this.initialVal = initialVal;
-    this.onSubmit = onSubmit;
-  }
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.createEl("h3", { text: `Set data for ${this.keyName}` });
-    contentEl.createEl("p", { text: "Tip: You can paste an Obsidian link here like [[spectra.pdf]]", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px", marginTop: "0" });
-    const input = contentEl.createEl("input", { type: "text", value: this.initialVal === "true" || this.initialVal === "false" ? "" : this.initialVal });
-    input.setCssStyles({ width: "100%", marginBottom: "15px" });
-    const saveBtn = contentEl.createEl("button", { text: "Save", cls: "mod-cta" });
-    saveBtn.onclick = () => {
-      this.onSubmit(input.value.trim());
-      this.close();
-    };
-    input.onkeydown = (e6) => {
-      if (e6.key === "Enter") saveBtn.click();
-    };
-    window.setTimeout(() => input.focus(), 50);
-  }
-  onClose() {
-    this.contentEl.empty();
-  }
-};
-
-// OrdersDashboard.ts
-var import_obsidian21 = require("obsidian");
-init_SharedBase();
-var ORDERS_DASHBOARD_VIEW_TYPE = "chem-orders-dashboard";
-var OrdersDashboardView = class extends import_obsidian21.ItemView {
-  constructor(leaf, plugin) {
-    super(leaf);
-    this.allEntries = [];
-    this.currentFilter = "All";
-    this.searchQuery = "";
-    this.plugin = plugin;
-  }
-  getViewType() {
-    return ORDERS_DASHBOARD_VIEW_TYPE;
-  }
-  getDisplayText() {
-    return "Orders & Requests";
-  }
-  getIcon() {
-    return "shopping-cart";
-  }
-  async onOpen() {
-    const container = this.containerEl.children[1];
-    container.empty();
-    container.addClass("chem-orders-dashboard-view");
-    container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
-    const header = container.createDiv();
-    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const titleArea = header.createDiv();
-    titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
-    renderLimsNav(titleArea, "orders", this.plugin);
-    titleArea.createEl("h2", { text: "Orders & Requests" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
-    titleArea.createEl("span", { text: "Track chemicals, consumables, and equipment purchases" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
-    const newBtn = header.createEl("button", { text: "+ New Request", cls: "mod-cta" });
-    newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
-    newBtn.onclick = () => {
-      const folder = window.localStorage.getItem("chem-orders-dir") || "Orders";
-      new CreateOrderModal(this.app, folder).open();
-    };
-    this.toolbarEl = container.createDiv();
-    this.toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
-    const leftTools = this.toolbarEl.createDiv();
-    leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center" });
-    const filterTabs = leftTools.createDiv();
-    filterTabs.setCssStyles({ display: "flex", gap: "8px" });
-    const tabs = ["All", "Planned", "Ordered", "Received"];
-    tabs.forEach((t8) => {
-      const btn = filterTabs.createEl("button", { text: t8 });
-      btn.setCssStyles({ borderRadius: "20px", padding: "4px 16px", fontSize: "12px", fontWeight: "600", border: `1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}`, background: this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)", color: this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)", boxShadow: "none" });
-      btn.onclick = () => {
-        this.currentFilter = t8;
-        this.renderToolbar();
-        this.applyFilters();
-      };
-    });
-    const dirWrap = leftTools.createDiv();
-    dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px", marginLeft: "10px" });
-    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
-    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-orders-dir") || "Orders" });
-    dirInp.setCssStyles({ width: "120px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
-    dirInp.onchange = (e6) => {
-      window.localStorage.setItem("chem-orders-dir", e6.target.value.trim());
-      void this.loadOrders();
-    };
-    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search item, supplier, catalog..." });
-    searchInp.setCssStyles({ width: "280px", fontSize: "13px", borderRadius: "6px" });
-    searchInp.oninput = (e6) => {
-      this.searchQuery = e6.target.value.toLowerCase();
-      this.applyFilters();
-    };
-    const tableContainer = container.createDiv();
-    tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
-    const table = tableContainer.createEl("table");
-    table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "left", fontSize: "13px" });
-    const thead = table.createEl("thead");
-    thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
-    const tr2 = thead.createEl("tr");
-    const cols = [
-      { name: "Item", width: "200px" },
-      { name: "Supplier Info", width: "200px" },
-      { name: "Amount & Price", width: "150px" },
-      { name: "Requester", width: "150px" },
-      { name: "Status", width: "120px" },
-      { name: "Actions", width: "120px" }
-    ];
-    cols.forEach((c10) => {
-      const th = tr2.createEl("th", { text: c10.name });
-      th.setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px", width: c10.width });
-    });
-    this.tableBodyEl = table.createEl("tbody");
-    await this.loadOrders();
-    let refreshTimeout;
-    const requestRefresh = () => {
-      window.clearTimeout(refreshTimeout);
-      refreshTimeout = window.setTimeout(() => void this.loadOrders(), 2e3);
-    };
-    this.registerEvent(this.app.vault.on("modify", requestRefresh));
-    this.registerEvent(this.app.vault.on("create", requestRefresh));
-    this.registerEvent(this.app.vault.on("delete", requestRefresh));
-  }
-  renderToolbar() {
-    const btns = this.toolbarEl.querySelectorAll("button");
-    btns.forEach((btn) => {
-      const isMatch = btn.innerText === this.currentFilter;
-      btn.setCssStyles({ background: isMatch ? "var(--interactive-accent)" : "var(--background-primary)", color: isMatch ? "var(--text-on-accent)" : "var(--text-muted)", borderColor: isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)" });
-    });
-  }
-  async loadOrders() {
-    var _a;
-    const targetDir = window.localStorage.getItem("chem-orders-dir") || "Orders";
-    const files = this.app.vault.getMarkdownFiles();
-    const entries = [];
-    for (const file of files) {
-      const inFolder = targetDir && file.path.startsWith(targetDir);
-      const cache2 = this.app.metadataCache.getFileCache(file);
-      const fmTags = ((_a = cache2 == null ? void 0 : cache2.frontmatter) == null ? void 0 : _a.tags) || [];
-      const isTagged = Array.isArray(fmTags) ? fmTags.includes("order") : fmTags === "order";
-      if (!inFolder && !isTagged) continue;
-      const fm = (cache2 == null ? void 0 : cache2.frontmatter) || {};
-      const name = fm.name || file.basename;
-      const type3 = fm.type || "Chemical";
-      const supplier = fm.supplier || "-";
-      const catalog = fm.catalog || "-";
-      const status2 = fm.status || "Planned";
-      entries.push({
-        file,
-        name,
-        type: type3,
-        supplier,
-        catalog,
-        amount: fm.amount || "-",
-        price: fm.price || "-",
-        status: status2,
-        requester: fm.requester || "-",
-        orderDate: fm.order_date || "-",
-        receiveDate: fm.receive_date || "-",
-        timestamp: file.stat.mtime,
-        searchText: `${name} ${type3} ${supplier} ${catalog} ${fm.requester || ""}`.toLowerCase()
-      });
-    }
-    const statusWeight = { "Planned": 1, "Ordered": 2, "Received": 3 };
-    this.allEntries = entries.sort((a9, b9) => {
-      const wA = statusWeight[a9.status] || 99;
-      const wB = statusWeight[b9.status] || 99;
-      if (wA !== wB) return wA - wB;
-      return b9.timestamp - a9.timestamp;
-    });
-    this.buildTableDOM();
-    this.applyFilters();
-  }
-  buildTableDOM() {
-    this.tableBodyEl.empty();
-    if (this.allEntries.length === 0) {
-      const tr2 = this.tableBodyEl.createEl("tr");
-      const td = tr2.createEl("td", { text: "No orders found. Add requests to an Orders folder or use tags: [order]." });
-      td.setAttribute("colspan", "6");
-      td.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
-      return;
-    }
-    this.allEntries.forEach((e6) => {
-      const tr2 = this.tableBodyEl.createEl("tr");
-      tr2.setCssStyles({ cursor: "default", transition: "background 0.2s" });
-      e6.rowEl = tr2;
-      tr2.onmouseover = () => tr2.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
-      tr2.onmouseout = () => tr2.setCssStyles({ backgroundColor: "transparent" });
-      const tdItem = tr2.createEl("td");
-      tdItem.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      const nameEl = tdItem.createDiv({ text: e6.name });
-      nameEl.setCssStyles({ fontWeight: "700", color: "var(--text-accent)", fontSize: "14px", marginBottom: "4px", cursor: "pointer" });
-      nameEl.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
-      const typeIcon = e6.type === "Chemical" ? "\u{1F9EA}" : e6.type === "Consumable" ? "\u{1F9E4}" : "\u{1F52C}";
-      tdItem.createDiv({ text: `${typeIcon} ${e6.type}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", fontWeight: "600" });
-      const tdSup = tr2.createEl("td");
-      tdSup.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      tdSup.createDiv({ text: e6.supplier }).setCssStyles({ fontSize: "13px", color: "var(--text-normal)", fontWeight: "600", marginBottom: "4px" });
-      tdSup.createDiv({ text: `Cat: ${e6.catalog}` }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", fontFamily: "monospace" });
-      const tdAmt = tr2.createEl("td");
-      tdAmt.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      tdAmt.createDiv({ text: e6.amount }).setCssStyles({ fontSize: "13px", color: "var(--text-normal)", fontWeight: "600", marginBottom: "4px" });
-      tdAmt.createDiv({ text: e6.price }).setCssStyles({ fontSize: "12px", color: "var(--text-success)", fontWeight: "600" });
-      const tdReq = tr2.createEl("td");
-      tdReq.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      tdReq.createDiv({ text: `\u{1F464} ${e6.requester}` }).setCssStyles({ fontSize: "12px", color: "var(--text-normal)", marginBottom: "4px" });
-      if (e6.orderDate && e6.orderDate !== "-") tdReq.createDiv({ text: `Ordered: ${e6.orderDate}` }).setCssStyles({ fontSize: "10px", color: "var(--text-muted)" });
-      if (e6.receiveDate && e6.receiveDate !== "-") tdReq.createDiv({ text: `Rcvd: ${e6.receiveDate}` }).setCssStyles({ fontSize: "10px", color: "var(--text-muted)" });
-      const tdStatus = tr2.createEl("td");
-      tdStatus.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      let color5 = "var(--text-muted)", bg = "var(--background-primary)";
-      if (e6.status === "Planned") color5 = "var(--text-accent)";
-      else if (e6.status === "Ordered") color5 = "var(--text-warning)";
-      else if (e6.status === "Received") color5 = "var(--text-success)";
-      const statSpan = tdStatus.createDiv({ text: e6.status.toUpperCase() });
-      statSpan.setCssStyles({ display: "inline-block", padding: "4px 10px", borderRadius: "12px", fontSize: "10px", fontWeight: "700", color: color5, border: `1px solid ${color5}`, background: bg });
-      const tdActions = tr2.createEl("td");
-      tdActions.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
-      if (e6.status === "Planned") {
-        const btn = tdActions.createEl("button", { text: "\u{1F6D2} Mark Ordered" });
-        btn.setCssStyles({ fontSize: "11px", padding: "4px", height: "26px", width: "100%" });
-        btn.onclick = async () => {
-          await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
-            fm.status = "Ordered";
-            fm.order_date = window.moment().format("YYYY-MM-DD");
-          });
-        };
-      } else if (e6.status === "Ordered") {
-        const btn = tdActions.createEl("button", { text: "\u{1F4E6} Mark Received" });
-        btn.setCssStyles({ fontSize: "11px", padding: "4px", height: "26px", width: "100%" });
-        btn.onclick = async () => {
-          await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
-            fm.status = "Received";
-            fm.receive_date = window.moment().format("YYYY-MM-DD");
-          });
-        };
-      }
-    });
-  }
-  applyFilters() {
-    this.allEntries.forEach((e6) => {
-      if (!e6.rowEl) return;
-      const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
-      const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
-      e6.rowEl.setCssStyles({ display: matchFilter && matchSearch ? "" : "none" });
-    });
-  }
-};
-var CreateOrderModal = class extends import_obsidian21.Modal {
-  constructor(app, folder) {
-    super(app);
-    this.data = { name: "", type: "Chemical", supplier: "", catalog: "", amount: "", price: "" };
-    this.folder = folder;
-  }
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.createEl("h3", { text: "New Order Request" });
-    new import_obsidian21.Setting(contentEl).setName("Item Name").addText((t8) => t8.onChange((v8) => this.data.name = v8));
-    new import_obsidian21.Setting(contentEl).setName("Type").addDropdown((d10) => d10.addOption("Chemical", "\u{1F9EA} Chemical").addOption("Consumable", "\u{1F9E4} Consumable / Labware").addOption("Equipment", "\u{1F52C} Equipment").setValue("Chemical").onChange((v8) => this.data.type = v8));
-    new import_obsidian21.Setting(contentEl).setName("Supplier").addText((t8) => t8.onChange((v8) => this.data.supplier = v8));
-    new import_obsidian21.Setting(contentEl).setName("Catalog #").addText((t8) => t8.onChange((v8) => this.data.catalog = v8));
-    new import_obsidian21.Setting(contentEl).setName("Amount (e.g. 500g, 10pk)").addText((t8) => t8.onChange((v8) => this.data.amount = v8));
-    new import_obsidian21.Setting(contentEl).setName("Estimated Price").addText((t8) => t8.onChange((v8) => this.data.price = v8));
-    new import_obsidian21.Setting(contentEl).addButton((btn) => btn.setButtonText("Create Request").setCta().onClick(async () => {
-      if (!this.data.name.trim()) {
-        new import_obsidian21.Notice("Name is required");
-        return;
-      }
-      if (!await this.app.vault.adapter.exists(this.folder)) {
-        await this.app.vault.createFolder(this.folder);
-      }
-      const safeName = this.data.name.replace(/[\\/:"*?<>|]/g, "_") + "_" + window.moment().format("HHmmss");
-      const content4 = `---
-tags: [order]
-name: "${this.data.name}"
-type: "${this.data.type}"
-supplier: "${this.data.supplier}"
-catalog: "${this.data.catalog}"
-amount: "${this.data.amount}"
-price: "${this.data.price}"
-status: "Planned"
-requester: "Current User"
-order_date: ""
-receive_date: ""
----
-# ${this.data.name} Request
-
-## \u{1F517} Links / Quotes
-- [Product Link]()
-
-## \u{1F4DD} Notes
-- Why do we need this? 
-`;
-      const file = await this.app.vault.create(`${this.folder}/${safeName}.md`, content4);
-      this.app.workspace.getLeaf(false).openFile(file);
-      new import_obsidian21.Notice("Order request created!");
-      this.close();
-    }));
-  }
-  onClose() {
-    this.contentEl.empty();
-  }
-};
-
 // main.ts
 var createRoot3 = null;
 try {
@@ -575138,10 +568217,9 @@ try {
 } catch (e6) {
   createRoot3 = null;
 }
-var ChemEditPlugin = class extends import_obsidian22.Plugin {
+var ChemEditPlugin = class extends import_obsidian8.Plugin {
   constructor() {
     super(...arguments);
-    this.scriptEngine = null;
     this.headlessKetcher = null;
     this.headlessRoot = null;
     this.isProcessingHeadless = false;
@@ -575149,8 +568227,6 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
     this.cameraRibbonEl = null;
     this.tlcRibbonEl = null;
     this.elnRibbonEl = null;
-    this.dashboardRibbonEl = null;
-    this.navigatorRibbonEl = null;
   }
   getSupportedExts() {
     return this.settings.supportedEmbedExtensions.split(",").map((s8) => s8.trim().toLowerCase()).filter((s8) => s8.length > 0);
@@ -575169,30 +568245,28 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
         openData = ex.data;
         openFormat = "svg";
       } else {
-        new import_obsidian22.Notice("Not a Ketcher SVG");
+        new import_obsidian8.Notice("Not a Ketcher SVG");
         return;
       }
     }
     new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
       if (isFile) {
-        new import_obsidian22.Notice(`Saved as new file: ${newData}. Please update the link.`);
+        new import_obsidian8.Notice(`Saved as new file: ${newData}. Please update the link.`);
         return;
       }
       if (newFormat && newFormat !== format3 && format3 !== "svg") {
-        new import_obsidian22.Notice(`Format upgraded to ${newFormat}. Remember to rename your file.`);
+        new import_obsidian8.Notice(`Format upgraded to ${newFormat}. Remember to rename your file.`);
       }
       await this.app.vault.modify(file, newData);
       wrapper2.empty();
-      wrapper2.createSpan({ cls: "color-text-muted", text: "Updating..." });
+      wrapper2.createSpan({ text: "Updating...", cls: "color-text-muted" });
       if ((newFormat || format3) === "svg") {
         wrapper2.empty();
-        const svgContainer = document.createElement("div");
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(this.namespaceSvgIds(newData), "image/svg+xml");
-        const svgNode3 = doc.documentElement;
-        if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
+        const svgContainer = (0, import_obsidian8.createDiv)();
+        svgContainer.innerHTML = this.namespaceSvgIds(newData);
+        const svgNode3 = svgContainer.querySelector("svg");
+        if (svgNode3) {
           svgNode3.setCssStyles({ width: "100%", height: "100%" });
-          svgContainer.appendChild(svgNode3);
         }
         wrapper2.appendChild(svgContainer);
       } else {
@@ -575202,7 +568276,7 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
           wrapper2.appendChild(updatedEl);
         } else {
           wrapper2.empty();
-          wrapper2.appendChild(this.createErrorCard("Error"));
+          wrapper2.createSpan({ text: "Error", cls: "color-red" });
         }
       }
     }).open();
@@ -575215,9 +568289,9 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
     if (this.settings.showMediaRibbonIcons) {
       if (!this.cameraRibbonEl) {
         this.cameraRibbonEl = this.addRibbonIcon("camera", "Take Lab Photo", () => {
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
           if (!view) {
-            new import_obsidian22.Notice("Place cursor in a Markdown file first.");
+            new import_obsidian8.Notice("Place cursor in a Markdown file first.");
             return;
           }
           takeStandardPhoto(async (buffer, ext) => {
@@ -575228,13 +568302,13 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
           });
         });
       } else {
-        this.cameraRibbonEl.setCssStyles({ display: "" });
+        this.cameraRibbonEl.style.display = "";
       }
       if (!this.tlcRibbonEl) {
         this.tlcRibbonEl = this.addRibbonIcon("image-file", "Add TLC Plate", () => {
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
           if (!view) {
-            new import_obsidian22.Notice("Place cursor in a Markdown file first.");
+            new import_obsidian8.Notice("Place cursor in a Markdown file first.");
             return;
           }
           new TlcModal(this.app, async (pngData, rfData) => {
@@ -575251,73 +568325,38 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
           }).open();
         });
       } else {
-        this.tlcRibbonEl.setCssStyles({ display: "" });
+        this.tlcRibbonEl.style.display = "";
       }
     } else {
-      if (this.cameraRibbonEl) this.cameraRibbonEl.setCssStyles({ display: "none" });
-      if (this.tlcRibbonEl) this.tlcRibbonEl.setCssStyles({ display: "none" });
+      if (this.cameraRibbonEl) this.cameraRibbonEl.style.display = "none";
+      if (this.tlcRibbonEl) this.tlcRibbonEl.style.display = "none";
     }
     if (this.settings.showElnRibbonIcon && this.settings.enableEln) {
       if (!this.elnRibbonEl) {
         this.elnRibbonEl = this.addRibbonIcon("flask-round", "Create Blank ELN Experiment", () => {
           var _a, _b;
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
           const currentFolder = this.settings.elnDirectory ? this.settings.elnDirectory : ((_b = (_a = view == null ? void 0 : view.file) == null ? void 0 : _a.parent) == null ? void 0 : _b.path) || "";
           new CreateExperimentModal(this.app, this, this.settings.elnPrefix, currentFolder, async (expCode) => {
             await createNewElnExperiment(this.app, expCode, currentFolder, this.settings.elnSections);
           }).open();
         });
       } else {
-        this.elnRibbonEl.setCssStyles({ display: "" });
+        this.elnRibbonEl.style.display = "";
       }
     } else {
-      if (this.elnRibbonEl) this.elnRibbonEl.setCssStyles({ display: "none" });
-    }
-    if (this.settings.showDashboardRibbonIcon && this.settings.enableEln) {
-      if (!this.dashboardRibbonEl) {
-        this.dashboardRibbonEl = this.addRibbonIcon("chem-dashboard", "Open LIMS Dashboard", () => {
-          void this.activateElnDashboard();
-        });
-      } else {
-        this.dashboardRibbonEl.setCssStyles({ display: "" });
-      }
-    } else {
-      if (this.dashboardRibbonEl) this.dashboardRibbonEl.setCssStyles({ display: "none" });
-    }
-    if (this.settings.enableNavigator && this.settings.showNavigatorRibbonIcon) {
-      if (!this.navigatorRibbonEl) {
-        this.navigatorRibbonEl = this.addRibbonIcon("chem-navigator", "Open Chem Navigator", () => {
-          void this.activateNavigator();
-        });
-      } else {
-        this.navigatorRibbonEl.setCssStyles({ display: "" });
-      }
-    } else {
-      if (this.navigatorRibbonEl) this.navigatorRibbonEl.setCssStyles({ display: "none" });
+      if (this.elnRibbonEl) this.elnRibbonEl.style.display = "none";
     }
   }
   async onload() {
-    this.app.workspace.onLayoutReady(() => {
-      (0, import_obsidian22.addIcon)("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
-      const compassIcon = `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,82 36,50" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,50" fill="currentColor"/><polygon points="50,82 36,50 50,50" fill="currentColor"/>`;
-      (0, import_obsidian22.addIcon)("chem-navigator", compassIcon);
-      (0, import_obsidian22.addIcon)("flask-conical", compassIcon);
-      const dashboardIcon = `<path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 20 85 A 10 10 0 0 1 30 75 L 85 75" /><path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 30 15 L 85 15 L 85 85 L 30 85 A 10 10 0 0 1 20 75 L 20 25 A 10 10 0 0 1 30 15 Z" /><polygon fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" points="57,32 72,40 72,58 57,66 42,58 42,40" />`;
-      (0, import_obsidian22.addIcon)("chem-dashboard", dashboardIcon);
-    });
+    (0, import_obsidian8.addIcon)("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
     await this.loadSettings();
     this.api = buildChemEditAPI(this);
     this.addSettingTab(new ChemEditSettingTab(this.app, this));
-    this.hiddenKetcherContainer = document.createElement("div");
-    this.hiddenKetcherContainer.className = "chemedit-headless-ketcher";
+    this.hiddenKetcherContainer = document.body.createDiv({ cls: "chemedit-headless-ketcher" });
     this.hiddenKetcherContainer.setCssStyles({ position: "absolute", top: "-10000px", left: "-10000px", width: "800px", height: "600px", opacity: "0", pointerEvents: "none", zIndex: "-1" });
-    document.body.appendChild(this.hiddenKetcherContainer);
     this.app.workspace.onLayoutReady(() => {
       this.bootHeadlessKetcher();
-      if (this.settings.enableScripting) {
-        this.scriptEngine = new ChemScriptEngine(this);
-        void this.scriptEngine.loadScripts();
-      }
     });
     const extsForView = this.getSupportedExts().filter((ext) => ext !== "svg");
     this.registerView(CHEM_FILE_VIEW_TYPE, (leaf) => new ChemFileView(leaf, this));
@@ -575327,15 +568366,9 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
       this.openNewDrawingModal();
     });
     this.refreshRibbonIcons();
-    if (this.settings.enableNavigator) {
-      this.registerView(CHEM_NAVIGATOR_VIEW_TYPE, (leaf) => new ChemNavigatorView(leaf, this));
-      this.addCommand({ id: "open-chem-navigator", name: "Open Chem Navigator", callback: () => {
-        void this.activateNavigator();
-      } });
-    }
     if (this.settings.enableContextMenu) {
       this.registerEvent(this.app.workspace.on("file-menu", (menu, file) => {
-        if (file instanceof import_obsidian22.TFile) {
+        if (file instanceof import_obsidian8.TFile) {
           const ext = file.extension.toLowerCase();
           if (ext === "svg") {
             menu.addItem((item) => {
@@ -575345,10 +568378,10 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
                 if (extracted) {
                   new KetcherModal(this, data, "svg", async (newData) => {
                     await this.app.vault.modify(file, newData);
-                    new import_obsidian22.Notice(`Saved ${file.name}`);
+                    new import_obsidian8.Notice(`Saved ${file.name}`);
                   }).open();
                 } else {
-                  new import_obsidian22.Notice("This SVG does not contain editable Ketcher metadata.");
+                  new import_obsidian8.Notice("This SVG does not contain editable Ketcher metadata.");
                 }
               });
             });
@@ -575357,19 +568390,10 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
           if (activeExts.includes(ext) && ext !== "svg") {
             menu.addSeparator();
             menu.addItem((item) => {
-              item.setTitle("\u2795 Add to Compound Database").setIcon("flask-round").onClick(async () => {
-                const data = await this.app.vault.read(file);
-                const targetFolder = this.settings.elnDirectory || "Library";
-                addCompoundToLibrary(this.app, this, targetFolder, () => {
-                }, data);
-              });
-            });
-            menu.addItem((item) => {
               item.setTitle("\u{1F4C8} Predict 1H NMR").setIcon("activity").onClick(async () => {
                 const data = await this.app.vault.read(file);
-                const smiles = ext === "mol" || ext === "sdf" ? ChemDataEngine.molToSmiles(data) : data.trim();
+                const smiles = data.trim();
                 if (smiles) window.open(`https://www.nmrdb.org/simulator/?smiles=${encodeURIComponent(smiles)}`);
-                else new import_obsidian22.Notice("Could not extract SMILES for NMR prediction.");
               });
             });
           }
@@ -575383,131 +568407,14 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
         }
       }));
     }
-    if (this.settings.enableScripting) {
-      this.addCommand({
-        id: "reload-chemedit-scripts",
-        name: "Reload Custom Scripts",
-        callback: () => {
-          if (this.scriptEngine) {
-            void this.scriptEngine.loadScripts();
-            new import_obsidian22.Notice("ChemEdit scripts reloaded!");
-          }
-        }
-      });
-      this.addCommand({
-        id: "open-chemedit-script-store",
-        name: "Open Script Store",
-        callback: () => {
-          const { ScriptStoreModal: ScriptStoreModal2 } = (init_ScriptStore(), __toCommonJS(ScriptStore_exports));
-          new ScriptStoreModal2(this.app, this).open();
-        }
-      });
-    }
     if (this.settings.enableEln) {
-      this.addCommand({ id: "insert-compound-library", name: "Insert Compound Library Database", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
-type: library
-path: Library/
-layout: table
-\`\`\`
-`) });
-      this.addCommand({ id: "insert-inventory-database", name: "Insert Chemical Inventory Database", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
-type: inventory
-path: Inventory/
-layout: table
-\`\`\`
-`) });
-      this.addCommand({ id: "insert-eln-gallery", name: "Insert ELN Experiment Gallery", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`eln-gallery
-path: Experiments/
-\`\`\`
-`) });
-      this.addCommand({ id: "insert-equipment-database", name: "Insert Lab Equipment / Instrument Tracker", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
-type: equipment
-path: Equipment/
-layout: table
-\`\`\`
-`) });
-      this.addCommand({
-        id: "insert-from-library",
-        name: "Insert SMILES from Library",
-        editorCallback: async (editor4) => {
-          const lib = await getCompoundLibrary(this);
-          new CompoundSuggestModal(this.app, lib, (selected6) => {
-            editor4.replaceSelection(selected6.smiles);
-          }).open();
-        }
-      });
-      this.registerMarkdownCodeBlockProcessor("chem-db", async (source, el2, ctx) => {
-        const r12 = new ChemDatabaseRenderer(this);
-        await r12.renderDatabase(source, el2, ctx);
-      });
-      this.registerMarkdownCodeBlockProcessor("chem-gallery", async (source, el2, ctx) => {
-        const r12 = new SharedGalleryRenderer(this);
-        await r12.renderChemGallery(source, el2, ctx);
-      });
-      this.registerMarkdownCodeBlockProcessor("eln-gallery", async (source, el2, ctx) => {
-        const r12 = new ElnGalleryRenderer(this);
-        await r12.renderGalleryBlock(source, el2, ctx);
-      });
       this.registerMarkdownCodeBlockProcessor("eln", async (source, el2, ctx) => {
         const elnRenderer = new SharedElnRenderer(this);
         await elnRenderer.renderElnBlock(source, el2, ctx);
       });
-      if (this.settings.enableElnDashboard) {
-        this.registerView(ELN_DASHBOARD_VIEW_TYPE, (leaf) => new ElnDashboardView(leaf, this));
-        this.addCommand({ id: "open-eln-dashboard", name: "Open ELN Dashboard", callback: () => void this.activateElnDashboard() });
-      }
-      if (this.settings.enableInventoryDashboard) {
-        this.registerView(INVENTORY_DASHBOARD_VIEW_TYPE, (leaf) => new InventoryDashboardView(leaf, this));
-        this.addCommand({ id: "open-inventory-dashboard", name: "Open Chemical Inventory Dashboard", callback: () => void this.activateInventoryDashboard() });
-      }
-      if (this.settings.enableEquipmentDashboard) {
-        this.registerView(EQUIPMENT_DASHBOARD_VIEW_TYPE, (leaf) => new EquipmentDashboardView(leaf, this));
-        this.addCommand({ id: "open-equipment-dashboard", name: "Open Lab Equipment Dashboard", callback: () => void this.activateEquipmentDashboard() });
-      }
-      if (this.settings.enableProtocolsDashboard) {
-        this.registerView(PROTOCOLS_DASHBOARD_VIEW_TYPE, (leaf) => new ProtocolsDashboardView(leaf, this));
-        this.addCommand({ id: "open-protocols-dashboard", name: "Open Lab Protocols Dashboard", callback: () => void this.activateProtocolsDashboard() });
-      }
-      if (this.settings.enableLibraryDashboard) {
-        this.registerView(LIBRARY_DASHBOARD_VIEW_TYPE, (leaf) => new LibraryDashboardView(leaf, this));
-        this.addCommand({ id: "open-library-dashboard", name: "Open Compounds Library Dashboard", callback: () => void this.activateLibraryDashboard() });
-      }
-      if (this.settings.enableGalleryDashboard) {
-        this.registerView(GALLERY_DASHBOARD_VIEW_TYPE, (leaf) => new GalleryDashboardView(leaf, this));
-        this.addCommand({ id: "open-gallery-dashboard", name: "Open Drawings Gallery Dashboard", callback: () => void this.activateGalleryDashboard() });
-      }
-      if (this.settings.enableCharacterizationDashboard) {
-        this.registerView(CHARACTERIZATION_DASHBOARD_VIEW_TYPE, (leaf) => new CharacterizationDashboardView(leaf, this));
-        this.addCommand({ id: "open-characterization-dashboard", name: "Open Compound Data Organizer", callback: () => void this.activateCharacterizationDashboard() });
-      }
-      if (this.settings.enableOrdersDashboard) {
-        this.registerView(ORDERS_DASHBOARD_VIEW_TYPE, (leaf) => new OrdersDashboardView(leaf, this));
-        this.addCommand({ id: "open-orders-dashboard", name: "Open Orders Dashboard", callback: () => void this.activateOrdersDashboard() });
-      }
-    }
-    if (this.settings.enablePathways) {
-      this.addCommand({ id: "insert-synthesis-map", name: "Insert Synthesis Map (Auto-Graph)", editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`synthesis-map
-\`\`\`
-`);
-      } });
-      this.addCommand({ id: "insert-synthesis-plan", name: "Insert Synthesis Plan (Manual Flowchart)", editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`synthesis-plan
-[[EXP-001]] -> [[EXP-002]] -> C1=CC=CC=C1
-\`\`\`
-`);
-      } });
-      this.registerMarkdownCodeBlockProcessor("synthesis-map", async (source, el2, ctx) => {
-        const r12 = new SynthesisMapRenderer(this);
-        await r12.renderMap(source, el2, ctx);
-      });
-      this.registerMarkdownCodeBlockProcessor("synthesis-plan", async (source, el2, ctx) => {
-        const r12 = new SynthesisMapRenderer(this);
-        await r12.renderPlan(source, el2, ctx);
-      });
     }
     this.addCommand({
-      id: "insert-new-molecule",
+      id: "draw-molecule",
       name: "Draw new SMILES molecule",
       editorCallback: (editor4) => {
         new KetcherModal(this, "", "smiles", (newData, isFile, newFormat) => {
@@ -575523,7 +568430,7 @@ layout: table
       }
     });
     this.addCommand({
-      id: "insert-inline-molecule",
+      id: "draw-inline-molecule",
       name: "Draw new inline molecule",
       editorCallback: (editor4) => {
         new KetcherModal(this, "", "smiles", (newData, isFile, newFormat) => {
@@ -575533,7 +568440,7 @@ layout: table
             editor4.setCursor({ line: cursor2.line, ch: cursor2.ch + newData.length + 2 });
           } else {
             if (newFormat === "ket") {
-              new import_obsidian22.Notice("Cannot save inline reaction. Inserting as block.");
+              new import_obsidian8.Notice("Cannot save inline reaction. Inserting as block.");
               this.insertSmilesAtCursor(editor4, newData, "ket");
               return;
             }
@@ -575544,43 +568451,7 @@ layout: table
         }).open();
       }
     });
-    this.addCommand({
-      id: "edit-inline-molecule-at-cursor",
-      name: "Edit inline molecule under cursor",
-      editorCallback: (editor4) => {
-        const cursor2 = editor4.getCursor();
-        const lineText = editor4.getLine(cursor2.line);
-        const prefix2 = this.settings.inlineSmilesPrefix;
-        const startIndex = lineText.lastIndexOf(prefix2, cursor2.ch);
-        if (startIndex !== -1) {
-          const searchArea = lineText.substring(startIndex + prefix2.length);
-          const match2 = searchArea.match(/[\s`'"]/);
-          const endIndex = match2 ? startIndex + prefix2.length + match2.index : lineText.length;
-          if (cursor2.ch >= startIndex && cursor2.ch <= endIndex) {
-            const rawData = lineText.substring(startIndex + prefix2.length, endIndex).trim();
-            new KetcherModal(this, rawData, "smiles", (newData, isFile, newFormat) => {
-              if (isFile) {
-                editor4.replaceRange(`!${newData}`, { line: cursor2.line, ch: startIndex }, { line: cursor2.line, ch: endIndex });
-                return;
-              }
-              if (newFormat === "ket") {
-                new import_obsidian22.Notice("Inline reactions not supported. Replaced with codeblock.");
-                editor4.replaceRange(`
-\`\`\`ket
-${newData}
-\`\`\`
-`, { line: cursor2.line, ch: startIndex }, { line: cursor2.line, ch: endIndex });
-                return;
-              }
-              editor4.replaceRange(newData, { line: cursor2.line, ch: startIndex + prefix2.length }, { line: cursor2.line, ch: endIndex });
-            }).open();
-            return;
-          }
-        }
-        new import_obsidian22.Notice("Place your cursor inside an inline $smiles= string first!");
-      }
-    });
-    this.registerMarkdownPostProcessor((el2, ctx) => {
+    this.registerMarkdownPostProcessor(async (el2, ctx) => {
       var _a;
       const walker = document.createTreeWalker(el2, NodeFilter.SHOW_TEXT, null);
       const nodes = [];
@@ -575612,7 +568483,7 @@ ${newData}
     this.registerEvent(
       this.app.workspace.on("editor-paste", (evt, editor4) => {
         var _a;
-        if (!this.settings.smartPasteSmiles && !this.settings.smartPasteMol) return;
+        if (evt.defaultPrevented) return;
         const text2 = (_a = evt.clipboardData) == null ? void 0 : _a.getData("text/plain");
         if (!text2) return;
         const cleanText = text2.trim();
@@ -575651,7 +568522,7 @@ ${cleanText}
       if (filenameToSearch) {
         const cleanLink = decodeURIComponent(filenameToSearch).split("#")[0].split("?")[0].trim();
         const file = this.app.metadataCache.getFirstLinkpathDest(cleanLink, ctx.sourcePath);
-        if (file && file instanceof import_obsidian22.TFile) {
+        if (file && file instanceof import_obsidian8.TFile) {
           const format3 = file.extension.toLowerCase();
           const fileData = await this.app.vault.read(file);
           if (format3 === "svg") {
@@ -575659,18 +568530,16 @@ ${cleanText}
             if (extracted) {
               wrapper2.title = `Double-click to edit ${file.name}`;
               wrapper2.empty();
-              const svgContainer = document.createElement("div");
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(this.namespaceSvgIds(fileData), "image/svg+xml");
-              const svgNode3 = doc.documentElement;
-              if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
+              const svgContainer = (0, import_obsidian8.createDiv)();
+              svgContainer.innerHTML = this.namespaceSvgIds(fileData);
+              const svgNode3 = svgContainer.querySelector("svg");
+              if (svgNode3) {
                 svgNode3.setCssStyles({ width: "100%", height: "100%" });
-                svgContainer.appendChild(svgNode3);
               }
               wrapper2.appendChild(svgContainer);
             } else {
               wrapper2.empty();
-              wrapper2.appendChild(this.createErrorCard("Not a Ketcher SVG"));
+              wrapper2.createSpan({ text: "Not a Ketcher SVG", cls: "color-red" });
               return;
             }
           } else {
@@ -575691,27 +568560,25 @@ ${cleanText}
                 openData = ex.data;
                 openFormat = "svg";
               } else {
-                new import_obsidian22.Notice("Not a Ketcher SVG");
+                new import_obsidian8.Notice("Not a Ketcher SVG");
                 return;
               }
             }
             new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
               if (isFile) {
-                new import_obsidian22.Notice(`Saved as new file: ${newData}. Please update the link.`);
+                new import_obsidian8.Notice(`Saved as new file: ${newData}. Please update the link.`);
                 return;
               }
               await this.app.vault.modify(file, newData);
               wrapper2.empty();
-              wrapper2.createSpan({ cls: "color-text-muted", text: "Updating..." });
+              wrapper2.createSpan({ text: "Updating...", cls: "color-text-muted" });
               if ((newFormat || format3) === "svg") {
                 wrapper2.empty();
-                const svgContainer = document.createElement("div");
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(this.namespaceSvgIds(newData), "image/svg+xml");
-                const svgNode3 = doc.documentElement;
-                if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
+                const svgContainer = (0, import_obsidian8.createDiv)();
+                svgContainer.innerHTML = this.namespaceSvgIds(newData);
+                const svgNode3 = svgContainer.querySelector("svg");
+                if (svgNode3) {
                   svgNode3.setCssStyles({ width: "100%", height: "100%" });
-                  svgContainer.appendChild(svgNode3);
                 }
                 wrapper2.appendChild(svgContainer);
               } else {
@@ -575727,7 +568594,7 @@ ${cleanText}
         }
         if (bracketMatch) {
           wrapper2.empty();
-          wrapper2.createSpan({ cls: "color-red", text: `File not found: ${cleanLink}` });
+          wrapper2.createSpan({ text: `File not found: ${cleanLink}`, cls: "color-red" });
           return;
         }
       }
@@ -575743,9 +568610,9 @@ ${cleanText}
         if (previewEl) wrapper2.appendChild(previewEl);
         else wrapper2.appendChild(this.createErrorCard("Invalid chemical format"));
       });
-      wrapper2.addEventListener("dblclick", (e6) => {
+      wrapper2.addEventListener("dblclick", async (e6) => {
         e6.stopPropagation();
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+        const view = this.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
         if (!view) return;
         const info = ctx.getSectionInfo(el2);
         new KetcherModal(this, source, defaultFormat, (newData, isFile, newFormat) => {
@@ -575768,7 +568635,9 @@ ${newData}
     const allCodeblocks = [.../* @__PURE__ */ new Set([...builtInCodeblocks, ...this.getSupportedExts()])];
     allCodeblocks.forEach((fmt) => {
       if (fmt !== "svg") {
-        this.registerMarkdownCodeBlockProcessor(fmt, (s8, e6, c10) => void fileCodeblockProcessor(s8, e6, c10, fmt));
+        this.registerMarkdownCodeBlockProcessor(fmt, (s8, e6, c10) => {
+          void fileCodeblockProcessor(s8, e6, c10, fmt);
+        });
       }
     });
     this.registerMarkdownCodeBlockProcessor("smiles", (source, el2, ctx) => {
@@ -575792,102 +568661,10 @@ ${newData}
       this.hiddenKetcherContainer.remove();
     }
   }
-  async activateNavigator() {
-    const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(CHEM_NAVIGATOR_VIEW_TYPE)[0];
-    if (!leaf) {
-      const rightLeaf = workspace.getRightLeaf(false);
-      if (rightLeaf) {
-        await rightLeaf.setViewState({ type: CHEM_NAVIGATOR_VIEW_TYPE, active: true });
-        leaf = rightLeaf;
-      }
-    }
-    if (leaf) workspace.revealLeaf(leaf);
-  }
-  async activateElnDashboard() {
-    const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(ELN_DASHBOARD_VIEW_TYPE)[0];
-    if (!leaf) {
-      const newLeaf = workspace.getLeaf(true);
-      await newLeaf.setViewState({ type: ELN_DASHBOARD_VIEW_TYPE, active: true });
-      leaf = newLeaf;
-    }
-    workspace.revealLeaf(leaf);
-  }
-  async activateOrdersDashboard() {
-    const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(ORDERS_DASHBOARD_VIEW_TYPE)[0];
-    if (!leaf) {
-      const newLeaf = workspace.getLeaf(true);
-      await newLeaf.setViewState({ type: ORDERS_DASHBOARD_VIEW_TYPE, active: true });
-      leaf = newLeaf;
-    }
-    workspace.revealLeaf(leaf);
-  }
-  async activateInventoryDashboard() {
-    const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(INVENTORY_DASHBOARD_VIEW_TYPE)[0];
-    if (!leaf) {
-      const newLeaf = workspace.getLeaf(true);
-      await newLeaf.setViewState({ type: INVENTORY_DASHBOARD_VIEW_TYPE, active: true });
-      leaf = newLeaf;
-    }
-    workspace.revealLeaf(leaf);
-  }
-  async activateEquipmentDashboard() {
-    const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(EQUIPMENT_DASHBOARD_VIEW_TYPE)[0];
-    if (!leaf) {
-      const newLeaf = workspace.getLeaf(true);
-      await newLeaf.setViewState({ type: EQUIPMENT_DASHBOARD_VIEW_TYPE, active: true });
-      leaf = newLeaf;
-    }
-    workspace.revealLeaf(leaf);
-  }
-  async activateProtocolsDashboard() {
-    const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(PROTOCOLS_DASHBOARD_VIEW_TYPE)[0];
-    if (!leaf) {
-      const newLeaf = workspace.getLeaf(true);
-      await newLeaf.setViewState({ type: PROTOCOLS_DASHBOARD_VIEW_TYPE, active: true });
-      leaf = newLeaf;
-    }
-    workspace.revealLeaf(leaf);
-  }
-  async activateLibraryDashboard() {
-    const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(LIBRARY_DASHBOARD_VIEW_TYPE)[0];
-    if (!leaf) {
-      const newLeaf = workspace.getLeaf(true);
-      await newLeaf.setViewState({ type: LIBRARY_DASHBOARD_VIEW_TYPE, active: true });
-      leaf = newLeaf;
-    }
-    workspace.revealLeaf(leaf);
-  }
-  async activateGalleryDashboard() {
-    const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(GALLERY_DASHBOARD_VIEW_TYPE)[0];
-    if (!leaf) {
-      const newLeaf = workspace.getLeaf(true);
-      await newLeaf.setViewState({ type: GALLERY_DASHBOARD_VIEW_TYPE, active: true });
-      leaf = newLeaf;
-    }
-    workspace.revealLeaf(leaf);
-  }
-  async activateCharacterizationDashboard() {
-    const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(CHARACTERIZATION_DASHBOARD_VIEW_TYPE)[0];
-    if (!leaf) {
-      const newLeaf = workspace.getLeaf(true);
-      await newLeaf.setViewState({ type: CHARACTERIZATION_DASHBOARD_VIEW_TYPE, active: true });
-      leaf = newLeaf;
-    }
-    workspace.revealLeaf(leaf);
-  }
   openNewDrawingModal() {
-    const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+    const view = this.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
     if (!view) {
-      new import_obsidian22.Notice("Please open a Markdown file first to insert a drawing.");
+      new import_obsidian8.Notice("Please open a Markdown file first to insert a drawing.");
       return;
     }
     new KetcherModal(this, "", "smiles", (newData, isFile, newFormat) => {
@@ -575910,7 +568687,7 @@ ${data}
     editor4.setCursor({ line: cursor2.line + 3, ch: 0 });
   }
   renderSmilesBlock(smiles, el2, ctx, isGridItem, w7, h5) {
-    const wrapper2 = document.createElement("div");
+    const wrapper2 = (0, import_obsidian8.createDiv)();
     wrapper2.setCssStyles({ cursor: "pointer", display: isGridItem ? "flex" : "inline-block", alignItems: "center", justifyContent: "center" });
     wrapper2.title = "Double-click to edit structure";
     if (isGridItem) {
@@ -575923,7 +568700,7 @@ ${data}
       try {
         const Smi = Yr;
         if (smiles.includes(">")) {
-          const rxnContainer = document.createElement("span");
+          const rxnContainer = (0, import_obsidian8.createSpan)();
           rxnContainer.setCssStyles({ display: "inline-flex", alignItems: "center" });
           wrapper2.appendChild(rxnContainer);
           Smi.parseReaction(smiles, (tree) => {
@@ -575940,12 +568717,14 @@ ${data}
         } else {
           if (this.settings.useSvgSmiles) {
             const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            svg.setCssStyles({ width: `${w7}px`, height: `${h5}px` });
+            svg.setAttribute("width", `${w7}px`);
+            svg.setAttribute("height", `${h5}px`);
             wrapper2.appendChild(svg);
             Smi.parse(smiles, (tree) => new Smi.SvgDrawer({ width: w7, height: h5 }).draw(tree, svg, theme));
           } else {
             const canvas = document.createElement("canvas");
-            canvas.setCssStyles({ width: `${w7}px`, height: `${h5}px` });
+            canvas.setAttribute("width", `${w7}px`);
+            canvas.setAttribute("height", `${h5}px`);
             wrapper2.appendChild(canvas);
             Smi.parse(smiles, (tree) => new Smi.Drawer(drawerOptions).draw(tree, canvas, theme));
           }
@@ -575963,10 +568742,10 @@ ${data}
     wrapper2.addEventListener("dblclick", (e6) => {
       e6.stopPropagation();
       if (isGridItem) {
-        new import_obsidian22.Notice("Cannot inline-edit grids yet. Edit code block manually.");
+        new import_obsidian8.Notice("Cannot inline-edit grids yet. Edit code block manually.");
         return;
       }
-      const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+      const view = this.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
       if (!view) return;
       const info = ctx.getSectionInfo(el2.parentElement || el2);
       new KetcherModal(this, smiles, "smiles", (newData, isFile, newFormat) => {
@@ -575986,10 +568765,10 @@ ${newData}
     });
   }
   createBaseWrapper(titleText) {
-    const wrapper2 = document.createElement("div");
+    const wrapper2 = (0, import_obsidian8.createDiv)();
     wrapper2.setCssStyles({ cursor: "pointer", border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "10px", textAlign: "center", display: "block", margin: "10px 0", backgroundColor: "var(--background-primary)" });
     wrapper2.title = titleText;
-    wrapper2.createSpan({ cls: "color-text-muted", text: "Loading preview..." });
+    wrapper2.createSpan({ text: "Loading preview...", cls: "color-text-muted" });
     return wrapper2;
   }
   destroyHeadlessKetcher() {
@@ -576016,7 +568795,7 @@ ${newData}
           } catch (e6) {
           }
         }
-        window.setTimeout(() => void this.processHeadlessQueue(), 500);
+        window.setTimeout(() => this.processHeadlessQueue(), 500);
       },
       onChange: () => {
       }
@@ -576033,20 +568812,12 @@ ${newData}
     window.setTimeout(() => this.bootHeadlessKetcher(), 100);
   }
   createErrorCard(msg) {
-    const div = document.createElement("div");
+    const div = (0, import_obsidian8.createDiv)();
     div.setCssStyles({ padding: "10px", border: "1px dashed var(--text-error)", color: "var(--text-error)", borderRadius: "5px", textAlign: "center", display: "inline-block" });
-    const s1 = document.createElement("span");
-    s1.textContent = "\u{1F9EA} ";
-    div.appendChild(s1);
-    const b9 = document.createElement("b");
-    b9.textContent = msg;
-    div.appendChild(b9);
-    div.appendChild(document.createElement("br"));
-    const s22 = document.createElement("span");
-    s22.textContent = "Double-click to open editor";
-    s22.className = "color-text-muted";
-    s22.style.fontSize = "0.8em";
-    div.appendChild(s22);
+    const b9 = div.createEl("b", { text: msg });
+    div.prepend(document.createTextNode("\u{1F9EA} "));
+    div.createEl("br");
+    div.createSpan({ text: "Double-click to open editor", cls: "color-text-muted" }).setCssStyles({ fontSize: "0.8em" });
     return div;
   }
   async processInlineString(textNode, fullText, prefix2, type3, sourcePath) {
@@ -576059,14 +568830,10 @@ ${newData}
     const afterText = fullText.substring(endIndex);
     const parent = textNode.parentNode;
     if (!parent) return;
-    const wrapper2 = document.createElement("span");
-    wrapper2.className = "chem-inline-wrapper";
+    const wrapper2 = (0, import_obsidian8.createSpan)({ cls: "chem-inline-wrapper" });
     wrapper2.setCssStyles({ display: "inline-block", verticalAlign: "middle", cursor: "pointer", margin: "0 4px" });
     wrapper2.title = "Double-click to edit";
-    const small = document.createElement("small");
-    small.className = "color-text-muted";
-    small.textContent = "\u23F3";
-    wrapper2.appendChild(small);
+    wrapper2.createSpan({ text: "\u23F3", cls: "color-text-muted" });
     parent.insertBefore(document.createTextNode(beforeText), textNode);
     parent.insertBefore(wrapper2, textNode);
     parent.insertBefore(document.createTextNode(afterText), textNode);
@@ -576081,7 +568848,7 @@ ${newData}
           const Smi = Yr;
           wrapper2.empty();
           if (rawData.includes(">")) {
-            const rxnContainer = document.createElement("span");
+            const rxnContainer = (0, import_obsidian8.createSpan)();
             rxnContainer.setCssStyles({ display: "inline-flex", alignItems: "center" });
             wrapper2.appendChild(rxnContainer);
             Smi.parseReaction(rawData, (tree) => {
@@ -576098,14 +568865,16 @@ ${newData}
           } else {
             if (this.settings.useSvgSmiles) {
               const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-              svg.setCssStyles({ width: `${cssW}px`, height: `${cssH}px` });
+              svg.setAttribute("width", `${cssW}px`);
+              svg.setAttribute("height", `${cssH}px`);
               wrapper2.appendChild(svg);
               Smi.parse(rawData, (tree) => {
                 new Smi.SvgDrawer({ width: cssW, height: cssH }).draw(tree, svg, theme);
               });
             } else {
               const canvas = document.createElement("canvas");
-              canvas.setCssStyles({ width: `${cssW}px`, height: `${cssH}px` });
+              canvas.setAttribute("width", `${cssW}px`);
+              canvas.setAttribute("height", `${cssH}px`);
               wrapper2.appendChild(canvas);
               Smi.parse(rawData, (tree) => {
                 new Smi.Drawer(drawerOptions).draw(tree, canvas, theme);
@@ -576114,14 +568883,12 @@ ${newData}
           }
         } catch (e6) {
           wrapper2.empty();
-          const s8 = document.createElement("span");
-          s8.textContent = "\u274C";
-          wrapper2.appendChild(s8);
+          wrapper2.appendChild(document.createTextNode("\u274C"));
         }
       });
       wrapper2.addEventListener("dblclick", (e6) => {
         e6.stopPropagation();
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+        const view = this.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
         if (!view) return;
         new KetcherModal(this, rawData, "smiles", (newData, isFile, newFormat) => {
           const editor4 = view.editor;
@@ -576132,7 +568899,7 @@ ${newData}
             return;
           }
           if (newFormat === "ket") {
-            new import_obsidian22.Notice("Inline reactions not supported. Inserted as block.");
+            new import_obsidian8.Notice("Inline reactions not supported. Inserted as block.");
             const updatedContent2 = content4.replace(prefix2 + rawData, `
 \`\`\`ket
 ${newData}
@@ -576148,7 +568915,7 @@ ${newData}
     } else if (type3 === "file") {
       const cleanFileName = rawData.replace("[[", "").replace("]]", "");
       const file = this.app.metadataCache.getFirstLinkpathDest(cleanFileName, sourcePath);
-      if (file && file instanceof import_obsidian22.TFile) {
+      if (file && file instanceof import_obsidian8.TFile) {
         const format3 = file.extension.toLowerCase();
         const fileData = await this.app.vault.read(file);
         window.requestAnimationFrame(async () => {
@@ -576156,20 +568923,16 @@ ${newData}
             const ex = extractDataFromSvg(fileData);
             if (ex) {
               wrapper2.empty();
-              const svgContainer = document.createElement("span");
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(this.namespaceSvgIds(fileData), "image/svg+xml");
-              const svgNode3 = doc.documentElement;
-              if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
+              const svgContainer = (0, import_obsidian8.createSpan)();
+              svgContainer.innerHTML = this.namespaceSvgIds(fileData);
+              const svgNode3 = svgContainer.querySelector("svg");
+              if (svgNode3) {
                 svgNode3.setCssStyles({ width: `${this.settings.inlineWidth}px`, height: `${this.settings.inlineHeight}px` });
-                svgContainer.appendChild(svgNode3);
               }
               wrapper2.appendChild(svgContainer);
             } else {
               wrapper2.empty();
-              const s8 = document.createElement("span");
-              s8.textContent = `\u274C`;
-              wrapper2.appendChild(s8);
+              wrapper2.appendChild(document.createTextNode(`\u274C`));
             }
           } else {
             const previewEl = await this.renderMoleculeToPreview(fileData, format3, true);
@@ -576178,9 +568941,7 @@ ${newData}
               wrapper2.appendChild(previewEl);
             } else {
               wrapper2.empty();
-              const s8 = document.createElement("span");
-              s8.textContent = `\u274C`;
-              wrapper2.appendChild(s8);
+              wrapper2.appendChild(document.createTextNode(`\u274C`));
             }
           }
         });
@@ -576195,32 +568956,28 @@ ${newData}
               openData = ex.data;
               openFormat = "svg";
             } else {
-              new import_obsidian22.Notice("Not a Ketcher SVG");
+              new import_obsidian8.Notice("Not a Ketcher SVG");
               return;
             }
           }
           new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
             if (isFile) {
-              new import_obsidian22.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
+              new import_obsidian8.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
               return;
             }
             if (newFormat && newFormat !== format3 && format3 !== "svg") {
-              new import_obsidian22.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
+              new import_obsidian8.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
             }
             await this.app.vault.modify(file, newData);
             wrapper2.empty();
-            const s8 = document.createElement("span");
-            s8.textContent = `\u23F3`;
-            wrapper2.appendChild(s8);
+            wrapper2.appendChild(document.createTextNode(`\u23F3`));
             if (format3 === "svg") {
               wrapper2.empty();
-              const svgContainer = document.createElement("div");
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(this.namespaceSvgIds(newData), "image/svg+xml");
-              const svgNode3 = doc.documentElement;
-              if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
+              const svgContainer = (0, import_obsidian8.createDiv)();
+              svgContainer.innerHTML = this.namespaceSvgIds(newData);
+              const svgNode3 = svgContainer.querySelector("svg");
+              if (svgNode3) {
                 svgNode3.setCssStyles({ width: "100%", height: "100%" });
-                svgContainer.appendChild(svgNode3);
               }
               wrapper2.appendChild(svgContainer);
             } else {
@@ -576234,9 +568991,7 @@ ${newData}
         });
       } else {
         wrapper2.empty();
-        const s8 = document.createElement("span");
-        s8.textContent = `\u274C`;
-        wrapper2.appendChild(s8);
+        wrapper2.appendChild(document.createTextNode(`\u274C`));
       }
     }
   }
@@ -576258,7 +569013,7 @@ ${newData}
       if (normalizedFormat === "smiles" || normalizedFormat === "eln") {
         const Smi = Yr;
         if (cleanData.includes(">")) {
-          const rxnContainer = document.createElement("div");
+          const rxnContainer = (0, import_obsidian8.createDiv)();
           rxnContainer.setCssStyles({ display: "flex", alignItems: "center", justifyContent: "center" });
           Smi.parseReaction(cleanData, (tree) => {
             if (this.settings.useSvgSmiles) {
@@ -576277,7 +569032,8 @@ ${newData}
         } else {
           if (this.settings.useSvgSmiles) {
             const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            svg.setCssStyles({ width: `${w7}px`, height: `${h5}px` });
+            svg.setAttribute("width", `${w7}px`);
+            svg.setAttribute("height", `${h5}px`);
             Smi.parse(cleanData, (tree) => {
               const drawer = new Smi.SvgDrawer({ width: w7, height: h5 });
               drawer.draw(tree, svg, theme);
@@ -576285,7 +569041,8 @@ ${newData}
             return svg;
           } else {
             const canvas = document.createElement("canvas");
-            canvas.setCssStyles({ width: `${w7}px`, height: `${h5}px` });
+            canvas.setAttribute("width", `${w7}px`);
+            canvas.setAttribute("height", `${h5}px`);
             Smi.parse(cleanData, (tree) => {
               const drawer = new Smi.Drawer(drawerOptions);
               drawer.draw(tree, canvas, theme);
@@ -576296,7 +569053,7 @@ ${newData}
       } else if (["mol", "cdxml", "sdf", "rxn", "rdf", "cml", "ket", "inchi", "smarts", "fasta", "sequence", "idt", "helm", "biln"].includes(normalizedFormat)) {
         return new Promise((resolve) => {
           this.headlessQueue.push({ data: cleanData, isInline, resolve, w: w7, h: h5 });
-          void this.processHeadlessQueue();
+          this.processHeadlessQueue();
         });
       }
       return null;
@@ -576361,8 +569118,7 @@ ${newData}
         svgEl.setCssStyles({ width: "100%", height: "100%" });
         const w7 = task.w ? task.w : task.isInline ? this.settings.inlineWidth : this.settings.width;
         const h5 = task.h ? task.h : task.isInline ? this.settings.inlineHeight : this.settings.height;
-        const container = document.createElement("div");
-        container.className = "chemedit-svg-preview";
+        const container = (0, import_obsidian8.createDiv)({ cls: "chemedit-svg-preview" });
         container.setCssStyles({ width: `${w7}px`, height: `${h5}px`, display: "flex", justifyContent: "center", alignItems: "center", lineHeight: "normal", fontFamily: "Arial, Helvetica, sans-serif", letterSpacing: "normal", textAlign: "left" });
         container.appendChild(svgEl);
         isResolved = true;
@@ -576383,18 +569139,13 @@ ${newData}
   }
   finishHeadlessTask() {
     this.isProcessingHeadless = false;
-    window.setTimeout(() => {
-      void this.processHeadlessQueue();
-    }, 25);
+    window.setTimeout(() => this.processHeadlessQueue(), 25);
   }
   async injectNativeEmbed(embed, src2, sourcePath) {
     const file = this.app.metadataCache.getFirstLinkpathDest(src2, sourcePath);
-    if (!(file instanceof import_obsidian22.TFile)) {
+    if (!(file instanceof import_obsidian8.TFile)) {
       embed.empty();
-      const err = document.createElement("div");
-      err.className = "chem-native-embed-wrapper color-red";
-      err.textContent = `File not found: ${src2}`;
-      embed.appendChild(err);
+      embed.createDiv({ text: `File not found: ${src2}`, cls: "chem-native-embed-wrapper color-red" });
       return;
     }
     const format3 = file.extension.toLowerCase();
@@ -576405,15 +569156,11 @@ ${newData}
       if (!extractedSvgData) return;
     }
     embed.classList.add("chem-custom-embed");
-    const wrapper2 = document.createElement("div");
-    wrapper2.className = "chem-native-embed-wrapper";
+    const wrapper2 = (0, import_obsidian8.createDiv)({ cls: "chem-native-embed-wrapper" });
     wrapper2.setCssStyles({ cursor: "pointer", display: "flex", justifyContent: "center", margin: "10px 0" });
     wrapper2.title = `Double-click to edit ${file.name}`;
-    const loadingDiv = document.createElement("div");
-    loadingDiv.className = "color-text-muted";
+    const loadingDiv = wrapper2.createDiv({ text: `\u23F3 Loading ${file.extension.toUpperCase()}...`, cls: "color-text-muted" });
     loadingDiv.setCssStyles({ padding: "15px", border: "1px solid var(--background-modifier-border)", borderRadius: "8px" });
-    loadingDiv.textContent = `\u23F3 Loading ${file.extension.toUpperCase()}...`;
-    wrapper2.appendChild(loadingDiv);
     embed.empty();
     embed.appendChild(wrapper2);
     const observer = new MutationObserver(() => {
@@ -576426,13 +569173,11 @@ ${newData}
     window.requestAnimationFrame(async () => {
       let previewEl = null;
       if (format3 === "svg") {
-        previewEl = document.createElement("div");
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(this.namespaceSvgIds(fileData), "image/svg+xml");
-        const svgNode3 = doc.documentElement;
-        if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
+        previewEl = (0, import_obsidian8.createDiv)();
+        previewEl.innerHTML = this.namespaceSvgIds(fileData);
+        const svgNode3 = previewEl.querySelector("svg");
+        if (svgNode3) {
           svgNode3.setCssStyles({ width: "100%", height: "100%" });
-          previewEl.appendChild(svgNode3);
         }
       } else {
         previewEl = await this.renderMoleculeToPreview(fileData, format3, false);
@@ -576458,28 +569203,22 @@ ${newData}
       }
       new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
         if (isFile) {
-          new import_obsidian22.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
+          new import_obsidian8.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
           return;
         }
         if (newFormat && newFormat !== format3 && format3 !== "svg") {
-          new import_obsidian22.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
+          new import_obsidian8.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
         }
         await this.app.vault.modify(file, newData);
         wrapper2.empty();
-        const ld = document.createElement("div");
-        ld.className = "color-text-muted";
-        ld.textContent = "\u23F3 Updating...";
-        ld.setCssStyles({ padding: "15px", border: "1px solid var(--background-modifier-border)", borderRadius: "8px" });
-        wrapper2.appendChild(ld);
+        wrapper2.createDiv({ text: "\u23F3 Updating...", cls: "color-text-muted" }).setCssStyles({ padding: "15px", border: "1px solid var(--background-modifier-border)", borderRadius: "8px" });
         if (format3 === "svg") {
           wrapper2.empty();
-          const svgContainer = document.createElement("div");
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(this.namespaceSvgIds(newData), "image/svg+xml");
-          const svgNode3 = doc.documentElement;
-          if (svgNode3 && svgNode3.tagName.toLowerCase() === "svg") {
+          const svgContainer = (0, import_obsidian8.createDiv)();
+          svgContainer.innerHTML = this.namespaceSvgIds(newData);
+          const svgNode3 = svgContainer.querySelector("svg");
+          if (svgNode3) {
             svgNode3.setCssStyles({ width: "100%", height: "100%" });
-            svgContainer.appendChild(svgNode3);
           }
           svgContainer.setCssStyles({ border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "10px", backgroundColor: "var(--background-primary)" });
           wrapper2.appendChild(svgContainer);

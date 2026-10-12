@@ -177,8 +177,6 @@ export class ChemEditSettingTab extends PluginSettingTab {
             const storeText = storeWrap.createDiv();
             storeText.createDiv({ text: "ChemEdit Script Store" }).setCssStyles({ fontWeight: "600", color: "var(--text-normal)" });
             storeText.createDiv({ text: "Browse and install community macros (like MathifyChem)." }).setCssStyles({ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px" });
-            const openStoreBtn = storeWrap.createEl("button", { text: "Browse Scripts", cls: "mod-cta" });
-            openStoreBtn.onclick = () => { const { ScriptStoreModal } = require('./ScriptStore'); new ScriptStoreModal(this.app, this.plugin).open(); };
 
             new Setting(scriptSec).setName('Scripts Folder').setDesc('Folder containing custom .js scripts.').addText(text => text.setPlaceholder('ChemEdit/Scripts').setValue(this.plugin.settings.scriptsFolder).onChange(async (v) => { this.plugin.settings.scriptsFolder = v; await this.plugin.saveSettings(); }));
         }

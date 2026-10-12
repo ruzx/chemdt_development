@@ -1,5 +1,4 @@
 // LivePreview.ts
-
 import { RangeSetBuilder } from "@codemirror/state";
 import { EditorView, ViewPlugin, ViewUpdate, WidgetType, Decoration, DecorationSet } from "@codemirror/view";
 import { TFile } from 'obsidian';
@@ -14,19 +13,14 @@ class ChemInlineWidget extends WidgetType {
     toDOM() {
         const wrapper = document.createElement("span"); 
         wrapper.className = "chem-inline-widget"; 
-        wrapper.setCssStyles({ display: "inline-block", verticalAlign: "middle", cursor: "pointer", margin: "0 4px" });
-        const loadingSpan = document.createElement("span");
-        loadingSpan.textContent = "⏳";
-        wrapper.appendChild(loadingSpan);
+        Object.assign(wrapper.style, { display: "inline-block", verticalAlign: "middle", cursor: "pointer", margin: "0 4px" });
+        wrapper.textContent = "⏳";
         
         window.requestAnimationFrame(async () => {
             if (this.type === 'smiles') { 
                 const el = await this.plugin.renderMoleculeToPreview(this.data, 'smiles', true); 
-                wrapper.empty(); 
-                if (el) wrapper.appendChild(el); 
-                else {
-                    const err = document.createElement("span"); err.textContent = "❌"; wrapper.appendChild(err);
-                } 
+                wrapper.textContent = ""; 
+                if (el) wrapper.appendChild(el); else wrapper.textContent = '❌'; 
             } else {
                 const cleanName = this.data.replace('[[', '').replace(']]', ''); 
                 const file = this.plugin.app.metadataCache.getFirstLinkpathDest(cleanName, "");
@@ -36,27 +30,25 @@ class ChemInlineWidget extends WidgetType {
                     if (format === 'svg') { 
                         const extracted = extractDataFromSvg(fileData); 
                         if (extracted) { 
-                            wrapper.empty(); 
+                            wrapper.textContent = ""; 
                             const svgContainer = document.createElement("span"); 
-                            const parser = new DOMParser();
-                            const doc = parser.parseFromString(this.plugin.namespaceSvgIds(fileData), 'image/svg+xml');
-                            const svgNode = doc.documentElement;
-                            if (svgNode && svgNode.tagName.toLowerCase() === 'svg') {
-                                svgNode.setCssStyles({ width: `${this.plugin.settings.inlineWidth}px`, height: `${this.plugin.settings.inlineHeight}px` });
-                                svgContainer.appendChild(svgNode);
-                            }
+                            svgContainer.innerHTML = this.plugin.namespaceSvgIds(fileData); // Allowed for SVG
+                            const svgNode = svgContainer.querySelector('svg'); 
+                            if (svgNode) {  
+                                svgNode.style.width = `${this.plugin.settings.inlineWidth}px`;  
+                                svgNode.style.height = `${this.plugin.settings.inlineHeight}px`;  
+                            } 
                             wrapper.appendChild(svgContainer); 
                             return; 
                         } else { 
-                            wrapper.empty(); const err = document.createElement("span"); err.textContent = "❌"; wrapper.appendChild(err); return; 
+                            wrapper.textContent = '❌'; return; 
                         } 
                     }
                     const el = await this.plugin.renderMoleculeToPreview(fileData, format, true); 
-                    wrapper.empty(); 
-                    if (el) wrapper.appendChild(el); 
-                    else { const err = document.createElement("span"); err.textContent = "❌"; wrapper.appendChild(err); }
+                    wrapper.textContent = ""; 
+                    if (el) wrapper.appendChild(el); else wrapper.textContent = '❌';
                 } else { 
-                    wrapper.empty(); const err = document.createElement("span"); err.textContent = "❌"; wrapper.appendChild(err); 
+                    wrapper.textContent = '❌'; 
                 }
             }
         });
@@ -80,7 +72,7 @@ export function buildLivePreviewPlugin(plugin: ChemEditPlugin) {
             for (let {from, to} of view.visibleRanges) {
                 const text = view.state.doc.sliceString(from, to); 
                 let match; 
-                const escapeRegex = (s: string) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const escapeRegex = (s: string) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
                 const regexSrc = []; 
                 if (prefixSmiles) regexSrc.push(`(?:${escapeRegex(prefixSmiles)}[^\\s]+)`); 
                 if (prefixMol) regexSrc.push(`(?:${escapeRegex(prefixMol)}[^\\s]+)`); 
