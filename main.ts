@@ -1,4 +1,4 @@
-// main.ts
+// main.ts 
 
 import { Plugin, MarkdownView, Editor, Notice, TFile, addIcon } from 'obsidian';
 import React from 'react';
@@ -121,7 +121,7 @@ export default class ChemEditPlugin extends Plugin {
             } else { this.cameraRibbonEl.setCssStyles({ display: '' }); }
             
             if (!this.tlcRibbonEl) {
-                this.tlcRibbonEl = this.addRibbonIcon('image-file', 'Add TLC Plate', () => {
+                this.tlcRibbonEl = this.addRibbonIcon('image-file', 'Add TLC Plate1', () => {
                     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
                     if (!view) { new Notice("Place cursor in a Markdown file first."); return; }
                     new TlcModal(this.app, async (pngData, rfData) => {

@@ -575048,7 +575048,7 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
         this.cameraRibbonEl.setCssStyles({ display: "" });
       }
       if (!this.tlcRibbonEl) {
-        this.tlcRibbonEl = this.addRibbonIcon("image-file", "Add TLC Plate", () => {
+        this.tlcRibbonEl = this.addRibbonIcon("image-file", "Add TLC Plate1", () => {
           const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
           if (!view) {
             new import_obsidian22.Notice("Place cursor in a Markdown file first.");
