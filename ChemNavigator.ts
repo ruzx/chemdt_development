@@ -1,5 +1,4 @@
 // ChemNavigator.ts
-
 import { ItemView, WorkspaceLeaf, TFile, Notice, setIcon, requestUrl } from 'obsidian';
 import type ChemEditPlugin from './main';
 import { calculateMwOffline, getCompoundLibrary } from './SharedEln';
