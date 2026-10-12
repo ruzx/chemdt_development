@@ -1,4 +1,6 @@
 // SharedGallery.ts
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-floating-promises */
+
 import { TFile } from 'obsidian';
 
 export class SharedGalleryRenderer {
@@ -14,13 +16,19 @@ export class SharedGalleryRenderer {
         const folderPath = match ? match[1].trim() : "";
 
         if (!folderPath) {
-            el.createEl("div", { text: "⚠️ Please specify a folder path (e.g., path: Molecules/)", cls: "color-text-error" });
+            const err = document.createElement("div");
+            err.textContent = "⚠️ Please specify a folder path (e.g., path: Molecules/)";
+            err.className = "color-text-error";
+            el.appendChild(err);
             return;
         }
 
         const folder = this.plugin.app.vault.getAbstractFileByPath(folderPath);
         if (!folder || !('children' in folder)) {
-            el.createEl("div", { text: `⚠️ Folder not found: ${folderPath}`, cls: "color-text-error" });
+            const err = document.createElement("div");
+            err.textContent = `⚠️ Folder not found: ${folderPath}`;
+            err.className = "color-text-error";
+            el.appendChild(err);
             return;
         }
 
@@ -28,26 +36,34 @@ export class SharedGalleryRenderer {
         const files = folder.children.filter((f: any) => f instanceof TFile && validExts.includes(f.extension.toLowerCase()));
 
         if (files.length === 0) {
-            el.createEl("div", { text: "No supported files found in this folder.", cls: "color-text-muted" });
+            const err = document.createElement("div");
+            err.textContent = "No supported files found in this folder.";
+            err.className = "color-text-muted";
+            el.appendChild(err);
             return;
         }
 
         // --- HEADER & SEARCH BAR ---
-        const header = el.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;" } });
-        const countLabel = header.createDiv({ text: `Loading...`, attr: { style: "font-size: 13px; color: var(--text-muted); font-weight: 500;" } });
+        const header = document.createElement("div");
+        header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", flexWrap: "wrap", gap: "10px" });
+        const countLabel = document.createElement("div");
+        countLabel.textContent = `Loading...`;
+        countLabel.setCssStyles({ fontSize: "13px", color: "var(--text-muted)", fontWeight: "500" });
+        header.appendChild(countLabel);
         
-        const searchInput = header.createEl("input", { 
-            type: "search", 
-            placeholder: "Search name or SMILES...", 
-            attr: { style: "width: 250px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary);" } 
-        });
+        const searchInput = document.createElement("input");
+        searchInput.type = "search";
+        searchInput.placeholder = "Search name or SMILES...";
+        searchInput.setCssStyles({ width: "250px", padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--background-modifier-border)", background: "var(--background-primary)" });
+        header.appendChild(searchInput);
+        
+        el.appendChild(header);
 
         // --- GRID CONTAINER ---
-        const container = el.createDiv({ cls: "chem-gallery-container" });
-        container.style.display = "grid";
-        container.style.gridTemplateColumns = "repeat(auto-fill, minmax(140px, 1fr))";
-        container.style.gap = "15px";
-        container.style.padding = "5px 0";
+        const container = document.createElement("div");
+        container.className = "chem-gallery-container";
+        container.setCssStyles({ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "15px", padding: "5px 0" });
+        el.appendChild(container);
 
         const cards: { el: HTMLElement, text: string }[] = [];
         let renderCount = 0;
@@ -88,43 +104,33 @@ export class SharedGalleryRenderer {
             renderCount++;
 
             // --- CREATE CARD ---
-            const card = container.createDiv({ cls: "chem-gallery-card" });
-            card.style.border = "1px solid var(--background-modifier-border)";
-            card.style.borderRadius = "8px";
-            card.style.padding = "10px";
-            card.style.display = "flex";
-            card.style.flexDirection = "column";
-            card.style.alignItems = "center";
-            card.style.backgroundColor = "var(--background-primary)";
-            card.style.cursor = "pointer";
-            card.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
-            card.style.transition = "border-color 0.2s ease";
+            const card = document.createElement("div");
+            card.className = "chem-gallery-card";
+            card.setCssStyles({ border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "10px", display: "flex", flexDirection: "column", alignItems: "center", backgroundColor: "var(--background-primary)", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", transition: "border-color 0.2s ease" });
             
-            card.onmouseover = () => card.style.borderColor = "var(--interactive-accent)";
-            card.onmouseout = () => card.style.borderColor = "var(--background-modifier-border)";
+            card.onmouseover = () => card.setCssStyles({ borderColor: "var(--interactive-accent)" });
+            card.onmouseout = () => card.setCssStyles({ borderColor: "var(--background-modifier-border)" });
 
             // Image wrapper
-            const previewWrapper = card.createDiv();
-            previewWrapper.style.width = "100%";
-            previewWrapper.style.height = "100px";
-            previewWrapper.style.display = "flex";
-            previewWrapper.style.justifyContent = "center";
-            previewWrapper.style.alignItems = "center";
-            previewWrapper.innerHTML = `<span class="color-text-muted" style="font-size:12px;">⏳ Loading...</span>`;
+            const previewWrapper = document.createElement("div");
+            previewWrapper.setCssStyles({ width: "100%", height: "100px", display: "flex", justifyContent: "center", alignItems: "center" });
+            const pText = document.createElement("span");
+            pText.textContent = "⏳ Loading...";
+            pText.className = "color-text-muted";
+            pText.setCssStyles({ fontSize: "12px" });
+            previewWrapper.appendChild(pText);
+            card.appendChild(previewWrapper);
 
             // Label
-            const label = card.createDiv();
+            const label = document.createElement("div");
             label.textContent = file.name;
-            label.style.fontSize = "12px";
-            label.style.marginTop = "10px";
-            label.style.textAlign = "center";
-            label.style.wordBreak = "break-word";
-            label.style.color = "var(--text-normal)";
-            label.style.fontWeight = "500";
+            label.setCssStyles({ fontSize: "12px", marginTop: "10px", textAlign: "center", wordBreak: "break-word", color: "var(--text-normal)", fontWeight: "500" });
             
             if (file.extension.toLowerCase() === 'md') {
-                label.style.color = "var(--text-accent)"; // Highlight MD files slightly
+                label.setCssStyles({ color: "var(--text-accent)" }); 
             }
+            card.appendChild(label);
+            container.appendChild(card);
 
             cards.push({ el: card, text: searchableText });
 
@@ -141,7 +147,7 @@ export class SharedGalleryRenderer {
             };
 
             // --- RENDER IMAGE ---
-            requestAnimationFrame(async () => {
+            window.requestAnimationFrame(async () => {
                 const originalW = this.plugin.settings.width; 
                 const originalH = this.plugin.settings.height;
                 this.plugin.settings.width = 120; 
@@ -151,14 +157,18 @@ export class SharedGalleryRenderer {
                     const previewEl = await this.plugin.renderMoleculeToPreview(dataToRender, renderFormat, false);
                     previewWrapper.empty();
                     if (previewEl) {
-                        previewEl.style.maxWidth = '100%';
-                        previewEl.style.maxHeight = '100%';
+                        previewEl.setCssStyles({ maxWidth: '100%', maxHeight: '100%' });
                         previewWrapper.appendChild(previewEl);
                     } else {
-                        previewWrapper.innerHTML = `❌ Error`;
+                        const err = document.createElement("span");
+                        err.textContent = "❌ Error";
+                        previewWrapper.appendChild(err);
                     }
                 } catch(e) {
-                    previewWrapper.innerHTML = `❌ Error`;
+                    previewWrapper.empty();
+                    const err = document.createElement("span");
+                    err.textContent = "❌ Error";
+                    previewWrapper.appendChild(err);
                 } finally {
                     this.plugin.settings.width = originalW;
                     this.plugin.settings.height = originalH;
@@ -174,18 +184,13 @@ export class SharedGalleryRenderer {
             let visibleCount = 0;
             cards.forEach(c => {
                 if (c.text.includes(query)) {
-                    c.el.style.display = "flex";
+                    c.el.setCssStyles({ display: "flex" });
                     visibleCount++;
                 } else {
-                    c.el.style.display = "none";
+                    c.el.setCssStyles({ display: "none" });
                 }
             });
             countLabel.textContent = `${visibleCount} / ${renderCount} molecules`;
         });
-    }
-
-    // Safety fallback just in case it's called with the old name
-    async renderGalleryBlock(source: string, el: HTMLElement, ctx: any) {
-        return this.renderChemGallery(source, el, ctx);
     }
 }

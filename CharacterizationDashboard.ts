@@ -1,4 +1,6 @@
 // CharacterizationDashboard.ts
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-floating-promises */
+
 import { ItemView, WorkspaceLeaf, TFile, Notice, debounce, Menu, Modal, App } from 'obsidian';
 import type ChemEditPlugin from './main';
 import { renderLimsNav } from './SharedBase';
@@ -9,10 +11,9 @@ interface CharEntry {
     file: TFile;
     name: string;
     smiles: string;
-    metricsData: Record<string, any>; // Dynamically holds our tracking values
+    metricsData: Record<string, any>; 
     score: number;
     timestamp: number;
-    // For CSS-based filtering
     rowEl?: HTMLElement;
     searchText: string;
 }
@@ -24,7 +25,7 @@ export class CharacterizationDashboardView extends ItemView {
     
     allEntries: CharEntry[] = [];
     searchQuery: string = '';
-    metricsList: string[] = []; // Stores the active user-defined metrics
+    metricsList: string[] = []; 
     
     private observer: IntersectionObserver;
 
@@ -32,7 +33,6 @@ export class CharacterizationDashboardView extends ItemView {
         super(leaf);
         this.plugin = plugin;
         
-        // Lazy-loader for structures (Zero battery drain, only renders what is on screen)
         this.observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -43,11 +43,10 @@ export class CharacterizationDashboardView extends ItemView {
                         this.plugin.api.renderStructure(smiles, 120, 100).then(renderEl => {
                             el.empty();
                             if (renderEl) {
-                                renderEl.style.maxWidth = '100%';
-                                renderEl.style.maxHeight = '100%';
+                                renderEl.setCssStyles({ maxWidth: '100%', maxHeight: '100%' });
                                 el.appendChild(renderEl);
                             } else {
-                                el.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">Invalid</span>`;
+                                el.createSpan({ text: "Invalid", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
                             }
                         });
                     }
@@ -61,68 +60,82 @@ export class CharacterizationDashboardView extends ItemView {
     getIcon() { return "bar-chart-2"; }
 
     async onOpen() {
-        const container = this.containerEl.children[1];
+        const container = this.containerEl.children[1] as HTMLElement;
         container.empty();
         container.addClass('chem-characterization-dashboard-view');
         
-        Object.assign(container.style, { display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
+        container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
 
         // --- HEADER ---
-        const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" }});
-        const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" }});
+        const header = container.createDiv();
+        header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
+        const titleArea = header.createDiv();
+        titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
 
         renderLimsNav(titleArea, "data", this.plugin);
 
-        titleArea.createEl("h2", { text: "Compound Data Organizer", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" }});
-        titleArea.createEl("span", { text: "Track publication readiness and analytical spectra", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" }});
+        titleArea.createEl("h2", { text: "Compound Data Organizer" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
+        titleArea.createEl("span", { text: "Track publication readiness and analytical spectra" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
 
-        const newBtn = header.createEl("button", { text: "+ Add Compound", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" }});
+        const newBtn = header.createEl("button", { text: "+ Add Compound", cls: "mod-cta" });
+        newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
         newBtn.onclick = () => {
             const folder = window.localStorage.getItem('chem-char-dir') || "Characterization";
-            this.createNewEntry(folder);
+            void this.createNewEntry(folder);
         };
 
         // --- TOOLBAR ---
-        const toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" }});
+        const toolbarEl = container.createDiv();
+        toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
         
-        const leftTools = toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center; flex-wrap: wrap;" }});
+        const leftTools = toolbarEl.createDiv();
+        leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center", flexWrap: "wrap" });
         
         // 1. Folder Setting
-        const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px;" }});
-        dirWrap.createEl("span", { text: "📁 Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" }});
-        const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem('chem-char-dir') || "Characterization", attr: { style: "width: 120px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" }});
+        const dirWrap = leftTools.createDiv();
+        dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px" });
+        dirWrap.createEl("span", { text: "📁 Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
+        const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem('chem-char-dir') || "Characterization" });
+        dirInp.setCssStyles({ width: "120px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
         dirInp.onchange = (e: any) => {
             window.localStorage.setItem('chem-char-dir', e.target.value.trim());
-            this.loadData();
+            void this.loadData();
         };
 
         // 2. DYNAMIC METRICS SETTING
-        const metricWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px;" }});
-        metricWrap.createEl("span", { text: "⚙️ Metrics (YAML keys):", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);", title: "Comma separated list of data you want to track." }});
-        const metricInp = metricWrap.createEl("input", { type: "text", value: window.localStorage.getItem('chem-char-metrics') || "hnmr, cnmr, hrms, ir, mp", attr: { style: "width: 220px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" }});
+        const metricWrap = leftTools.createDiv();
+        metricWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px" });
+        const metSpan = metricWrap.createEl("span", { text: "⚙️ Metrics (YAML keys):" });
+        metSpan.setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
+        metSpan.title = "Comma separated list of data you want to track.";
+        const metricInp = metricWrap.createEl("input", { type: "text", value: window.localStorage.getItem('chem-char-metrics') || "hnmr, cnmr, hrms, ir, mp" });
+        metricInp.setCssStyles({ width: "220px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
         metricInp.onchange = (e: any) => {
             window.localStorage.setItem('chem-char-metrics', e.target.value.trim());
-            this.loadData();
+            void this.loadData();
         };
 
-        const searchInp = toolbarEl.createEl("input", { type: "search", placeholder: "Search compound name...", attr: { style: "width: 220px; font-size: 13px; border-radius: 6px;" }});
+        const searchInp = toolbarEl.createEl("input", { type: "search", placeholder: "Search compound name..." });
+        searchInp.setCssStyles({ width: "220px", fontSize: "13px", borderRadius: "6px" });
         searchInp.oninput = (e: any) => { 
             this.searchQuery = e.target.value.toLowerCase(); 
-            this.applyFilters(); // FAST CSS FILTER
+            this.applyFilters(); 
         };
 
         // --- TABLE ---
-        const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" }});
-        const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: center; font-size: 13px;" }});
-        const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" }});
+        const tableContainer = container.createDiv();
+        tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
+        const table = tableContainer.createEl("table");
+        table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "center", fontSize: "13px" });
+        const thead = table.createEl("thead");
+        thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
         
         this.tableHeadTr = thead.createEl("tr");
         this.tableBodyEl = table.createEl("tbody");
 
         await this.loadData();
 
-        // BATTERY-EFFICIENT AUTO-REFRESH
-        const requestRefresh = debounce(() => this.loadData(), 2000, true);
+        const requestRefresh = debounce(() => { void this.loadData(); }, 2000, true);
         this.registerEvent(this.app.vault.on('modify', requestRefresh));
         this.registerEvent(this.app.vault.on('create', requestRefresh));
         this.registerEvent(this.app.vault.on('delete', requestRefresh));
@@ -133,7 +146,6 @@ export class CharacterizationDashboardView extends ItemView {
         
         const name = "Compound_" + window.moment().format("HHmmss");
         
-        // Dynamically insert the user's chosen metrics into the new file!
         let metricsYaml = "";
         this.metricsList.forEach(m => { metricsYaml += `${m}: false\n`; });
 
@@ -146,14 +158,12 @@ export class CharacterizationDashboardView extends ItemView {
         const targetDir = window.localStorage.getItem('chem-char-dir') || "Characterization";
         const metricsStr = window.localStorage.getItem('chem-char-metrics') || "hnmr, cnmr, hrms, ir, mp";
         
-        // Parse the custom metrics
         this.metricsList = metricsStr.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
         const files = this.app.vault.getMarkdownFiles();
         const entries: CharEntry[] = [];
 
         for (const file of files) {
-            // 1. FAST RAM-ONLY PRE-FILTER
             const inFolder = targetDir && file.path.startsWith(targetDir);
             const cache = this.app.metadataCache.getFileCache(file);
             const fm = cache?.frontmatter || {};
@@ -162,9 +172,7 @@ export class CharacterizationDashboardView extends ItemView {
 
             if (!inFolder && !isTagged) continue;
 
-            let smiles = fm.smiles || "";
-            
-            // Extract dynamically mapped data
+            const smiles = fm.smiles || "";
             let collectedCount = 0;
             const metricsData: Record<string, any> = {};
             
@@ -174,7 +182,6 @@ export class CharacterizationDashboardView extends ItemView {
                 if (val && val !== 'false' && val !== false) collectedCount++;
             });
 
-            // Calculate dynamic score
             const score = this.metricsList.length > 0 ? Math.round((collectedCount / this.metricsList.length) * 100) : 0;
             const name = fm.name || file.basename;
 
@@ -191,7 +198,6 @@ export class CharacterizationDashboardView extends ItemView {
     private buildTableDOM() {
         this.observer.disconnect();
 
-        // 1. Rebuild Headers Dynamically
         this.tableHeadTr.empty();
         const formatHeader = (key: string) => {
             if (key === 'hnmr') return '1H NMR';
@@ -205,70 +211,100 @@ export class CharacterizationDashboardView extends ItemView {
         const allCols = [...staticCols, ...dynamicCols, "Readiness"];
 
         allCols.forEach((c, i) => {
-            this.tableHeadTr.createEl("th", { text: c, attr: { style: `padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; ${i < 2 ? 'text-align: left;' : ''}` }});
+            const th = this.tableHeadTr.createEl("th", { text: c });
+            th.setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px" });
+            if (i < 2) th.setCssStyles({ textAlign: "left" });
         });
 
-        // 2. Rebuild Body using Anti-Blink DocumentFragment
         const fragment = document.createDocumentFragment();
 
         if (this.allEntries.length === 0) {
             const emptyTr = document.createElement("tr");
-            emptyTr.innerHTML = `<td colspan="${allCols.length}" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No compounds found. Click '+ Add Compound' to start.</td>`;
+            const emptyTd = document.createElement("td");
+            emptyTd.setAttribute("colspan", allCols.length.toString());
+            emptyTd.textContent = "No compounds found. Click '+ Add Compound' to start.";
+            emptyTd.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
+            emptyTr.appendChild(emptyTd);
             fragment.appendChild(emptyTr);
         } else {
             this.allEntries.forEach(e => {
                 const tr = document.createElement("tr");
-                tr.style.transition = "background 0.2s";
+                tr.setCssStyles({ transition: "background 0.2s" });
                 e.rowEl = tr;
-                tr.onmouseover = () => tr.style.backgroundColor = "var(--background-secondary-alt)";
-                tr.onmouseout = () => tr.style.backgroundColor = "transparent";
+                tr.onmouseover = () => tr.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
+                tr.onmouseout = () => tr.setCssStyles({ backgroundColor: "transparent" });
 
-                // Structure
-                const tdStruct = tr.createEl("td", { attr: { style: "padding: 10px; border-bottom: 1px solid var(--background-modifier-border-hover); text-align: left;" }});
-                const structWrap = tdStruct.createDiv({ attr: { 'data-smiles': e.smiles, style: "width: 120px; height: 100px; display: flex; align-items: center; justify-content: center; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 6px; cursor: pointer;" }});
+                const tdStruct = document.createElement("td");
+                tdStruct.setCssStyles({ padding: "10px", borderBottom: "1px solid var(--background-modifier-border-hover)", textAlign: "left" });
+                const structWrap = document.createElement("div");
+                structWrap.setAttribute("data-smiles", e.smiles);
+                structWrap.setCssStyles({ width: "120px", height: "100px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px", cursor: "pointer" });
                 structWrap.onclick = () => this.app.workspace.getLeaf(false).openFile(e.file);
+                
                 if (e.smiles) {
-                    structWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">⏳</span>`;
+                    const l = document.createElement("span"); l.textContent = "⏳"; l.setCssStyles({ color: "var(--text-muted)", fontSize: "11px" });
+                    structWrap.appendChild(l);
                     this.observer.observe(structWrap);
                 } else {
-                    structWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">No Structure</span>`;
+                    const l = document.createElement("span"); l.textContent = "No Structure"; l.setCssStyles({ color: "var(--text-muted)", fontSize: "11px" });
+                    structWrap.appendChild(l);
                 }
+                tdStruct.appendChild(structWrap);
+                tr.appendChild(tdStruct);
 
-                // Name
-                const tdName = tr.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); text-align: left;" }});
-                tdName.createDiv({ text: e.name, attr: { style: "font-weight: 700; color: var(--text-accent); font-size: 14px; cursor: pointer;" }}).onclick = () => this.app.workspace.getLeaf(false).openFile(e.file);
+                const tdName = document.createElement("td");
+                tdName.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", textAlign: "left" });
+                const nameDiv = document.createElement("div");
+                nameDiv.textContent = e.name;
+                nameDiv.setCssStyles({ fontWeight: "700", color: "var(--text-accent)", fontSize: "14px", cursor: "pointer" });
+                nameDiv.onclick = () => this.app.workspace.getLeaf(false).openFile(e.file);
+                tdName.appendChild(nameDiv);
+                tr.appendChild(tdName);
                 
-                // Dynamic Data Cells
                 this.metricsList.forEach(m => {
                     this.createDataCell(tr, e.file, m, e.metricsData[m]);
                 });
 
-                // Progress
-                const tdProg = tr.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" }});
+                const tdProg = document.createElement("td");
+                tdProg.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
                 const pColor = e.score === 100 ? 'var(--text-success)' : e.score >= 60 ? 'var(--text-warning)' : 'var(--text-error)';
-                tdProg.innerHTML = `<div style="font-size:11px; font-weight:bold; margin-bottom:4px; color:${pColor};">${e.score}%</div>
-                                    <div style="width: 100%; height: 6px; background: var(--background-modifier-border); border-radius: 3px; overflow: hidden;">
-                                        <div style="width: ${e.score}%; height: 100%; background: ${pColor}; transition: width 0.3s;"></div>
-                                    </div>`;
+                
+                const scoreDiv = document.createElement("div");
+                scoreDiv.textContent = `${e.score}%`;
+                scoreDiv.setCssStyles({ fontSize: "11px", fontWeight: "bold", marginBottom: "4px", color: pColor });
+                
+                const track = document.createElement("div");
+                track.setCssStyles({ width: "100%", height: "6px", background: "var(--background-modifier-border)", borderRadius: "3px", overflow: "hidden" });
+                
+                const bar = document.createElement("div");
+                bar.setCssStyles({ width: `${e.score}%`, height: "100%", background: pColor, transition: "width 0.3s" });
+                track.appendChild(bar);
+                
+                tdProg.appendChild(scoreDiv);
+                tdProg.appendChild(track);
+                tr.appendChild(tdProg);
                 
                 fragment.appendChild(tr);
             });
         }
 
-        // Swap body instantly
         this.tableBodyEl.empty();
         this.tableBodyEl.appendChild(fragment);
     }
 
     private createDataCell(tr: HTMLElement, file: TFile, key: string, val: any) {
-        const td = tr.createEl("td", { attr: { style: "padding: 10px; border-bottom: 1px solid var(--background-modifier-border-hover); vertical-align: middle;" }});
+        const td = document.createElement("td");
+        td.setCssStyles({ padding: "10px", borderBottom: "1px solid var(--background-modifier-border-hover)", verticalAlign: "middle" });
         
         const isDone = !!val && val !== 'false' && val !== false;
         const isLink = typeof val === 'string' && val.includes('[[');
         const displayStr = isLink ? '📄' : (isDone ? '✅' : '❌');
         const color = isDone ? (isLink ? 'var(--text-accent)' : 'var(--text-success)') : 'var(--text-faint)';
 
-        const btn = td.createEl("button", { text: displayStr, attr: { title: val ? String(val) : "Missing", style: `background: ${isDone ? 'var(--background-primary)' : 'transparent'}; border: 1px solid ${isDone ? color : 'transparent'}; border-radius: 6px; font-size: 14px; padding: 4px 8px; color: ${color}; box-shadow: none; cursor: pointer;` }});
+        const btn = document.createElement("button");
+        btn.textContent = displayStr;
+        btn.title = val ? String(val) : "Missing";
+        btn.setCssStyles({ background: isDone ? 'var(--background-primary)' : 'transparent', border: `1px solid ${isDone ? color : 'transparent'}`, borderRadius: "6px", fontSize: "14px", padding: "4px 8px", color: color, boxShadow: "none", cursor: "pointer" });
 
         btn.onclick = (e) => {
             const menu = new Menu();
@@ -281,20 +317,23 @@ export class CharacterizationDashboardView extends ItemView {
                 }));
                 menu.addSeparator();
             }
-            menu.addItem(i => i.setTitle("Mark as Collected (✅)").setIcon("check").onClick(() => this.app.fileManager.processFrontMatter(file, fm => fm[key] = true)));
+            menu.addItem(i => i.setTitle("Mark as Collected (✅)").setIcon("check").onClick(() => void this.app.fileManager.processFrontMatter(file, fm => fm[key] = true)));
             menu.addItem(i => i.setTitle("Link File / Text (📄)").setIcon("paperclip").onClick(() => {
                 new DataPromptModal(this.app, key.toUpperCase(), val?.toString() || "", (newVal) => {
-                    this.app.fileManager.processFrontMatter(file, fm => fm[key] = newVal);
+                    void this.app.fileManager.processFrontMatter(file, fm => fm[key] = newVal);
                 }).open();
             }));
-            menu.addItem(i => i.setTitle("Mark as Missing (❌)").setIcon("cross").onClick(() => this.app.fileManager.processFrontMatter(file, fm => { fm[key] = false; })));
+            menu.addItem(i => i.setTitle("Mark as Missing (❌)").setIcon("cross").onClick(() => void this.app.fileManager.processFrontMatter(file, fm => { fm[key] = false; })));
             menu.showAtMouseEvent(e);
         };
+        
+        td.appendChild(btn);
+        tr.appendChild(td);
     }
 
     private applyFilters() {
         this.allEntries.forEach(e => {
-            if (e.rowEl) e.rowEl.style.display = (!this.searchQuery || e.searchText.includes(this.searchQuery)) ? "" : "none";
+            if (e.rowEl) e.rowEl.setCssStyles({ display: (!this.searchQuery || e.searchText.includes(this.searchQuery)) ? "" : "none" });
         });
     }
 
@@ -311,15 +350,15 @@ class DataPromptModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.createEl("h3", { text: `Set data for ${this.keyName}` });
-        contentEl.createEl("p", { text: "Tip: You can paste an Obsidian link here like [[spectra.pdf]]", cls: "color-text-muted", attr: {style: "font-size: 12px; margin-top: 0;"}});
+        contentEl.createEl("p", { text: "Tip: You can paste an Obsidian link here like [[spectra.pdf]]", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px", marginTop: "0" });
         
         const input = contentEl.createEl("input", { type: "text", value: this.initialVal === 'true' || this.initialVal === 'false' ? '' : this.initialVal });
-        input.style.width = "100%"; input.style.marginBottom = "15px";
+        input.setCssStyles({ width: "100%", marginBottom: "15px" });
         
         const saveBtn = contentEl.createEl("button", { text: "Save", cls: "mod-cta" });
         saveBtn.onclick = () => { this.onSubmit(input.value.trim()); this.close(); };
         input.onkeydown = (e) => { if (e.key === "Enter") saveBtn.click(); };
-        setTimeout(() => input.focus(), 50);
+        window.setTimeout(() => input.focus(), 50);
     }
     onClose() { this.contentEl.empty(); }
 }

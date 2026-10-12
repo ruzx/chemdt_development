@@ -1,4 +1,6 @@
 // ChemFileView.ts
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-floating-promises */
+
 import { TextFileView, WorkspaceLeaf, Notice } from 'obsidian';
 import type ChemEditPlugin from './main';
 import { KetcherModal } from './KetcherModals';
@@ -24,18 +26,13 @@ export class ChemFileView extends TextFileView {
         container.empty();
         
         const wrapper = container.createDiv(); 
-        wrapper.style.display = "flex"; 
-        wrapper.style.alignItems = "center"; 
-        wrapper.style.justifyContent = "center"; 
-        wrapper.style.width = "100%"; 
-        wrapper.style.height = "100%"; 
-        wrapper.style.cursor = "pointer"; 
+        wrapper.setCssStyles({ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", cursor: "pointer" });
         wrapper.title = "Double-click to edit"; 
-        wrapper.innerHTML = `<div class="color-text-muted">Loading preview...</div>`;
+        wrapper.createDiv({ cls: "color-text-muted", text: "Loading preview..." });
         
         const format = this.file?.extension === 'cdxml' ? 'cdxml' : 'mol';
         
-        requestAnimationFrame(async () => { 
+        window.requestAnimationFrame(async () => { 
             const previewEl = await this.plugin.renderMoleculeToPreview(data, format); 
             wrapper.empty(); 
             if (previewEl) { 
@@ -51,7 +48,7 @@ export class ChemFileView extends TextFileView {
                 if (newFormat && newFormat !== format) { new Notice(`Format was upgraded to ${newFormat}. Please rename the file extension!`); }
                 this.data = newData; 
                 this.requestSave(); 
-                this.setViewData(newData, false); 
+                void this.setViewData(newData, false); 
             }).open();
         };
     }

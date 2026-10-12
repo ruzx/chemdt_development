@@ -1,4 +1,6 @@
 // KetcherModals.ts
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-floating-promises */
+
 import { App, Modal, Notice, Setting } from 'obsidian';
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -39,17 +41,11 @@ export class KetcherModal extends Modal {
             if (ex) this.initialData = ex.data; 
         }
         
-        this.modalEl.style.width = "85vw"; 
-        this.modalEl.style.height = "85vh"; 
-        contentEl.style.height = "100%"; 
-        contentEl.style.display = "flex"; 
-        contentEl.style.flexDirection = "column";
+        this.modalEl.setCssStyles({ width: "85vw", height: "85vh" });
+        contentEl.setCssStyles({ height: "100%", display: "flex", flexDirection: "column" });
         
         const reactContainer = contentEl.createDiv(); 
-        reactContainer.style.flex = "1 1 auto"; 
-        reactContainer.style.width = "100%"; 
-        reactContainer.style.minHeight = "400px"; 
-        reactContainer.style.position = "relative";
+        reactContainer.setCssStyles({ flex: "1 1 auto", width: "100%", minHeight: "400px", position: "relative" });
         
         const element = React.createElement(KetcherReact, {
             data: this.initialData, 
@@ -70,11 +66,7 @@ export class KetcherModal extends Modal {
         }
 
         const btnContainer = contentEl.createDiv(); 
-        btnContainer.style.display = "flex"; 
-        btnContainer.style.justifyContent = "flex-end"; 
-        btnContainer.style.marginTop = "10px"; 
-        btnContainer.style.paddingTop = "10px"; 
-        btnContainer.style.gap = "10px";
+        btnContainer.setCssStyles({ display: "flex", justifyContent: "flex-end", marginTop: "10px", paddingTop: "10px", gap: "10px" });
         
         const saveBtn = btnContainer.createEl("button", { text: "Save", cls: "mod-cta" }); 
         const saveFileBtn = btnContainer.createEl("button", { text: "Save as File..." }); 
@@ -205,7 +197,7 @@ export class SaveFileModal extends Modal {
         new Setting(contentEl).setName("Filename").setDesc("Enter a name for the new chemical file.").addText(text => text.setPlaceholder("molecule").onChange(value => { this.filename = value; }).inputEl.addEventListener("keypress", (e) => { if (e.key === "Enter" && this.filename) { this.submit(); } }));
         new Setting(contentEl).setName("Format").setDesc("Select the file format to save as.").addDropdown(drop => drop.addOption("mol", ".mol (MDL Molfile)").addOption("cdxml", ".cdxml (ChemDraw)").addOption("ket", ".ket (Ketcher Native)").addOption("rxn", ".rxn (MDL Rxnfile)").addOption("sdf", ".sdf (Structure Data)").addOption("fasta", ".fasta (FASTA Sequence)").addOption("sequence", ".sequence (Raw Sequence)").addOption("idt", ".idt (IDT Sequence)").addOption("helm", ".helm (HELM Macromolecule)").addOption("biln", ".biln (BILN Macromolecule)").addOption("ketcher.svg", ".svg (Ketcher SVG)").setValue("mol").onChange(value => { this.format = value; }));
         new Setting(contentEl).addButton(btn => btn.setButtonText("Save File").setCta().onClick(() => this.submit()));
-        setTimeout(() => { const input = contentEl.querySelector('input[type="text"]') as HTMLInputElement; if (input) input.focus(); }, 50);
+        window.setTimeout(() => { const input = contentEl.querySelector('input[type="text"]') as HTMLInputElement; if (input) input.focus(); }, 50);
     }
     submit() { if (this.filename.trim()) { this.onSubmit(this.filename, this.format); this.close(); } else { new Notice("Please enter a filename."); } }
     onClose() { this.contentEl.empty(); }

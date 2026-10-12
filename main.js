@@ -559908,30 +559908,42 @@ var init_SharedMedia = __esm({
         const { contentEl } = this;
         contentEl.empty();
         if (import_obsidian3.Platform.isMobile) {
-          this.modalEl.style.width = "100vw";
-          this.modalEl.style.height = "100vh";
+          this.modalEl.setCssStyles({ width: "100vw", height: "100vh" });
         }
-        contentEl.createEl("h3", { text: "Digital TLC Calculator", attr: { style: "margin-top: 0; margin-bottom: 10px;" } });
-        const controls = contentEl.createDiv({ attr: { style: "margin-bottom: 15px; display: flex; gap: 8px; align-items:center;" } });
-        const fileInput = controls.createEl("input", { type: "file", attr: { accept: "image/*", capture: "environment", style: "display:none;" } });
-        const uploadBtn = controls.createEl("button", { text: "\u{1F4F7} Upload", cls: "mod-cta", attr: { style: "padding: 4px 12px;" } });
+        contentEl.createEl("h3", { text: "Digital TLC Calculator" }).setCssStyles({ marginTop: "0", marginBottom: "10px" });
+        const controls = contentEl.createDiv();
+        controls.setCssStyles({ marginBottom: "15px", display: "flex", gap: "8px", alignItems: "center" });
+        const fileInput = controls.createEl("input", { type: "file", attr: { accept: "image/*", capture: "environment" } });
+        fileInput.setCssStyles({ display: "none" });
+        const uploadBtn = controls.createEl("button", { text: "\u{1F4F7} Upload", cls: "mod-cta" });
+        uploadBtn.setCssStyles({ padding: "4px 12px" });
         uploadBtn.onclick = () => fileInput.click();
-        const clearBtn = controls.createEl("button", { text: "Clear", attr: { style: "padding: 4px 12px;" } });
+        const clearBtn = controls.createEl("button", { text: "Clear" });
+        clearBtn.setCssStyles({ padding: "4px 12px" });
         clearBtn.onclick = () => {
           this.spots = [];
           this.draw();
         };
-        const saveBtn = controls.createEl("button", { text: "Save", cls: "mod-cta", attr: { style: "margin-left:auto; padding: 4px 16px;" } });
-        saveBtn.style.display = "none";
+        const saveBtn = controls.createEl("button", { text: "Save", cls: "mod-cta" });
+        saveBtn.setCssStyles({ marginLeft: "auto", padding: "4px 16px", display: "none" });
         saveBtn.onclick = () => this.exportAndSave();
-        const instructions = contentEl.createDiv({ cls: "color-text-muted", attr: { style: "font-size:12px; margin-bottom:10px; line-height: 1.3;" } });
-        instructions.innerHTML = "Upload an image. Drag the <b style='color:#4488ff'>Baseline</b> and <b style='color:#ff4444'>Solvent Front</b>. Click anywhere to add a spot.";
-        const canvasWrapper = contentEl.createDiv({ attr: { style: "width:100%; height:65vh; overflow:hidden; position:relative; background:#1e1e1e; border-radius:8px;" } });
+        const instructions = contentEl.createDiv({ cls: "color-text-muted" });
+        instructions.setCssStyles({ fontSize: "12px", marginBottom: "10px", lineHeight: "1.3" });
+        const b1 = document.createElement("b");
+        b1.setCssStyles({ color: "#4488ff" });
+        b1.textContent = "Baseline";
+        const b22 = document.createElement("b");
+        b22.setCssStyles({ color: "#ff4444" });
+        b22.textContent = "Solvent Front";
+        instructions.appendChild(document.createTextNode("Upload an image. Drag the "));
+        instructions.appendChild(b1);
+        instructions.appendChild(document.createTextNode(" and "));
+        instructions.appendChild(b22);
+        instructions.appendChild(document.createTextNode(". Click anywhere to add a spot."));
+        const canvasWrapper = contentEl.createDiv();
+        canvasWrapper.setCssStyles({ width: "100%", height: "65vh", overflow: "hidden", position: "relative", background: "#1e1e1e", borderRadius: "8px" });
         this.canvas = canvasWrapper.createEl("canvas");
-        this.canvas.style.width = "100%";
-        this.canvas.style.height = "100%";
-        this.canvas.style.objectFit = "contain";
-        this.canvas.style.touchAction = "none";
+        this.canvas.setCssStyles({ width: "100%", height: "100%", objectFit: "contain", touchAction: "none" });
         this.ctx = this.canvas.getContext("2d");
         fileInput.onchange = (e6) => {
           const file = e6.target.files[0];
@@ -559954,7 +559966,7 @@ var init_SharedMedia = __esm({
               this.baselineY = this.canvas.height * 0.85;
               this.frontY = this.canvas.height * 0.15;
               this.spots = [];
-              saveBtn.style.display = "block";
+              saveBtn.setCssStyles({ display: "block" });
               this.draw();
             };
             this.img.src = (_a = event.target) == null ? void 0 : _a.result;
@@ -572521,32 +572533,45 @@ var SharedGalleryRenderer = class {
     const match2 = source.match(/path:\s*['"]?(.*?)['"]?(?:\n|$)/);
     const folderPath = match2 ? match2[1].trim() : "";
     if (!folderPath) {
-      el2.createEl("div", { text: "\u26A0\uFE0F Please specify a folder path (e.g., path: Molecules/)", cls: "color-text-error" });
+      const err = document.createElement("div");
+      err.textContent = "\u26A0\uFE0F Please specify a folder path (e.g., path: Molecules/)";
+      err.className = "color-text-error";
+      el2.appendChild(err);
       return;
     }
     const folder = this.plugin.app.vault.getAbstractFileByPath(folderPath);
     if (!folder || !("children" in folder)) {
-      el2.createEl("div", { text: `\u26A0\uFE0F Folder not found: ${folderPath}`, cls: "color-text-error" });
+      const err = document.createElement("div");
+      err.textContent = `\u26A0\uFE0F Folder not found: ${folderPath}`;
+      err.className = "color-text-error";
+      el2.appendChild(err);
       return;
     }
     const validExts = ["mol", "cdxml", "sdf", "rxn", "ket", "smi", "smiles", "md"];
     const files = folder.children.filter((f9) => f9 instanceof import_obsidian9.TFile && validExts.includes(f9.extension.toLowerCase()));
     if (files.length === 0) {
-      el2.createEl("div", { text: "No supported files found in this folder.", cls: "color-text-muted" });
+      const err = document.createElement("div");
+      err.textContent = "No supported files found in this folder.";
+      err.className = "color-text-muted";
+      el2.appendChild(err);
       return;
     }
-    const header = el2.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;" } });
-    const countLabel = header.createDiv({ text: `Loading...`, attr: { style: "font-size: 13px; color: var(--text-muted); font-weight: 500;" } });
-    const searchInput = header.createEl("input", {
-      type: "search",
-      placeholder: "Search name or SMILES...",
-      attr: { style: "width: 250px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary);" }
-    });
-    const container = el2.createDiv({ cls: "chem-gallery-container" });
-    container.style.display = "grid";
-    container.style.gridTemplateColumns = "repeat(auto-fill, minmax(140px, 1fr))";
-    container.style.gap = "15px";
-    container.style.padding = "5px 0";
+    const header = document.createElement("div");
+    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", flexWrap: "wrap", gap: "10px" });
+    const countLabel = document.createElement("div");
+    countLabel.textContent = `Loading...`;
+    countLabel.setCssStyles({ fontSize: "13px", color: "var(--text-muted)", fontWeight: "500" });
+    header.appendChild(countLabel);
+    const searchInput = document.createElement("input");
+    searchInput.type = "search";
+    searchInput.placeholder = "Search name or SMILES...";
+    searchInput.setCssStyles({ width: "250px", padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--background-modifier-border)", background: "var(--background-primary)" });
+    header.appendChild(searchInput);
+    el2.appendChild(header);
+    const container = document.createElement("div");
+    container.className = "chem-gallery-container";
+    container.setCssStyles({ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "15px", padding: "5px 0" });
+    el2.appendChild(container);
     const cards = [];
     let renderCount = 0;
     for (const file of files) {
@@ -572575,37 +572600,27 @@ var SharedGalleryRenderer = class {
         if (renderFormat === "smiles") searchableText += " " + dataToRender.toLowerCase();
       }
       renderCount++;
-      const card = container.createDiv({ cls: "chem-gallery-card" });
-      card.style.border = "1px solid var(--background-modifier-border)";
-      card.style.borderRadius = "8px";
-      card.style.padding = "10px";
-      card.style.display = "flex";
-      card.style.flexDirection = "column";
-      card.style.alignItems = "center";
-      card.style.backgroundColor = "var(--background-primary)";
-      card.style.cursor = "pointer";
-      card.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
-      card.style.transition = "border-color 0.2s ease";
-      card.onmouseover = () => card.style.borderColor = "var(--interactive-accent)";
-      card.onmouseout = () => card.style.borderColor = "var(--background-modifier-border)";
-      const previewWrapper = card.createDiv();
-      previewWrapper.style.width = "100%";
-      previewWrapper.style.height = "100px";
-      previewWrapper.style.display = "flex";
-      previewWrapper.style.justifyContent = "center";
-      previewWrapper.style.alignItems = "center";
-      previewWrapper.innerHTML = `<span class="color-text-muted" style="font-size:12px;">\u23F3 Loading...</span>`;
-      const label = card.createDiv();
+      const card = document.createElement("div");
+      card.className = "chem-gallery-card";
+      card.setCssStyles({ border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "10px", display: "flex", flexDirection: "column", alignItems: "center", backgroundColor: "var(--background-primary)", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", transition: "border-color 0.2s ease" });
+      card.onmouseover = () => card.setCssStyles({ borderColor: "var(--interactive-accent)" });
+      card.onmouseout = () => card.setCssStyles({ borderColor: "var(--background-modifier-border)" });
+      const previewWrapper = document.createElement("div");
+      previewWrapper.setCssStyles({ width: "100%", height: "100px", display: "flex", justifyContent: "center", alignItems: "center" });
+      const pText = document.createElement("span");
+      pText.textContent = "\u23F3 Loading...";
+      pText.className = "color-text-muted";
+      pText.setCssStyles({ fontSize: "12px" });
+      previewWrapper.appendChild(pText);
+      card.appendChild(previewWrapper);
+      const label = document.createElement("div");
       label.textContent = file.name;
-      label.style.fontSize = "12px";
-      label.style.marginTop = "10px";
-      label.style.textAlign = "center";
-      label.style.wordBreak = "break-word";
-      label.style.color = "var(--text-normal)";
-      label.style.fontWeight = "500";
+      label.setCssStyles({ fontSize: "12px", marginTop: "10px", textAlign: "center", wordBreak: "break-word", color: "var(--text-normal)", fontWeight: "500" });
       if (file.extension.toLowerCase() === "md") {
-        label.style.color = "var(--text-accent)";
+        label.setCssStyles({ color: "var(--text-accent)" });
       }
+      card.appendChild(label);
+      container.appendChild(card);
       cards.push({ el: card, text: searchableText });
       card.onclick = async () => {
         if (file.extension.toLowerCase() === "md") {
@@ -572615,7 +572630,7 @@ var SharedGalleryRenderer = class {
           this.plugin.openKetcherForFile(file, freshData, renderFormat, previewWrapper);
         }
       };
-      requestAnimationFrame(async () => {
+      window.requestAnimationFrame(async () => {
         const originalW = this.plugin.settings.width;
         const originalH = this.plugin.settings.height;
         this.plugin.settings.width = 120;
@@ -572624,14 +572639,18 @@ var SharedGalleryRenderer = class {
           const previewEl = await this.plugin.renderMoleculeToPreview(dataToRender, renderFormat, false);
           previewWrapper.empty();
           if (previewEl) {
-            previewEl.style.maxWidth = "100%";
-            previewEl.style.maxHeight = "100%";
+            previewEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
             previewWrapper.appendChild(previewEl);
           } else {
-            previewWrapper.innerHTML = `\u274C Error`;
+            const err = document.createElement("span");
+            err.textContent = "\u274C Error";
+            previewWrapper.appendChild(err);
           }
         } catch (e6) {
-          previewWrapper.innerHTML = `\u274C Error`;
+          previewWrapper.empty();
+          const err = document.createElement("span");
+          err.textContent = "\u274C Error";
+          previewWrapper.appendChild(err);
         } finally {
           this.plugin.settings.width = originalW;
           this.plugin.settings.height = originalH;
@@ -572644,18 +572663,14 @@ var SharedGalleryRenderer = class {
       let visibleCount = 0;
       cards.forEach((c10) => {
         if (c10.text.includes(query)) {
-          c10.el.style.display = "flex";
+          c10.el.setCssStyles({ display: "flex" });
           visibleCount++;
         } else {
-          c10.el.style.display = "none";
+          c10.el.setCssStyles({ display: "none" });
         }
       });
       countLabel.textContent = `${visibleCount} / ${renderCount} molecules`;
     });
-  }
-  // Safety fallback just in case it's called with the old name
-  async renderGalleryBlock(source, el2, ctx) {
-    return this.renderChemGallery(source, el2, ctx);
   }
 };
 
@@ -572719,16 +572734,10 @@ var KetcherModal = class extends import_obsidian10.Modal {
       const ex = extractDataFromSvg(this.initialData);
       if (ex) this.initialData = ex.data;
     }
-    this.modalEl.style.width = "85vw";
-    this.modalEl.style.height = "85vh";
-    contentEl.style.height = "100%";
-    contentEl.style.display = "flex";
-    contentEl.style.flexDirection = "column";
+    this.modalEl.setCssStyles({ width: "85vw", height: "85vh" });
+    contentEl.setCssStyles({ height: "100%", display: "flex", flexDirection: "column" });
     const reactContainer = contentEl.createDiv();
-    reactContainer.style.flex = "1 1 auto";
-    reactContainer.style.width = "100%";
-    reactContainer.style.minHeight = "400px";
-    reactContainer.style.position = "relative";
+    reactContainer.setCssStyles({ flex: "1 1 auto", width: "100%", minHeight: "400px", position: "relative" });
     const element = import_react25.default.createElement(KetcherReact_default, {
       data: this.initialData,
       onInit: async (ketcher) => {
@@ -572750,11 +572759,7 @@ var KetcherModal = class extends import_obsidian10.Modal {
       import_react_dom6.default.render(element, reactContainer);
     }
     const btnContainer = contentEl.createDiv();
-    btnContainer.style.display = "flex";
-    btnContainer.style.justifyContent = "flex-end";
-    btnContainer.style.marginTop = "10px";
-    btnContainer.style.paddingTop = "10px";
-    btnContainer.style.gap = "10px";
+    btnContainer.setCssStyles({ display: "flex", justifyContent: "flex-end", marginTop: "10px", paddingTop: "10px", gap: "10px" });
     const saveBtn = btnContainer.createEl("button", { text: "Save", cls: "mod-cta" });
     const saveFileBtn = btnContainer.createEl("button", { text: "Save as File..." });
     const cancelBtn = btnContainer.createEl("button", { text: "Cancel" });
@@ -572932,7 +572937,7 @@ var SaveFileModal = class extends import_obsidian10.Modal {
       this.format = value;
     }));
     new import_obsidian10.Setting(contentEl).addButton((btn) => btn.setButtonText("Save File").setCta().onClick(() => this.submit()));
-    setTimeout(() => {
+    window.setTimeout(() => {
       const input = contentEl.querySelector('input[type="text"]');
       if (input) input.focus();
     }, 50);
@@ -572976,16 +572981,11 @@ var ChemFileView = class extends import_obsidian11.TextFileView {
     const container = this.contentEl;
     container.empty();
     const wrapper2 = container.createDiv();
-    wrapper2.style.display = "flex";
-    wrapper2.style.alignItems = "center";
-    wrapper2.style.justifyContent = "center";
-    wrapper2.style.width = "100%";
-    wrapper2.style.height = "100%";
-    wrapper2.style.cursor = "pointer";
+    wrapper2.setCssStyles({ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", cursor: "pointer" });
     wrapper2.title = "Double-click to edit";
-    wrapper2.innerHTML = `<div class="color-text-muted">Loading preview...</div>`;
+    wrapper2.createDiv({ cls: "color-text-muted", text: "Loading preview..." });
     const format3 = ((_a = this.file) == null ? void 0 : _a.extension) === "cdxml" ? "cdxml" : "mol";
-    requestAnimationFrame(async () => {
+    window.requestAnimationFrame(async () => {
       const previewEl = await this.plugin.renderMoleculeToPreview(data, format3);
       wrapper2.empty();
       if (previewEl) {
@@ -573005,7 +573005,7 @@ var ChemFileView = class extends import_obsidian11.TextFileView {
         }
         this.data = newData;
         this.requestSave();
-        this.setViewData(newData, false);
+        void this.setViewData(newData, false);
       }).open();
     };
   }
@@ -574445,11 +574445,10 @@ var CharacterizationDashboardView = class extends import_obsidian20.ItemView {
             this.plugin.api.renderStructure(smiles, 120, 100).then((renderEl) => {
               el2.empty();
               if (renderEl) {
-                renderEl.style.maxWidth = "100%";
-                renderEl.style.maxHeight = "100%";
+                renderEl.setCssStyles({ maxWidth: "100%", maxHeight: "100%" });
                 el2.appendChild(renderEl);
               } else {
-                el2.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">Invalid</span>`;
+                el2.createSpan({ text: "Invalid", cls: "color-text-muted" }).setCssStyles({ fontSize: "11px" });
               }
             });
           }
@@ -574470,45 +574469,62 @@ var CharacterizationDashboardView = class extends import_obsidian20.ItemView {
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass("chem-characterization-dashboard-view");
-    Object.assign(container.style, { display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
-    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    container.setCssStyles({ display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
+    const header = container.createDiv();
+    header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "20px 30px", background: "var(--background-secondary)", borderBottom: "1px solid var(--background-modifier-border)" });
+    const titleArea = header.createDiv();
+    titleArea.setCssStyles({ display: "flex", flexDirection: "column" });
     renderLimsNav(titleArea, "data", this.plugin);
-    titleArea.createEl("h2", { text: "Compound Data Organizer", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
-    titleArea.createEl("span", { text: "Track publication readiness and analytical spectra", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
-    const newBtn = header.createEl("button", { text: "+ Add Compound", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" } });
+    titleArea.createEl("h2", { text: "Compound Data Organizer" }).setCssStyles({ margin: "0", fontSize: "22px", fontWeight: "700", color: "var(--text-normal)" });
+    titleArea.createEl("span", { text: "Track publication readiness and analytical spectra" }).setCssStyles({ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" });
+    const newBtn = header.createEl("button", { text: "+ Add Compound", cls: "mod-cta" });
+    newBtn.setCssStyles({ height: "36px", fontSize: "14px", fontWeight: "600", padding: "0 20px" });
     newBtn.onclick = () => {
       const folder = window.localStorage.getItem("chem-char-dir") || "Characterization";
-      this.createNewEntry(folder);
+      void this.createNewEntry(folder);
     };
-    const toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
-    const leftTools = toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center; flex-wrap: wrap;" } });
-    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px;" } });
-    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
-    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-char-dir") || "Characterization", attr: { style: "width: 120px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    const toolbarEl = container.createDiv();
+    toolbarEl.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px 30px", background: "var(--background-primary)", borderBottom: "1px solid var(--background-modifier-border)" });
+    const leftTools = toolbarEl.createDiv();
+    leftTools.setCssStyles({ display: "flex", gap: "15px", alignItems: "center", flexWrap: "wrap" });
+    const dirWrap = leftTools.createDiv();
+    dirWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px" });
+    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:" }).setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
+    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-char-dir") || "Characterization" });
+    dirInp.setCssStyles({ width: "120px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
     dirInp.onchange = (e6) => {
       window.localStorage.setItem("chem-char-dir", e6.target.value.trim());
-      this.loadData();
+      void this.loadData();
     };
-    const metricWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px;" } });
-    metricWrap.createEl("span", { text: "\u2699\uFE0F Metrics (YAML keys):", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);", title: "Comma separated list of data you want to track." } });
-    const metricInp = metricWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-char-metrics") || "hnmr, cnmr, hrms, ir, mp", attr: { style: "width: 220px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    const metricWrap = leftTools.createDiv();
+    metricWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "6px" });
+    const metSpan = metricWrap.createEl("span", { text: "\u2699\uFE0F Metrics (YAML keys):" });
+    metSpan.setCssStyles({ fontSize: "11px", fontWeight: "600", color: "var(--text-muted)" });
+    metSpan.title = "Comma separated list of data you want to track.";
+    const metricInp = metricWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-char-metrics") || "hnmr, cnmr, hrms, ir, mp" });
+    metricInp.setCssStyles({ width: "220px", fontSize: "12px", padding: "4px 8px", borderRadius: "4px", height: "26px", border: "1px solid var(--background-modifier-border)" });
     metricInp.onchange = (e6) => {
       window.localStorage.setItem("chem-char-metrics", e6.target.value.trim());
-      this.loadData();
+      void this.loadData();
     };
-    const searchInp = toolbarEl.createEl("input", { type: "search", placeholder: "Search compound name...", attr: { style: "width: 220px; font-size: 13px; border-radius: 6px;" } });
+    const searchInp = toolbarEl.createEl("input", { type: "search", placeholder: "Search compound name..." });
+    searchInp.setCssStyles({ width: "220px", fontSize: "13px", borderRadius: "6px" });
     searchInp.oninput = (e6) => {
       this.searchQuery = e6.target.value.toLowerCase();
       this.applyFilters();
     };
-    const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" } });
-    const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: center; font-size: 13px;" } });
-    const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" } });
+    const tableContainer = container.createDiv();
+    tableContainer.setCssStyles({ flexGrow: "1", overflow: "auto", padding: "0 30px 30px 30px" });
+    const table = tableContainer.createEl("table");
+    table.setCssStyles({ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "center", fontSize: "13px" });
+    const thead = table.createEl("thead");
+    thead.setCssStyles({ position: "sticky", top: "0", background: "var(--background-primary)", zIndex: "10" });
     this.tableHeadTr = thead.createEl("tr");
     this.tableBodyEl = table.createEl("tbody");
     await this.loadData();
-    const requestRefresh = (0, import_obsidian20.debounce)(() => this.loadData(), 2e3, true);
+    const requestRefresh = (0, import_obsidian20.debounce)(() => {
+      void this.loadData();
+    }, 2e3, true);
     this.registerEvent(this.app.vault.on("modify", requestRefresh));
     this.registerEvent(this.app.vault.on("create", requestRefresh));
     this.registerEvent(this.app.vault.on("delete", requestRefresh));
@@ -574546,7 +574562,7 @@ ${metricsYaml}---
       const fmTags = fm.tags || [];
       const isTagged = Array.isArray(fmTags) ? fmTags.includes("characterization") || fmTags.includes("compound") : fmTags === "characterization" || fmTags === "compound";
       if (!inFolder && !isTagged) continue;
-      let smiles = fm.smiles || "";
+      const smiles = fm.smiles || "";
       let collectedCount = 0;
       const metricsData = {};
       this.metricsList.forEach((m9) => {
@@ -574583,40 +574599,71 @@ ${metricsYaml}---
     const dynamicCols = this.metricsList.map(formatHeader);
     const allCols = [...staticCols, ...dynamicCols, "Readiness"];
     allCols.forEach((c10, i8) => {
-      this.tableHeadTr.createEl("th", { text: c10, attr: { style: `padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; ${i8 < 2 ? "text-align: left;" : ""}` } });
+      const th = this.tableHeadTr.createEl("th", { text: c10 });
+      th.setCssStyles({ padding: "16px 10px", borderBottom: "2px solid var(--background-modifier-border)", color: "var(--text-muted)", fontWeight: "600", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.5px" });
+      if (i8 < 2) th.setCssStyles({ textAlign: "left" });
     });
     const fragment2 = document.createDocumentFragment();
     if (this.allEntries.length === 0) {
       const emptyTr = document.createElement("tr");
-      emptyTr.innerHTML = `<td colspan="${allCols.length}" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No compounds found. Click '+ Add Compound' to start.</td>`;
+      const emptyTd = document.createElement("td");
+      emptyTd.setAttribute("colspan", allCols.length.toString());
+      emptyTd.textContent = "No compounds found. Click '+ Add Compound' to start.";
+      emptyTd.setCssStyles({ textAlign: "center", padding: "40px", color: "var(--text-muted)", fontStyle: "italic" });
+      emptyTr.appendChild(emptyTd);
       fragment2.appendChild(emptyTr);
     } else {
       this.allEntries.forEach((e6) => {
         const tr2 = document.createElement("tr");
-        tr2.style.transition = "background 0.2s";
+        tr2.setCssStyles({ transition: "background 0.2s" });
         e6.rowEl = tr2;
-        tr2.onmouseover = () => tr2.style.backgroundColor = "var(--background-secondary-alt)";
-        tr2.onmouseout = () => tr2.style.backgroundColor = "transparent";
-        const tdStruct = tr2.createEl("td", { attr: { style: "padding: 10px; border-bottom: 1px solid var(--background-modifier-border-hover); text-align: left;" } });
-        const structWrap = tdStruct.createDiv({ attr: { "data-smiles": e6.smiles, style: "width: 120px; height: 100px; display: flex; align-items: center; justify-content: center; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 6px; cursor: pointer;" } });
+        tr2.onmouseover = () => tr2.setCssStyles({ backgroundColor: "var(--background-secondary-alt)" });
+        tr2.onmouseout = () => tr2.setCssStyles({ backgroundColor: "transparent" });
+        const tdStruct = document.createElement("td");
+        tdStruct.setCssStyles({ padding: "10px", borderBottom: "1px solid var(--background-modifier-border-hover)", textAlign: "left" });
+        const structWrap = document.createElement("div");
+        structWrap.setAttribute("data-smiles", e6.smiles);
+        structWrap.setCssStyles({ width: "120px", height: "100px", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", borderRadius: "6px", cursor: "pointer" });
         structWrap.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
         if (e6.smiles) {
-          structWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">\u23F3</span>`;
+          const l8 = document.createElement("span");
+          l8.textContent = "\u23F3";
+          l8.setCssStyles({ color: "var(--text-muted)", fontSize: "11px" });
+          structWrap.appendChild(l8);
           this.observer.observe(structWrap);
         } else {
-          structWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">No Structure</span>`;
+          const l8 = document.createElement("span");
+          l8.textContent = "No Structure";
+          l8.setCssStyles({ color: "var(--text-muted)", fontSize: "11px" });
+          structWrap.appendChild(l8);
         }
-        const tdName = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); text-align: left;" } });
-        tdName.createDiv({ text: e6.name, attr: { style: "font-weight: 700; color: var(--text-accent); font-size: 14px; cursor: pointer;" } }).onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
+        tdStruct.appendChild(structWrap);
+        tr2.appendChild(tdStruct);
+        const tdName = document.createElement("td");
+        tdName.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)", textAlign: "left" });
+        const nameDiv = document.createElement("div");
+        nameDiv.textContent = e6.name;
+        nameDiv.setCssStyles({ fontWeight: "700", color: "var(--text-accent)", fontSize: "14px", cursor: "pointer" });
+        nameDiv.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
+        tdName.appendChild(nameDiv);
+        tr2.appendChild(tdName);
         this.metricsList.forEach((m9) => {
           this.createDataCell(tr2, e6.file, m9, e6.metricsData[m9]);
         });
-        const tdProg = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+        const tdProg = document.createElement("td");
+        tdProg.setCssStyles({ padding: "16px 10px", borderBottom: "1px solid var(--background-modifier-border-hover)" });
         const pColor = e6.score === 100 ? "var(--text-success)" : e6.score >= 60 ? "var(--text-warning)" : "var(--text-error)";
-        tdProg.innerHTML = `<div style="font-size:11px; font-weight:bold; margin-bottom:4px; color:${pColor};">${e6.score}%</div>
-                                    <div style="width: 100%; height: 6px; background: var(--background-modifier-border); border-radius: 3px; overflow: hidden;">
-                                        <div style="width: ${e6.score}%; height: 100%; background: ${pColor}; transition: width 0.3s;"></div>
-                                    </div>`;
+        const scoreDiv = document.createElement("div");
+        scoreDiv.textContent = `${e6.score}%`;
+        scoreDiv.setCssStyles({ fontSize: "11px", fontWeight: "bold", marginBottom: "4px", color: pColor });
+        const track = document.createElement("div");
+        track.setCssStyles({ width: "100%", height: "6px", background: "var(--background-modifier-border)", borderRadius: "3px", overflow: "hidden" });
+        const bar = document.createElement("div");
+        bar.setCssStyles({ width: `${e6.score}%`, height: "100%", background: pColor, transition: "width 0.3s" });
+        track.appendChild(bar);
+        tdProg.appendChild(scoreDiv);
+        tdProg.appendChild(track);
+        tr2.appendChild(tdProg);
         fragment2.appendChild(tr2);
       });
     }
@@ -574624,12 +574671,16 @@ ${metricsYaml}---
     this.tableBodyEl.appendChild(fragment2);
   }
   createDataCell(tr2, file, key, val) {
-    const td = tr2.createEl("td", { attr: { style: "padding: 10px; border-bottom: 1px solid var(--background-modifier-border-hover); vertical-align: middle;" } });
+    const td = document.createElement("td");
+    td.setCssStyles({ padding: "10px", borderBottom: "1px solid var(--background-modifier-border-hover)", verticalAlign: "middle" });
     const isDone = !!val && val !== "false" && val !== false;
     const isLink = typeof val === "string" && val.includes("[[");
     const displayStr = isLink ? "\u{1F4C4}" : isDone ? "\u2705" : "\u274C";
     const color5 = isDone ? isLink ? "var(--text-accent)" : "var(--text-success)" : "var(--text-faint)";
-    const btn = td.createEl("button", { text: displayStr, attr: { title: val ? String(val) : "Missing", style: `background: ${isDone ? "var(--background-primary)" : "transparent"}; border: 1px solid ${isDone ? color5 : "transparent"}; border-radius: 6px; font-size: 14px; padding: 4px 8px; color: ${color5}; box-shadow: none; cursor: pointer;` } });
+    const btn = document.createElement("button");
+    btn.textContent = displayStr;
+    btn.title = val ? String(val) : "Missing";
+    btn.setCssStyles({ background: isDone ? "var(--background-primary)" : "transparent", border: `1px solid ${isDone ? color5 : "transparent"}`, borderRadius: "6px", fontSize: "14px", padding: "4px 8px", color: color5, boxShadow: "none", cursor: "pointer" });
     btn.onclick = (e6) => {
       const menu = new import_obsidian20.Menu();
       if (isLink) {
@@ -574641,21 +574692,23 @@ ${metricsYaml}---
         }));
         menu.addSeparator();
       }
-      menu.addItem((i8) => i8.setTitle("Mark as Collected (\u2705)").setIcon("check").onClick(() => this.app.fileManager.processFrontMatter(file, (fm) => fm[key] = true)));
+      menu.addItem((i8) => i8.setTitle("Mark as Collected (\u2705)").setIcon("check").onClick(() => void this.app.fileManager.processFrontMatter(file, (fm) => fm[key] = true)));
       menu.addItem((i8) => i8.setTitle("Link File / Text (\u{1F4C4})").setIcon("paperclip").onClick(() => {
         new DataPromptModal(this.app, key.toUpperCase(), (val == null ? void 0 : val.toString()) || "", (newVal) => {
-          this.app.fileManager.processFrontMatter(file, (fm) => fm[key] = newVal);
+          void this.app.fileManager.processFrontMatter(file, (fm) => fm[key] = newVal);
         }).open();
       }));
-      menu.addItem((i8) => i8.setTitle("Mark as Missing (\u274C)").setIcon("cross").onClick(() => this.app.fileManager.processFrontMatter(file, (fm) => {
+      menu.addItem((i8) => i8.setTitle("Mark as Missing (\u274C)").setIcon("cross").onClick(() => void this.app.fileManager.processFrontMatter(file, (fm) => {
         fm[key] = false;
       })));
       menu.showAtMouseEvent(e6);
     };
+    td.appendChild(btn);
+    tr2.appendChild(td);
   }
   applyFilters() {
     this.allEntries.forEach((e6) => {
-      if (e6.rowEl) e6.rowEl.style.display = !this.searchQuery || e6.searchText.includes(this.searchQuery) ? "" : "none";
+      if (e6.rowEl) e6.rowEl.setCssStyles({ display: !this.searchQuery || e6.searchText.includes(this.searchQuery) ? "" : "none" });
     });
   }
   async onClose() {
@@ -574672,10 +574725,9 @@ var DataPromptModal = class extends import_obsidian20.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.createEl("h3", { text: `Set data for ${this.keyName}` });
-    contentEl.createEl("p", { text: "Tip: You can paste an Obsidian link here like [[spectra.pdf]]", cls: "color-text-muted", attr: { style: "font-size: 12px; margin-top: 0;" } });
+    contentEl.createEl("p", { text: "Tip: You can paste an Obsidian link here like [[spectra.pdf]]", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px", marginTop: "0" });
     const input = contentEl.createEl("input", { type: "text", value: this.initialVal === "true" || this.initialVal === "false" ? "" : this.initialVal });
-    input.style.width = "100%";
-    input.style.marginBottom = "15px";
+    input.setCssStyles({ width: "100%", marginBottom: "15px" });
     const saveBtn = contentEl.createEl("button", { text: "Save", cls: "mod-cta" });
     saveBtn.onclick = () => {
       this.onSubmit(input.value.trim());
@@ -574684,7 +574736,7 @@ var DataPromptModal = class extends import_obsidian20.Modal {
     input.onkeydown = (e6) => {
       if (e6.key === "Enter") saveBtn.click();
     };
-    setTimeout(() => input.focus(), 50);
+    window.setTimeout(() => input.focus(), 50);
   }
   onClose() {
     this.contentEl.empty();

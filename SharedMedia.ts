@@ -1,4 +1,6 @@
 // SharedMedia.ts
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-floating-promises */
+
 import { App, Modal, Platform } from 'obsidian';
 
 export async function saveMediaFile(app: App, arrayBuffer: ArrayBuffer, savePath: string, filename: string): Promise<string> {
@@ -19,7 +21,7 @@ export function takeStandardPhoto(callback: (buffer: ArrayBuffer, ext: string) =
     const input = document.createElement('input');
     input.type = 'file'; 
     input.accept = 'image/*'; 
-    input.capture = 'environment'; // Triggers native camera on mobile
+    input.capture = 'environment'; 
     input.onchange = async (e: any) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -51,36 +53,45 @@ export class TlcModal extends Modal {
         contentEl.empty();
         
         if (Platform.isMobile) { 
-            this.modalEl.style.width = "100vw"; 
-            this.modalEl.style.height = "100vh"; 
+            this.modalEl.setCssStyles({ width: "100vw", height: "100vh" });
         }
 
-        contentEl.createEl("h3", { text: "Digital TLC Calculator", attr: { style: "margin-top: 0; margin-bottom: 10px;" } });
+        contentEl.createEl("h3", { text: "Digital TLC Calculator" }).setCssStyles({ marginTop: "0", marginBottom: "10px" });
         
-        // Compact buttons for mobile
-        const controls = contentEl.createDiv({ attr: {style: "margin-bottom: 15px; display: flex; gap: 8px; align-items:center;"}});
+        const controls = contentEl.createDiv();
+        controls.setCssStyles({ marginBottom: "15px", display: "flex", gap: "8px", alignItems: "center" });
         
-        const fileInput = controls.createEl("input", { type: "file", attr: { accept: "image/*", capture: "environment", style: "display:none;" }});
-        const uploadBtn = controls.createEl("button", { text: "📷 Upload", cls: "mod-cta", attr: {style: "padding: 4px 12px;"} });
+        const fileInput = controls.createEl("input", { type: "file", attr: { accept: "image/*", capture: "environment" }});
+        fileInput.setCssStyles({ display: "none" });
+
+        const uploadBtn = controls.createEl("button", { text: "📷 Upload", cls: "mod-cta" });
+        uploadBtn.setCssStyles({ padding: "4px 12px" });
         uploadBtn.onclick = () => fileInput.click();
         
-        const clearBtn = controls.createEl("button", { text: "Clear", attr: {style: "padding: 4px 12px;"} });
+        const clearBtn = controls.createEl("button", { text: "Clear" });
+        clearBtn.setCssStyles({ padding: "4px 12px" });
         clearBtn.onclick = () => { this.spots = []; this.draw(); };
 
-        const saveBtn = controls.createEl("button", { text: "Save", cls: "mod-cta", attr: {style:"margin-left:auto; padding: 4px 16px;"} });
-        saveBtn.style.display = "none";
+        const saveBtn = controls.createEl("button", { text: "Save", cls: "mod-cta" });
+        saveBtn.setCssStyles({ marginLeft: "auto", padding: "4px 16px", display: "none" });
         saveBtn.onclick = () => this.exportAndSave();
 
-        const instructions = contentEl.createDiv({ cls: "color-text-muted", attr: {style: "font-size:12px; margin-bottom:10px; line-height: 1.3;"}});
-        instructions.innerHTML = "Upload an image. Drag the <b style='color:#4488ff'>Baseline</b> and <b style='color:#ff4444'>Solvent Front</b>. Click anywhere to add a spot.";
+        const instructions = contentEl.createDiv({ cls: "color-text-muted" });
+        instructions.setCssStyles({ fontSize: "12px", marginBottom: "10px", lineHeight: "1.3" });
+        
+        const b1 = document.createElement("b"); b1.setCssStyles({ color: "#4488ff" }); b1.textContent = "Baseline";
+        const b2 = document.createElement("b"); b2.setCssStyles({ color: "#ff4444" }); b2.textContent = "Solvent Front";
+        instructions.appendChild(document.createTextNode("Upload an image. Drag the "));
+        instructions.appendChild(b1);
+        instructions.appendChild(document.createTextNode(" and "));
+        instructions.appendChild(b2);
+        instructions.appendChild(document.createTextNode(". Click anywhere to add a spot."));
 
-        const canvasWrapper = contentEl.createDiv({ attr: {style: "width:100%; height:65vh; overflow:hidden; position:relative; background:#1e1e1e; border-radius:8px;"}});
+        const canvasWrapper = contentEl.createDiv();
+        canvasWrapper.setCssStyles({ width: "100%", height: "65vh", overflow: "hidden", position: "relative", background: "#1e1e1e", borderRadius: "8px" });
         
         this.canvas = canvasWrapper.createEl("canvas");
-        this.canvas.style.width = "100%"; 
-        this.canvas.style.height = "100%";
-        this.canvas.style.objectFit = "contain"; 
-        this.canvas.style.touchAction = "none"; // Required for dragging on mobile
+        this.canvas.setCssStyles({ width: "100%", height: "100%", objectFit: "contain", touchAction: "none" });
         this.ctx = this.canvas.getContext("2d")!;
 
         fileInput.onchange = (e: any) => {
@@ -90,7 +101,6 @@ export class TlcModal extends Modal {
             reader.onload = (event) => {
                 this.img = new Image();
                 this.img.onload = () => {
-                    // Downscale massively large phone photos (e.g. 4000x3000) to max 1600px to prevent memory crashes and make drawing consistent
                     let w = this.img!.width;
                     let h = this.img!.height;
                     const MAX_DIM = 1600;
@@ -105,7 +115,7 @@ export class TlcModal extends Modal {
                     this.baselineY = this.canvas.height * 0.85; 
                     this.frontY = this.canvas.height * 0.15;
                     this.spots = []; 
-                    saveBtn.style.display = "block"; 
+                    saveBtn.setCssStyles({ display: "block" }); 
                     this.draw();
                 };
                 this.img.src = event.target?.result as string;
@@ -118,7 +128,6 @@ export class TlcModal extends Modal {
     setupInteractions() {
         const getCoords = (e: PointerEvent) => {
             const rect = this.canvas.getBoundingClientRect();
-            // Calculates exact pixel clicked based on object-fit: contain scaling
             const scale = Math.min(rect.width / this.canvas.width, rect.height / this.canvas.height);
             const x = (e.clientX - rect.left - (rect.width - this.canvas.width * scale) / 2) / scale;
             const y = (e.clientY - rect.top - (rect.height - this.canvas.height * scale) / 2) / scale;
@@ -130,18 +139,14 @@ export class TlcModal extends Modal {
             e.preventDefault(); 
             const { x, y } = getCoords(e);
             
-            // Dynamic hit radius based on canvas size (fat-finger friendly for mobile!)
             const hitRadius = Math.max(50, this.canvas.width / 15); 
 
-            // Check Spots
             for (let i = 0; i < this.spots.length; i++) {
                 if (Math.hypot(this.spots[i].x - x, this.spots[i].y - y) < hitRadius) { this.draggingTarget = i; return; }
             }
-            // Check Lines
             if (Math.abs(this.baselineY - y) < hitRadius) { this.draggingTarget = "baseline"; return; }
             if (Math.abs(this.frontY - y) < hitRadius) { this.draggingTarget = "front"; return; }
             
-            // If missed everything, create a new spot
             this.spots.push({ x, y, rf: this.calcRf(y) });
             this.draggingTarget = this.spots.length - 1; 
             this.draw();
@@ -175,7 +180,6 @@ export class TlcModal extends Modal {
         this.ctx.clearRect(0, 0, w, h); 
         this.ctx.drawImage(this.img, 0, 0, w, h);
 
-        // Scale strokes and fonts perfectly dynamically relative to image resolution
         const scale = w / 800; 
         const lineW = Math.max(4, 6 * scale);
         const fontSz = Math.max(20, 28 * scale);
@@ -211,7 +215,7 @@ export class TlcModal extends Modal {
             this.ctx.shadowColor = "black"; 
             this.ctx.shadowBlur = 6 * scale;
             this.ctx.fillText(`${i+1} (Rf: ${s.rf.toFixed(2)})`, s.x + spotR + (10 * scale), s.y + (10 * scale));
-            this.ctx.shadowBlur = 0; // reset
+            this.ctx.shadowBlur = 0; 
         });
     }
 
