@@ -28,7 +28,11 @@ css = css.replace(/text-indent:[^;]+;/g, '');
 // 5. Remove advanced text-decoration (only keep none or underline)
 css = css.replace(/text-decoration:\s*(?!none|underline)[^;]+;/g, 'text-decoration: none;');
 
-// 6. DUPLICATE PROPERTIES: Fix all exact duplicates flagged by the Obsidian linter
+// 6. REMOVE LEGACY IE HACKS: Fixes the "Missed semicolon" linter error!
+css = css.replace(/\\9/g, ''); // Removes the \9 IE8 hack
+css = css.replace(/filter:\s*progid:[^;}]+;?/gi, ''); // Removes IE Microsoft.gradient filters
+
+// 7. DUPLICATE PROPERTIES: Fix all exact duplicates flagged by the Obsidian linter
 // Safely matches ONLY the innermost CSS rule blocks (avoids breaking @keyframes and @media blocks)
 css = css.replace(/\{([^{}]+)\}/g, (match, inner) => {
     
@@ -85,4 +89,4 @@ fs.writeFileSync('styles.css', css);
 // Cleanup the original main.css esbuild artifact
 if (cssFile === 'main.css') fs.unlinkSync('main.css');
 
-console.log('✅ Safely cleaned styles.css! All duplicate properties, !important, and scrollbars removed.');
+console.log('✅ Safely cleaned styles.css! All duplicate properties, IE hacks, and scrollbars removed.');
