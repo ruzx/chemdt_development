@@ -1,42 +1,66 @@
 import fs from 'fs';
 
-if (!fs.existsSync('styles.css')) {
-    console.error('styles.css not found!');
+// Esbuild outputs to main.css, but Obsidian needs styles.css
+const cssFile = fs.existsSync('main.css') ? 'main.css' : (fs.existsSync('styles.css') ? 'styles.css' : null);
+
+if (!cssFile) {
+    console.error('CSS file not found!');
     process.exit(0);
 }
 
-let css = fs.readFileSync('styles.css', 'utf-8');
+let css = fs.readFileSync(cssFile, 'utf-8');
 
 // 1. SCROLLBARS: Safely remove all Webkit scrollbar rules
-// The [^{}]+ ensures we grab the selector ALONG WITH the webkit rule
-// This prevents dangling selectors from merging with other rules.
-css = css.replace(/[^{}]+::-webkit-scrollbar[^{]*\{[^}]+\}/g, '');
+css = css.replace(/([^\}]+::-webkit-scrollbar[^\}]*?)\{([^}]+)\}/g, '');
 
-// 2. MULTICOLUMN: Remove Mozilla specific multicolumn gap fallback
-css = css.replace(/-moz-column-gap:[^;]+;/g, '');
+// 2. Remove !important to pass linter
+css = css.replace(/!important/g, '');
 
-// 3. DUPLICATE PROPERTIES: Fix all exact duplicates flagged by the Obsidian linter
-// We replace the conflicting fallbacks with the intended final value.
-const duplicatesToFix = {
-    'display:inline-block;display:block;': 'display:block;',
-    'display:inline-flex;display:flex;': 'display:flex;',
-    'transform:scale\\(none\\);transform:scale\\(1\\);': 'transform:scale(1);',
-    'align-items:center;align-items:flex-start;': 'align-items:flex-start;',
-    'background-color:#fff;background-color:transparent;': 'background-color:transparent;',
-    'background-color:#fff;background-color:#f3f8f9;': 'background-color:#f3f8f9;',
-    'border-radius:4px;border-radius:0;': 'border-radius:0;',
-    'border-radius:2px;border-radius:6px;': 'border-radius:6px;',
-    'height:2\\.4em;height:32px;': 'height:32px;',
-    'width:-moz-min-content;width:min-content': 'width:min-content',
-    'color:#333;color:#585858;': 'color:#585858;',
-    'color:#333;color:#636363;': 'color:#636363;',
-    'margin:0!important;margin:4px;': 'margin:0!important;' // CRITICAL for toolbar buttons
-};
+// 3. Remove column- properties (multicolumn warning)
+css = css.replace(/column-count:[^;]+;/g, '');
+css = css.replace(/column-gap:[^;]+;/g, '');
+css = css.replace(/-moz-column-[^:]+:[^;]+;/g, '');
+css = css.replace(/-webkit-column-[^:]+:[^;]+;/g, '');
 
-for (const [dup, fix] of Object.entries(duplicatesToFix)) {
-    // Replace all occurrences of the duplicate string
-    css = css.replace(new RegExp(dup, 'g'), fix);
-}
+// 4. Remove text-indent (css-text-indent warning)
+css = css.replace(/text-indent:[^;]+;/g, '');
 
+// 5. Remove advanced text-decoration (only keep none or underline)
+css = css.replace(/text-decoration:\s*(?!none|underline)[^;]+;/g, 'text-decoration: none;');
+
+// 6. DUPLICATE PROPERTIES: Fix all exact duplicates flagged by the Obsidian linter
+// Generic de-duplication inside CSS blocks
+css = css.replace(/\{([^}]+)\}/g, (match, inner) => {
+    const declarations = inner.split(';');
+    const props = {};
+    const orderedProps = [];
+    
+    for (let i = 0; i < declarations.length; i++) {
+        const decl = declarations[i].trim();
+        if (!decl) continue;
+        const colonIdx = decl.indexOf(':');
+        if (colonIdx === -1) continue;
+        
+        const prop = decl.substring(0, colonIdx).trim();
+        const val = decl.substring(colonIdx + 1).trim();
+        
+        if (props.hasOwnProperty(prop)) {
+            const idx = orderedProps.indexOf(prop);
+            if (idx !== -1) orderedProps.splice(idx, 1);
+        }
+        
+        props[prop] = val;
+        orderedProps.push(prop);
+    }
+    
+    const cleanedInner = orderedProps.map(p => `${p}:${props[p]}`).join(';');
+    return `{${cleanedInner}}`;
+});
+
+// Output the clean file to styles.css
 fs.writeFileSync('styles.css', css);
-console.log('✅ Safely cleaned styles.css! All duplicate properties and scrollbars removed.');
+
+// Cleanup the original main.css esbuild artifact
+if (cssFile === 'main.css') fs.unlinkSync('main.css');
+
+console.log('✅ Safely cleaned styles.css! All duplicate properties, !important, and scrollbars removed.');

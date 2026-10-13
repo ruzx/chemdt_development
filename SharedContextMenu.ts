@@ -1,6 +1,7 @@
 // SharedContextMenu.ts
 import { Menu, Notice, requestUrl } from 'obsidian';
 import { AddToLibraryModal, addCompoundToLibrary, calculateMwOffline } from './SharedEln';
+import { addCompoundToLibrary as addCompoundToDatabase } from './SharedBase';
 import { ChemDataEngine } from './ChemDataEngine';
 
 export function populateChemicalMenu(menu: Menu, plugin: any, smiles: string) {
@@ -14,6 +15,11 @@ export function populateChemicalMenu(menu: Menu, plugin: any, smiles: string) {
         });
     });
 
+    menu.addItem((item) => {
+        item.setTitle("Add to Compound Database (Card)").setIcon("flask-round").onClick(() => {
+            addCompoundToDatabase(plugin.app, plugin, plugin.settings.elnDirectory || "Library", () => {}, smiles);
+        });
+    });
 
     menu.addSeparator();
 
@@ -105,22 +111,6 @@ export function populateChemicalMenu(menu: Menu, plugin: any, smiles: string) {
             });
         });
     };
-	
-	menu.addSeparator();
-
-    // --- WEB VIEWER SHARE LINK ---
-    menu.addItem((item) => {
-        item.setTitle("Get Web Share Link").setIcon("globe").onClick(async () => {
-            // Generates the URL pointing to your GitHub Pages site
-            const viewerUrl = `https://ruzx.github.io/viewer.html#smi=${encodeURIComponent(smiles)}`;
-            
-            // Copy to clipboard
-            await navigator.clipboard.writeText(viewerUrl);
-            new Notice("🔗 Web link copied! Paste anywhere to share.");
-            
-            // REMOVED window.open(viewerUrl, '_blank'); so it doesn't interrupt the user
-        });
-    });
 
     const s = plugin.settings;
     addCustomLink(s.contextUrl1Name, s.contextUrl1, "search");

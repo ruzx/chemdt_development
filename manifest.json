@@ -1,8 +1,8 @@
 {
   "id": "chemeditdev",
   "name": "chemeditdev",
-  "version": "1.4.8",
-  "minAppVersion": "1.4.0",
+  "version": "1.5.0",
+  "minAppVersion": "1.0.0",
   "description": "Draw, edit, and preview chemical structures and reactions (SMILES, MOL:.mol, Chemdraw:.cdxml) using Ketcher.",
   "author": "Ruzal Sitdikov",
   "isDesktopOnly": true

@@ -1,7 +1,5 @@
 // SharedEln.ts
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-floating-promises */
-
-import { App, Modal, Notice, requestUrl, MarkdownView, TFile, Menu, FuzzySuggestModal, parseYaml, stringifyYaml } from 'obsidian';
+import { App, Modal, Notice, requestUrl, MarkdownView, TFile, Menu, FuzzySuggestModal } from 'obsidian';
 import { takeStandardPhoto, saveMediaFile, TlcModal } from './SharedMedia';
 import { ChemDataEngine } from './ChemDataEngine';
 
@@ -11,57 +9,73 @@ import { ChemDataEngine } from './ChemDataEngine';
 export async function calculateMwOffline(smiles: string, plugin?: any): Promise<{ mw: number, formula: string }> {
     try {
         let cleanSmiles = smiles.split(' |')[0].trim();
+        
+        // 1. Strip stereobonds globally right away. 
+        // They do not affect MW/Formula, but they cause parsing bugs in OpenChemLib and PubChem APIs.
         const sForMw = cleanSmiles.replace(/[\/\\]/g, '');
 
         if (plugin) {
+            // 2. Wait for Ketcher engine to boot up (max 5 seconds)
             let bootWait = 0;
             while (!plugin.headlessKetcher && bootWait < 50) {
-                await new Promise(r => window.setTimeout(r, 100));
+                await new Promise(r => setTimeout(r, 100));
                 bootWait++;
             }
 
+            // 3. Primary Engine: Ketcher (Matches Ketcher UI exactly, highly accurate Indigo backend)
             if (plugin.headlessKetcher && typeof plugin.headlessKetcher.calculate === 'function') {
                 let timeout = 0;
+                // Wait for Ketcher to be free (it might be generating SVGs)
                 while (plugin.isProcessingHeadless && timeout < 100) { 
-                    await new Promise(r => window.setTimeout(r, 50));
+                    await new Promise(r => setTimeout(r, 50));
                     timeout++;
                 }
                 
                 if (!plugin.isProcessingHeadless) {
-                    plugin.isProcessingHeadless = true; 
+                    plugin.isProcessingHeadless = true; // Acquire Lock
                     try {
                         const calcTask = async () => {
+                            // Clear canvas first, set molecule, then wait a tick for Redux to sync state
                             await plugin.headlessKetcher.setMolecule("");
                             await plugin.headlessKetcher.setMolecule(sForMw);
-                            await new Promise(r => window.setTimeout(r, 50)); 
+                            await new Promise(r => setTimeout(r, 50)); 
                             return await plugin.headlessKetcher.calculate();
                         };
 
                         const ketcherProps = await Promise.race([
                             calcTask(),
-                            new Promise<any>((_, reject) => window.setTimeout(() => reject(new Error("Ketcher timeout")), 3000))
+                            new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Ketcher timeout")), 3000))
                         ]);
 
                         if (ketcherProps && ketcherProps['molecular-weight']) {
                             const mw = Number(ketcherProps['molecular-weight']);
                             const formula = ketcherProps['gross'] || "";
-                            if (!isNaN(mw) && mw > 0) return { mw, formula };
+                            
+                            // If it successfully calculated a mass > 0, return it
+                            if (!isNaN(mw) && mw > 0) {
+                                return { mw, formula };
+                            }
                         }
                     } catch(e) {
                         console.warn("ChemEdit: Headless MW calculation failed, falling back to OCL/Web.", e);
                     } finally {
-                        plugin.isProcessingHeadless = false; 
+                        plugin.isProcessingHeadless = false; // ALWAYS Release Lock
+                        // Trigger queue processing if SVGs piled up while we were calculating
                         if (plugin.headlessQueue && plugin.headlessQueue.length > 0) {
-                            window.setTimeout(() => plugin.processHeadlessQueue(), 10);
+                            setTimeout(() => plugin.processHeadlessQueue(), 10);
                         }
                     }
                 }
             }
         }
 
-        const props = ChemDataEngine.getPropertiesFromSmiles(sForMw);
-        if (props && props.mw > 0) return { mw: props.mw, formula: props.formula };
+        // 4. Offline Fallback: OpenChemLib
+        let props = ChemDataEngine.getPropertiesFromSmiles(sForMw);
+        if (props && props.mw > 0) {
+            return { mw: props.mw, formula: props.formula };
+        }
 
+        // 5. Web Fallback 1: NCI Cactus
         try {
             const mwRes = await requestUrl(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(sForMw)}/mw`);
             const formulaRes = await requestUrl(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(sForMw)}/formula`);
@@ -70,6 +84,7 @@ export async function calculateMwOffline(smiles: string, plugin?: any): Promise<
             }
         } catch (e) {}
 
+        // 6. Web Fallback 2: PubChem
         try {
             const res = await requestUrl(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(sForMw)}/property/MolecularWeight,MolecularFormula/JSON`);
             if (res.status === 200) {
@@ -80,11 +95,13 @@ export async function calculateMwOffline(smiles: string, plugin?: any): Promise<
 
     } catch(e) {}
     
+    // 7. Absolute text-based fallback
     return fallbackMW(smiles);
 }
 
-export function fallbackMW(smiles: string) {
+function fallbackMW(smiles: string) {
     let mw = 0;
+    // Explicitly grab standard elements including metals to prevent regex grouping errors
     const els = smiles.match(/(Cl|Br|Na|Mg|Ca|Fe|Pd|Si|Se|Te|Zn|Cu|Ni|Co|Mn|Cr|V|Ti|Sc|K|Li|B|C|N|O|F|P|S|I|c|n|o|p|s)/g);
     if (els) {
          const masses: Record<string, number> = {
@@ -97,12 +114,15 @@ export function fallbackMW(smiles: string) {
              if (masses[e]) mw += masses[e];
              else if (masses[e.toUpperCase()]) mw += masses[e.toUpperCase()];
          });
-         mw += els.length * 1.008; 
+         mw += els.length * 1.008; // Rough fallback estimate of 1H per heavy atom
          return { mw, formula: "Est." };
     }
     return { mw: 0, formula: "Unknown" };
 }
 
+// ------------------------------------------------------------------
+// COMPOUND LIBRARY SYSTEM
+// ------------------------------------------------------------------
 export const DEFAULT_LIBRARY = [
     { name: "DCM (Dichloromethane)", smiles: "ClCCl" },
     { name: "THF (Tetrahydrofuran)", smiles: "C1CCOC1" },
@@ -134,7 +154,7 @@ export async function getCompoundLibrary(plugin: any): Promise<{name: string, sm
             const lines = content.split('\n');
             for (const line of lines) {
                 if (line.trim().startsWith('|')) {
-                    const parts = line.split('|').map((p: string) => p.trim());
+                    const parts = line.split('|').map(p => p.trim());
                     if (parts.length >= 3 && parts[1] && parts[2] && !parts[1].includes('---') && parts[1].toLowerCase() !== 'name') {
                         results.push({name: parts[1], smiles: parts[2]});
                     }
@@ -188,26 +208,23 @@ export class AddToLibraryModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.createEl("h3", { text: "Add to Compound Library" });
-        
-        const p = contentEl.createEl("p", { text: `SMILES: ${this.smiles.substring(0, 50)}${this.smiles.length > 50 ? '...' : ''}` });
-        p.setCssStyles({ color: "var(--text-muted)", fontFamily: "monospace", fontSize: "11px", wordBreak: "break-all" });
-        
+        contentEl.createEl("p", { text: `SMILES: ${this.smiles.substring(0, 50)}${this.smiles.length > 50 ? '...' : ''}`, cls: "color-text-muted", attr: {style: "font-family: monospace; font-size: 11px; word-break: break-all;"} });
         const input = contentEl.createEl("input", { type: "text", placeholder: "Compound Name (e.g. THF)" });
-        input.setCssStyles({ width: "100%", marginBottom: "15px" });
+        input.style.width = "100%"; input.style.marginBottom = "15px";
         input.onchange = (e: any) => this.name = e.target.value;
-        
-        const btnRow = contentEl.createDiv();
-        btnRow.setCssStyles({ display: "flex", justifyContent: "flex-end", gap: "10px" });
+        const btnRow = contentEl.createDiv({ attr: {style: "display:flex; justify-content:flex-end; gap: 10px;"}});
         const cancelBtn = btnRow.createEl("button", { text: "Cancel" }); cancelBtn.onclick = () => this.close();
         const btn = btnRow.createEl("button", { text: "Add to Library", cls: "mod-cta" });
-        
         btn.onclick = () => { if (!this.name.trim()) { new Notice("Please enter a name."); return; } this.onSubmit(this.name.trim(), this.smiles); this.close(); };
         input.addEventListener("keypress", (e) => { if (e.key === "Enter") btn.click(); });
-        window.setTimeout(() => input.focus(), 50);
+        setTimeout(() => input.focus(), 50);
     }
     onClose() { this.contentEl.empty(); }
 }
 
+// ------------------------------------------------------------------
+// STOICHIOMETRY ENGINE
+// ------------------------------------------------------------------
 class ElnCalculator {
     static calculate(data: any) {
         if (!data.reactants) data.reactants = [];
@@ -225,7 +242,7 @@ class ElnCalculator {
             if (limitingR.mmol !== undefined && limitingR.mmol !== null && limitingR.mmol !== 0) {
                 refMmol = limitingR.mmol / eq;
             } else if (limitingR.mass !== undefined && limitingR.mass !== null && limitingR.mass !== 0 && limitingR.mw) {
-                const pureMass = limitingR.mass * ((limitingR.purity || 100) / 100);
+                let pureMass = limitingR.mass * ((limitingR.purity || 100) / 100);
                 refMmol = (pureMass / limitingR.mw) / eq;
             } else if (limitingR.volume !== undefined && limitingR.volume !== null && limitingR.volume !== 0 && limitingR.molarity) {
                 refMmol = (limitingR.volume * limitingR.molarity) / eq;
@@ -240,7 +257,7 @@ class ElnCalculator {
                 r.volume = r.mmol / r.molarity; 
                 if (r.mw && r.mass === undefined) r.mass = r.mmol * r.mw; 
             } else if (r.mw) {
-                const neededPureMass = r.mmol * r.mw;
+                let neededPureMass = r.mmol * r.mw;
                 r.mass = neededPureMass / ((r.purity || 100) / 100);
                 if (r.density && r.density > 0) r.volume = (r.mass / 1000) / r.density;
             }
@@ -268,6 +285,9 @@ class ElnCalculator {
     }
 }
 
+// ------------------------------------------------------------------
+// MAIN ELN RENDERER
+// ------------------------------------------------------------------
 export class SharedElnRenderer {
     plugin: any;
 
@@ -276,19 +296,18 @@ export class SharedElnRenderer {
     }
 
     async renderElnBlock(source: string, el: HTMLElement, ctx: any) {
-        const wrapper = el.createDiv();
-        wrapper.setCssStyles({ 
-            position: "relative", 
-            border: "1px solid var(--background-modifier-border)", 
-            padding: "45px 15px 15px 15px", 
-            borderRadius: "12px", 
-            backgroundColor: "var(--background-primary)", 
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)", 
-            fontFamily: "var(--font-interface)", 
-            width: "100%" 
-        });
+        const { parseYaml, stringifyYaml } = require('obsidian'); 
         
-        wrapper.createEl("h3", { cls: "color-text-muted", text: "⏳ Calculating..." }).setCssStyles({ textAlign: "center" });
+        const wrapper = el.createDiv();
+        wrapper.style.position = "relative"; 
+        wrapper.style.border = "1px solid var(--background-modifier-border)";
+        wrapper.style.padding = "45px 15px 15px 15px"; 
+        wrapper.style.borderRadius = "12px";
+        wrapper.style.backgroundColor = "var(--background-primary)";
+        wrapper.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.05)";
+        wrapper.style.fontFamily = "var(--font-interface)";
+        wrapper.style.width = "100%";
+        wrapper.innerHTML = `<h3 class="color-text-muted" style="text-align:center;">⏳ Calculating...</h3>`;
 
         try {
             const safeSource = source.replace(/smiles:\s*(.*)$/gm, (match, p1) => {
@@ -330,7 +349,7 @@ export class SharedElnRenderer {
             const expCode = data.code || (currentFile ? currentFile.basename : "EXP");
             const filePrefix = expCode ? `${expCode.replace(/[/\\?%*:|"<>]/g, '-')}_` : "";
 
-            wrapper.empty();
+            wrapper.innerHTML = '';
 
             // --- INLINE EDITING LISTENER (TEXT CELLS) ---
             wrapper.addEventListener('dblclick', (e) => {
@@ -347,18 +366,22 @@ export class SharedElnRenderer {
                     const inputType = target.getAttribute('data-input-type') || 'number';
                     if (!key) return;
 
-                    const originalChildren = Array.from(target.childNodes);
+                    const originalHTML = target.innerHTML;
                     const currentValText = target.getAttribute('data-raw-value') || '';
                     
-                    target.empty();
-                    target.setCssStyles({ padding: "4px" });
+                    target.innerHTML = '';
+                    target.style.padding = "4px"; 
                     
                     const input = document.createElement('input');
                     input.type = inputType === 'text' ? 'text' : 'number';
                     if (inputType === 'number') input.step = "any";
                     input.value = currentValText;
-                    
-                    input.setCssStyles({ width: "100%", boxSizing: "border-box", padding: "4px 6px", border: "1px solid var(--interactive-accent)", borderRadius: "4px", background: "var(--background-primary)" });
+                    input.style.width = "100%";
+                    input.style.boxSizing = "border-box";
+                    input.style.padding = "4px 6px";
+                    input.style.border = "1px solid var(--interactive-accent)";
+                    input.style.borderRadius = "4px";
+                    input.style.background = "var(--background-primary)";
                     
                     target.appendChild(input);
                     input.focus();
@@ -404,38 +427,37 @@ export class SharedElnRenderer {
                                 const newYaml = stringifyYaml(yamlObj);
                                 view.editor.replaceRange(newYaml, {line: info.lineStart + 1, ch: 0}, {line: info.lineEnd, ch: 0});
                                 
-                                window.setTimeout(() => {
+                                setTimeout(() => {
                                     view.editor.scrollTo(scrollInfo.left, scrollInfo.top);
                                     view.editor.setCursor(cursor);
                                 }, 15);
                                 
-                            } catch (err) { 
-                                target.empty(); originalChildren.forEach(c => target.appendChild(c)); target.setCssStyles({ padding: "10px" }); 
-                            }
-                        } else { 
-                            target.empty(); originalChildren.forEach(c => target.appendChild(c)); target.setCssStyles({ padding: "10px" }); 
-                        }
+                            } catch (err) { target.innerHTML = originalHTML; target.style.padding = "10px"; }
+                        } else { target.innerHTML = originalHTML; target.style.padding = "10px"; }
                     };
 
                     input.onblur = finishEdit;
                     input.onkeydown = (ev) => { 
                         if (ev.key === 'Enter') input.blur(); 
-                        else if (ev.key === 'Escape') { target.empty(); originalChildren.forEach(c => target.appendChild(c)); target.setCssStyles({ padding: "10px" }); }
+                        else if (ev.key === 'Escape') { target.innerHTML = originalHTML; target.style.padding = "10px"; }
                     };
                 }
             });
 
             // --- ACTION BAR ---
             const actionBar = wrapper.createDiv();
-            actionBar.setCssStyles({ position: "absolute", top: "8px", right: "10px", display: "flex", gap: "5px", zIndex: "10", flexWrap: "wrap", justifyContent: "flex-end" });
+            actionBar.style.position = "absolute"; actionBar.style.top = "8px"; actionBar.style.right = "10px";
+            actionBar.style.display = "flex"; actionBar.style.gap = "5px"; actionBar.style.zIndex = "10";
+            actionBar.style.flexWrap = "wrap"; actionBar.style.justifyContent = "flex-end";
 
             const createBtn = (text: string, title: string, onClick: (e?: MouseEvent) => void) => {
                 const btn = actionBar.createDiv();
-                btn.setText(text);
-                btn.title = title;
-                btn.setCssStyles({ cursor: "pointer", fontSize: "11px", padding: "4px 8px", backgroundColor: "var(--background-secondary)", border: "1px solid var(--background-modifier-border)", color: "var(--text-normal)", borderRadius: "4px" });
-                btn.onmouseover = () => btn.setCssStyles({ backgroundColor: "var(--background-modifier-hover)" });
-                btn.onmouseout = () => btn.setCssStyles({ backgroundColor: "var(--background-secondary)" });
+                btn.innerHTML = text; btn.title = title; btn.style.cursor = "pointer";
+                btn.style.fontSize = "11px"; btn.style.padding = "4px 8px";
+                btn.style.backgroundColor = "var(--background-secondary)"; btn.style.border = "1px solid var(--background-modifier-border)";
+                btn.style.color = "var(--text-normal)"; btn.style.borderRadius = "4px";
+                btn.onmouseover = () => btn.style.backgroundColor = "var(--background-modifier-hover)";
+                btn.onmouseout = () => btn.style.backgroundColor = "var(--background-secondary)";
                 btn.onclick = onClick; return btn;
             };
 
@@ -470,6 +492,7 @@ export class SharedElnRenderer {
                 let info = ctx.getSectionInfo(el);
                 if (!info && el.parentElement) info = ctx.getSectionInfo(el.parentElement);
                 if (!info) return;
+                const { parseYaml, stringifyYaml } = require('obsidian');
                 const blockText = view.editor.getRange({line: info.lineStart + 1, ch: 0}, {line: info.lineEnd, ch: 0});
                 try {
                     const yamlObj = parseYaml(blockText);
@@ -479,6 +502,7 @@ export class SharedElnRenderer {
                 } catch (err) {}
             };
 
+            // Status Menu Button
             createBtn("⚙️ Status", "Change Experiment Status", (e?: MouseEvent) => {
                 if (!e) return;
                 const menu = new Menu();
@@ -529,37 +553,6 @@ export class SharedElnRenderer {
                     appendSmart(md, "Analytical Data"); new Notice(`Added ${filename}`);
                 }).open();
             });
-			
-            createBtn("🌐 Share", "Create Web Link for Collaborators", () => {
-                try {
-                    const exportData = { reactants: [] as any[], products: [] as any[] };
-                    const mapCompound = (c: any) => ({
-                        id: Math.random().toString(36).substring(2, 9),
-                        smiles: c.smiles || "",
-                        name: c.name || "Compound",
-                        mw: c.mw || 0,
-                        eq: c.eq || null,
-                        mmol: c.mmol || null,
-                        mass: c.mass || null,
-                        mass_isolated: c.mass_isolated || null,
-                        yield: c.yield || null,
-                        theory_mmol: c.theory_mmol || null
-                    });
-
-                    if (data.reactants) exportData.reactants = data.reactants.map(mapCompound);
-                    if (data.products) exportData.products = data.products.map(mapCompound);
-
-                    const jsonStr = JSON.stringify(exportData);
-                    const binString = Array.from(new TextEncoder().encode(jsonStr), (byte) => String.fromCharCode(byte)).join("");
-                    const b64 = btoa(binString);
-                    const viewerUrl = `https://ruzx.github.io/elnviewer.html#eln=${b64}`;
-
-                    navigator.clipboard.writeText(viewerUrl);
-                    new Notice("🔗 Web link copied to clipboard!");
-                } catch (e) {
-                    new Notice("Failed to generate share link.");
-                }
-            });
 
             createBtn("📋 Copy", "Copy Stoichiometry Table to Clipboard", () => {
                 let tsv = "Type\tName\tSMILES\tEq\tMW\tm [mg]\tn [mmol]\tV [mL]\tYield [%]\n";
@@ -594,15 +587,10 @@ export class SharedElnRenderer {
                 }
             });
 
-            const contentDiv = wrapper.createDiv();
+            // --- HTML RENDERING ---
+            const thColor = "var(--background-secondary-alt)"; 
+            const bdColor = "var(--background-modifier-border-hover)";
             const textColor = "var(--text-normal)";
-            contentDiv.setCssStyles({ fontSize: "14px", color: textColor, marginTop: "5px" });
-
-            const headerDiv = contentDiv.createDiv();
-            headerDiv.setCssStyles({ borderBottom: "2px solid var(--background-modifier-border)", paddingBottom: "10px", marginBottom: "20px", display: "flex", alignItems: "center" });
-            const h2 = headerDiv.createEl("h2");
-            h2.setCssStyles({ margin: "0", fontSize: "20px", fontWeight: "700", display: "flex", alignItems: "center" });
-            h2.setText(expCode + " ");
 
             let statusColor = "var(--text-muted)";
             if (data.status === "Completed") statusColor = "var(--text-success)";
@@ -610,182 +598,113 @@ export class SharedElnRenderer {
             else if (data.status === "Failed") statusColor = "var(--text-error)";
             else if (data.status === "Planned") statusColor = "var(--text-accent)";
             
-            if (data.status && data.status !== "None") {
-                const badge = h2.createSpan({ text: data.status });
-                badge.setCssStyles({ fontSize: "11px", padding: "2px 8px", borderRadius: "12px", background: "var(--background-primary)", border: `1px solid ${statusColor}`, color: statusColor, verticalAlign: "middle", marginLeft: "10px", fontWeight: "500" });
-            }
+            const statusBadge = data.status && data.status !== "None" 
+                ? `<span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: var(--background-primary); border: 1px solid ${statusColor}; color: ${statusColor}; vertical-align: middle; margin-left: 10px; font-weight: 500;">${data.status}</span>` 
+                : '';
 
-            if (data.project) {
-                const projBadge = h2.createSpan({ text: `📁 ${data.project}` });
-                projBadge.setCssStyles({ fontSize: "10px", padding: "2px 6px", borderRadius: "4px", background: "var(--background-secondary-alt)", color: "var(--text-muted)", border: "1px solid var(--background-modifier-border)", verticalAlign: "middle", marginLeft: "10px", textTransform: "uppercase" });
-            }
+            const projectBadge = data.project 
+                ? `<span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--background-secondary-alt); color: var(--text-muted); border: 1px solid var(--background-modifier-border); vertical-align: middle; margin-left: 10px; text-transform: uppercase;">📁 ${data.project}</span>`
+                : '';
 
-            const uniqueId = Math.random().toString(36).substring(2, 9); 
+            let html = `<div style="font-size: 14px; color: ${textColor}; margin-top:5px;">`;
+            html += `<div style="border-bottom: 2px solid var(--background-modifier-border); padding-bottom: 10px; margin-bottom: 20px;">
+                        <h2 style="margin: 0; font-size: 20px; font-weight: 700; display: flex; align-items: center;">${expCode} ${statusBadge} ${projectBadge}</h2>
+                     </div>`;
 
-            const rxnContainer = contentDiv.createDiv();
-            rxnContainer.setCssStyles({ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: "10px", padding: "15px", marginBottom: "20px", background: "var(--background-secondary)", borderRadius: "8px", border: "1px solid var(--background-modifier-border)" });
-            
+            const uniqueId = Math.random().toString(36).substring(2, 9); // Prevent DOM collisions
+
+            html += `<div style="display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; padding: 15px; margin-bottom: 20px; background: var(--background-secondary); border-radius: 8px; border: 1px solid var(--background-modifier-border);">`;
             data.reactants.forEach((r: any, i: number) => {
-                if(i > 0) rxnContainer.createDiv({ text: "+" }).setCssStyles({ fontSize: "20px", fontWeight: "bold", color: "var(--text-muted)" });
-                const col = rxnContainer.createDiv();
-                col.setCssStyles({ display: "flex", flexDirection: "column", alignItems: "center" });
-                const sDiv = col.createDiv(); sDiv.id = `eln_${uniqueId}_r_scheme_${i}`;
-                col.createDiv({ text: `${r.eq || 1} eq` }).setCssStyles({ color: "var(--text-muted)", fontSize: "11px", marginTop: "4px" });
+                if(i > 0) html += `<div style="font-size: 20px; font-weight: bold; color: var(--text-muted);">+</div>`;
+                html += `<div style="display: flex; flex-direction: column; align-items: center;">
+                    <div id="eln_${uniqueId}_r_scheme_${i}"></div>
+                    <div style="color: var(--text-muted); font-size: 11px; margin-top: 4px;">${r.eq || 1} eq</div>
+                </div>`;
             });
-            
-            const arrDiv = rxnContainer.createDiv();
-            arrDiv.setCssStyles({ display: "flex", flexDirection: "column", alignItems: "center", margin: "10px" });
-            arrDiv.createDiv({ text: data.temperature || '' }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", textAlign: "center", fontWeight: "500" });
-            arrDiv.createDiv({ text: data.duration || '' }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", textAlign: "center", fontWeight: "500" });
-            arrDiv.createDiv({ text: "⟶" }).setCssStyles({ fontSize: "28px", fontWeight: "bold", lineHeight: "0.8", margin: "4px 0" });
-            arrDiv.createDiv({ text: data.solvent || '' }).setCssStyles({ fontSize: "11px", color: "var(--text-muted)", textAlign: "center", fontWeight: "500" });
-
+            html += `<div style="display: flex; flex-direction: column; align-items: center; margin: 10px;">
+                <div style="font-size: 11px; color: var(--text-muted); text-align: center; font-weight: 500;">${data.temperature || ''}</div>
+                <div style="font-size: 11px; color: var(--text-muted); text-align: center; font-weight: 500;">${data.duration || ''}</div>
+                <div style="font-size: 28px; font-weight: bold; line-height: 0.8; margin: 4px 0;">⟶</div>
+                <div style="font-size: 11px; color: var(--text-muted); text-align: center; font-weight: 500;">${data.solvent || ''}</div>
+            </div>`;
             data.products.forEach((p: any, i: number) => {
-                if(i > 0) rxnContainer.createDiv({ text: "+" }).setCssStyles({ fontSize: "20px", fontWeight: "bold", color: "var(--text-muted)" });
-                const col = rxnContainer.createDiv();
-                col.setCssStyles({ display: "flex", flexDirection: "column", alignItems: "center" });
-                const sDiv = col.createDiv(); sDiv.id = `eln_${uniqueId}_p_scheme_${i}`;
-                col.createDiv({ text: `${p.eq || 1} eq` }).setCssStyles({ color: "var(--text-muted)", fontSize: "11px", marginTop: "4px" });
+                if(i > 0) html += `<div style="font-size: 20px; font-weight: bold; color: var(--text-muted);">+</div>`;
+                html += `<div style="display: flex; flex-direction: column; align-items: center;">
+                    <div id="eln_${uniqueId}_p_scheme_${i}"></div>
+                    <div style="color: var(--text-muted); font-size: 11px; margin-top: 4px;">${p.eq || 1} eq</div>
+                </div>`;
             });
+            html += `</div>`;
 
             // INLINE EDITABLE ROOT PROPERTIES
-            const makeEditableRoot = (parent: HTMLElement, key: string, val: any) => {
+            const makeEditableRoot = (key: string, val: any) => {
                 const displayVal = val || '-';
-                const rawVal = val !== undefined && val !== null ? String(val) : "";
-                const span = parent.createSpan({ text: displayVal });
-                span.addClass("eln-editable");
-                span.setAttribute("data-type", "root");
-                span.setAttribute("data-key", key);
-                span.setAttribute("data-input-type", "text");
-                span.setAttribute("data-raw-value", rawVal);
-                span.title = "Double-click to edit";
-                span.setCssStyles({ cursor: "text", borderBottom: "1px dashed transparent", display: "inline-block" });
-                span.onmouseover = () => span.setCssStyles({ backgroundColor: "var(--background-modifier-hover)" });
-                span.onmouseout = () => span.setCssStyles({ backgroundColor: "transparent" });
-                return span;
+                const rawVal = val !== undefined && val !== null ? String(val).replace(/"/g, '&quot;') : "";
+                return `<span class="eln-editable" data-type="root" data-key="${key}" data-input-type="text" data-raw-value="${rawVal}" title="Double-click to edit" style="cursor: text; border-bottom: 1px dashed transparent; display: inline-block;">${displayVal}</span>`;
             };
 
-            const conditionsDiv = contentDiv.createDiv();
-            conditionsDiv.setCssStyles({ display: "flex", flexWrap: "wrap", justifyContent: "flex-start", gap: "15px", background: "var(--background-secondary-alt)", padding: "10px 15px", borderRadius: "6px", marginBottom: "25px", fontSize: "13px" });
-            
-            const c1 = conditionsDiv.createDiv(); c1.setCssStyles({ flex: "1 1 100px", display: "flex", alignItems: "center", gap: "5px" }); c1.createEl("b", { text: "Duration: " }).setCssStyles({ color: "var(--text-muted)" }); makeEditableRoot(c1, 'duration', data.duration);
-            const c2 = conditionsDiv.createDiv(); c2.setCssStyles({ flex: "1 1 100px", display: "flex", alignItems: "center", gap: "5px" }); c2.createEl("b", { text: "Solvent: " }).setCssStyles({ color: "var(--text-muted)" }); makeEditableRoot(c2, 'solvent', data.solvent);
-            const c3 = conditionsDiv.createDiv(); c3.setCssStyles({ flex: "1 1 100px", display: "flex", alignItems: "center", gap: "5px" }); c3.createEl("b", { text: "Temp: " }).setCssStyles({ color: "var(--text-muted)" }); makeEditableRoot(c3, 'temperature', data.temperature);
+            html += `<div style="display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 15px; background: var(--background-secondary-alt); padding: 10px 15px; border-radius: 6px; margin-bottom: 25px; font-size: 13px;">
+                <div style="flex: 1 1 100px; display: flex; align-items:center; gap: 5px;"><b style="color:var(--text-muted);">Duration:</b> ${makeEditableRoot('duration', data.duration)}</div>
+                <div style="flex: 1 1 100px; display: flex; align-items:center; gap: 5px;"><b style="color:var(--text-muted);">Solvent:</b> ${makeEditableRoot('solvent', data.solvent)}</div>
+                <div style="flex: 1 1 100px; display: flex; align-items:center; gap: 5px;"><b style="color:var(--text-muted);">Temp:</b> ${makeEditableRoot('temperature', data.temperature)}</div>
+            </div>`;
             
             // CLEAN INLINE EDITABLE TABLE CELLS
-            const makeEditableTd = (tr: HTMLElement, type: string, i: number, key: string, val: any, inputType: 'number' | 'text' = 'number', customHtmlContainer?: HTMLElement, extraStyles?: any) => {
-                const td = tr.createEl("td");
-                td.addClass("eln-editable");
-                td.setAttribute("data-type", type);
-                td.setAttribute("data-idx", i.toString());
-                td.setAttribute("data-key", key);
-                td.setAttribute("data-input-type", inputType);
-                
-                let rawValAttr = val !== undefined && val !== null ? String(val) : "";
-                td.setAttribute("data-raw-value", rawValAttr);
-                td.title = "Double-click to edit text";
-                
-                let defaultStyles: any = { padding: "10px", cursor: "text", transition: "background 0.2s" };
-                
-                if (customHtmlContainer !== undefined) {
-                    td.appendChild(customHtmlContainer);
-                } else {
+            const makeEditableTd = (type: string, i: number, key: string, val: any, inputType: 'number' | 'text' = 'number', customHtml?: string, extraStyles: string = "") => {
+                let innerHTML = customHtml !== undefined ? customHtml : '-';
+                let colorStyle = ""; 
+                let rawValAttr = val !== undefined && val !== null ? String(val).replace(/"/g, '&quot;') : "";
+
+                if (customHtml === undefined) {
                     if (inputType === 'text') {
-                        td.setText(val ? String(val) : '-');
+                        innerHTML = val ? val : '-';
                     } else {
                         const numVal = Number(val);
-                        if (!isNaN(numVal) && numVal > 0) { 
-                            td.setText(numVal.toFixed(2)); 
-                        } else { 
-                            td.setText('-'); 
-                            if (key === 'mw') {
-                                defaultStyles.color = "var(--text-error)";
-                                defaultStyles.fontWeight = "bold";
-                            }
-                        }
+                        if (!isNaN(numVal) && numVal > 0) { innerHTML = numVal.toFixed(2); } 
+                        else { innerHTML = '-'; if (key === 'mw') colorStyle = "color: var(--text-error); font-weight: bold;"; }
                     }
                 }
-                
-                if (extraStyles) Object.assign(defaultStyles, extraStyles);
-                td.setCssStyles(defaultStyles);
-                td.onmouseover = () => td.setCssStyles({ backgroundColor: "var(--background-modifier-hover)" });
-                td.onmouseout = () => td.setCssStyles({ backgroundColor: "transparent" });
-                return td;
+                return `<td class="eln-editable" data-type="${type}" data-idx="${i}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawValAttr}" title="Double-click to edit text" style="padding: 10px; cursor: text; transition: background 0.2s; ${colorStyle} ${extraStyles}">${innerHTML}</td>`;
             };
 
-            contentDiv.createEl("h4", { text: "Reactants" }).setCssStyles({ marginBottom: "10px", marginTop: "0" });
-            const rTableWrap = contentDiv.createDiv(); rTableWrap.setCssStyles({ width: "100%", overflowX: "auto", marginBottom: "30px" });
-            const rTable = rTableWrap.createEl("table"); rTable.setCssStyles({ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px", minWidth: "650px" });
-            
-            const thColor = "var(--background-secondary-alt)"; 
-            const bdColor = "var(--background-modifier-border-hover)";
-            const rThead = rTable.createEl("tr"); rThead.setCssStyles({ backgroundColor: thColor, borderBottom: "2px solid var(--background-modifier-border)" });
-            ["Type", "Eq", "Structure", "Name", "MW", "n [mmol]", "Purity/Conc.", "m [mg]", "V [ml]"].forEach(t => rThead.createEl("th", { text: t }).setCssStyles({ padding: "10px" }));
-
+            html += `<h4 style="margin-bottom: 10px; margin-top: 0;">Reactants</h4>
+                <div style="width: 100%; overflow-x: auto; margin-bottom: 30px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; min-width: 650px;">
+                    <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
+                        <th style="padding: 10px;">Type</th><th style="padding: 10px;">Eq</th><th style="padding: 10px;">Structure</th><th style="padding: 10px;">Name</th><th style="padding: 10px;">MW</th><th style="padding: 10px;">n [mmol]</th><th style="padding: 10px;">Purity/Conc.</th><th style="padding: 10px;">m [mg]</th><th style="padding: 10px;">V [ml]</th>
+                    </tr>`;
             data.reactants.forEach((r: any, i: number) => {
-                const tr = rTable.createEl("tr"); tr.setCssStyles({ borderBottom: `1px solid ${bdColor}` });
-                
-                const tdType = tr.createEl("td"); tdType.setCssStyles({ padding: "10px" });
-                if (r.is_limiting) tdType.createSpan({ text: "LIMITING" }).setCssStyles({ background: "var(--interactive-accent)", color: "var(--text-on-accent)", padding: "2px 6px", borderRadius: "4px", fontSize: "10px", fontWeight: "bold" });
-                
-                makeEditableTd(tr, 'reactants', i, 'eq', r.eq, 'number', undefined, { fontWeight: "500" });
-                const cTd = tr.createEl("td"); cTd.setCssStyles({ padding: "10px" }); cTd.createDiv({ attr: { id: `eln_${uniqueId}_r_table_${i}` } });
-                
-                const nameContainer = document.createElement("div");
-                if (r.name) {
-                    const b = document.createElement("b"); b.textContent = r.name; nameContainer.appendChild(b);
-                } else nameContainer.appendChild(document.createTextNode("-"));
-                if (r.ghs && r.ghs.length > 0) {
-                    const sp = document.createElement("span"); sp.textContent = " " + r.ghs.join(' '); sp.title = "GHS Hazards"; nameContainer.appendChild(sp);
-                }
-                makeEditableTd(tr, 'reactants', i, 'name', r.name, 'text', nameContainer);
-                
-                makeEditableTd(tr, 'reactants', i, 'mw', r.mw, 'number', undefined, { color: "var(--text-muted)" });
-                makeEditableTd(tr, 'reactants', i, 'mmol', r.mmol, 'number');
-                
-                let concStr = "-"; let concKey = "purity"; let concVal = r.purity || 100;
+                let concStr = "-";
+                let concKey = "purity";
+                let concVal = r.purity || 100;
                 if (r.molarity) { concStr = `${r.molarity} M`; concKey = "molarity"; concVal = r.molarity; }
                 else if (r.purity && r.purity !== 100) { concStr = `${r.purity}%`; }
                 else if (r.purity === 100) { concStr = `Pure`; }
-                const concDiv = document.createElement("div"); concDiv.textContent = concStr;
-                makeEditableTd(tr, 'reactants', i, concKey, concVal, 'number', concDiv, { color: "var(--text-muted)" });
-                
-                makeEditableTd(tr, 'reactants', i, 'mass', r.mass, 'number');
-                makeEditableTd(tr, 'reactants', i, 'volume', r.volume, 'number');
+
+                const ghsStr = r.ghs && r.ghs.length > 0 ? `<span title="GHS Hazards">${r.ghs.join(' ')}</span>` : '';
+                const lrIcon = r.is_limiting ? `<span style="background: var(--interactive-accent); color: var(--text-on-accent); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;">LIMITING</span>` : "";
+
+                html += `<tr style="border-bottom: 1px solid ${bdColor};">
+                    <td style="padding: 10px;">${lrIcon}</td>
+                    ${makeEditableTd('reactants', i, 'eq', r.eq, 'number', undefined, "font-weight:500;")}
+                    <td style="padding: 10px;"><div id="eln_${uniqueId}_r_table_${i}"></div></td>
+                    ${makeEditableTd('reactants', i, 'name', r.name, 'text', r.name ? `<b>${r.name}</b> ${ghsStr}` : `- ${ghsStr}`)}
+                    ${makeEditableTd('reactants', i, 'mw', r.mw, 'number', undefined, "color:var(--text-muted);")}
+                    ${makeEditableTd('reactants', i, 'mmol', r.mmol, 'number')}
+                    ${makeEditableTd('reactants', i, concKey, concVal, 'number', concStr, "color:var(--text-muted);")}
+                    ${makeEditableTd('reactants', i, 'mass', r.mass, 'number')}
+                    ${makeEditableTd('reactants', i, 'volume', r.volume, 'number')}
+                </tr>`;
             });
             
-            contentDiv.createEl("h4", { text: "Products" }).setCssStyles({ marginBottom: "10px" });
-            const pTableWrap = contentDiv.createDiv(); pTableWrap.setCssStyles({ width: "100%", overflowX: "auto", marginBottom: "20px" });
-            const pTable = pTableWrap.createEl("table"); pTable.setCssStyles({ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px", minWidth: "600px" });
-            
-            const pThead = pTable.createEl("tr"); pThead.setCssStyles({ backgroundColor: thColor, borderBottom: "2px solid var(--background-modifier-border)" });
-            ["Eq", "Structure", "Name", "MW", "n [mmol]", "Isol. [mg]", "Yield [%]"].forEach(t => pThead.createEl("th", { text: t }).setCssStyles({ padding: "10px" }));
-
+            html += `</table></div><h4 style="margin-bottom: 10px;">Products</h4>
+                <div style="width: 100%; overflow-x: auto; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; min-width: 600px;">
+                    <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
+                        <th style="padding: 10px;">Eq</th><th style="padding: 10px;">Structure</th><th style="padding: 10px;">Name</th><th style="padding: 10px;">MW</th><th style="padding: 10px;">n [mmol]</th><th style="padding: 10px;">Isol. [mg]</th><th style="padding: 10px;">Yield [%]</th>
+                    </tr>`;
             data.products.forEach((p: any, i: number) => {
-                const tr = pTable.createEl("tr"); tr.setCssStyles({ borderBottom: `1px solid ${bdColor}` });
-                makeEditableTd(tr, 'products', i, 'eq', p.eq, 'number', undefined, { fontWeight: "500" });
-                const cTd = tr.createEl("td"); cTd.setCssStyles({ padding: "10px" }); cTd.createDiv({ attr: { id: `eln_${uniqueId}_p_table_${i}` } });
-                
-                const nameContainer = document.createElement("div");
-                if (p.name) {
-                    const b = document.createElement("b"); b.textContent = p.name; nameContainer.appendChild(b);
-                } else nameContainer.appendChild(document.createTextNode("-"));
-                if (p.ghs && p.ghs.length > 0) {
-                    const sp = document.createElement("span"); sp.textContent = " " + p.ghs.join(' '); sp.title = "GHS Hazards"; nameContainer.appendChild(sp);
-                }
-                makeEditableTd(tr, 'products', i, 'name', p.name, 'text', nameContainer);
-                
-                makeEditableTd(tr, 'products', i, 'mw', p.mw, 'number', undefined, { color: "var(--text-muted)" });
-                
-                const prodMmolDisplay = document.createElement("div");
-                if (p.mmol_isolated !== undefined) { prodMmolDisplay.textContent = p.mmol_isolated.toFixed(2); } 
-                else if (p.theory_mmol) { 
-                    const sp = document.createElement("span"); sp.textContent = `(${p.theory_mmol.toFixed(2)})`; sp.style.opacity = "0.6"; prodMmolDisplay.appendChild(sp);
-                } 
-                else { prodMmolDisplay.textContent = "-"; }
-                makeEditableTd(tr, 'products', i, 'mmol_isolated', p.mmol_isolated, 'number', prodMmolDisplay);
-                
-                makeEditableTd(tr, 'products', i, 'mass_isolated', p.mass_isolated, 'number');
+                const ghsStr = p.ghs && p.ghs.length > 0 ? `<span title="GHS Hazards">${p.ghs.join(' ')}</span>` : '';
                 
                 let yieldColor = "var(--text-normal)";
                 if (p.yield) {
@@ -794,18 +713,39 @@ export class SharedElnRenderer {
                     else if (yVal <= 30) yieldColor = "var(--text-error)";
                     else yieldColor = "var(--text-warning)";
                 }
-                const yieldTd = tr.createEl("td"); yieldTd.setCssStyles({ padding: "10px", fontSize: "14px", fontWeight: "bold", color: yieldColor });
-                yieldTd.setText(p.yield ? p.yield + '%' : '-');
-            });
 
+                const prodMmolDisplay = p.mmol_isolated !== undefined ? p.mmol_isolated.toFixed(2) : (p.theory_mmol ? `<span style="opacity:0.6">(${p.theory_mmol.toFixed(2)})</span>` : '-');
+
+                html += `<tr style="border-bottom: 1px solid ${bdColor};">
+                    ${makeEditableTd('products', i, 'eq', p.eq, 'number', undefined, "font-weight:500;")}
+                    <td style="padding: 10px;"><div id="eln_${uniqueId}_p_table_${i}"></div></td>
+                    ${makeEditableTd('products', i, 'name', p.name, 'text', p.name ? `<b>${p.name}</b> ${ghsStr}` : `- ${ghsStr}`)}
+                    ${makeEditableTd('products', i, 'mw', p.mw, 'number', undefined, "color:var(--text-muted);")}
+                    ${makeEditableTd('products', i, 'mmol_isolated', p.mmol_isolated, 'number', prodMmolDisplay)}
+                    ${makeEditableTd('products', i, 'mass_isolated', p.mass_isolated, 'number')}
+                    <td style="padding: 10px; font-size: 14px; font-weight:bold; color: ${yieldColor};">${p.yield ? p.yield + '%' : '-'}</td>
+                </tr>`;
+            });
+            html += `</table></div>`;
+            
+            // Inject styling for editable cells hover effect
+            const styleBlock = document.createElement("style");
+            styleBlock.innerHTML = `.eln-editable:hover { background-color: var(--background-modifier-hover); }`;
+            wrapper.appendChild(styleBlock);
+
+            const contentDiv = document.createElement("div");
+            contentDiv.innerHTML = html;
+            wrapper.appendChild(contentDiv);
+
+            // --- ATTACH KETCHER/API STRUCTURES ---
             const attachStructure = (parent: HTMLElement, smiles: string, type: 'reactants'|'products', index: number, w: number, h: number) => {
-                parent.setCssStyles({ width: `${w}px`, height: `${h}px`, cursor: "pointer" }); parent.title = "Double-click to edit structure"; parent.setText("⏳");
+                parent.style.width = `${w}px`; parent.style.height = `${h}px`; parent.style.cursor = "pointer"; parent.title = "Double-click to edit structure"; parent.innerHTML = "⏳";
                 
-                window.requestAnimationFrame(async () => {
+                requestAnimationFrame(async () => {
                     const renderEl = await this.plugin.api.renderStructure(smiles, w, h);
                     parent.empty();
-                    if (renderEl) { renderEl.setCssStyles({ maxWidth: '100%', maxHeight: '100%' }); parent.appendChild(renderEl); } 
-                    else { parent.setText("❌"); }
+                    if (renderEl) { renderEl.style.maxWidth = '100%'; renderEl.style.maxHeight = '100%'; parent.appendChild(renderEl); } 
+                    else { parent.innerHTML = "❌"; }
                 });
 
                 parent.addEventListener("contextmenu", (e) => {
@@ -824,8 +764,10 @@ export class SharedElnRenderer {
                     if (!info && el.parentElement) info = ctx.getSectionInfo(el.parentElement);
                     if (!view || !info) return;
 
+                    // FINALLY, CALL THE NEW SAFE API TO FIX THE CRASH!
                     this.plugin.api.ketcher.openEditor(smiles || "", "smiles", (newData: string, isFile: boolean, newFormat: string) => {
                         if (newFormat === "ket") { new Notice("ELN tables only support SMILES."); return; }
+                        const { parseYaml, stringifyYaml } = require('obsidian');
                         const blockText = view.editor.getRange({line: info.lineStart + 1, ch: 0}, {line: info.lineEnd, ch: 0});
                         try {
                             const yamlObj = parseYaml(blockText);
@@ -852,6 +794,7 @@ export class SharedElnRenderer {
                 if (tableEl) attachStructure(tableEl as HTMLElement, p.smiles, 'products', i, 90, 90);
             });
 			
+			// --- OPTIMIZATION MATRIX ---
             if (currentFile && currentFile.parent && data.reactants.length > 0 && data.products.length > 0) {
                 const folderFiles = currentFile.parent.children.filter((f: any) => f instanceof TFile && f.extension.toLowerCase() === 'md' && f.path !== currentFile.path);
                 const matchRows: any[] = [];
@@ -868,6 +811,7 @@ export class SharedElnRenderer {
                             const otherRSmi = otherData.reactants?.[0]?.smiles?.trim();
                             const otherPSmi = otherData.products?.[0]?.smiles?.trim();
                             
+                            // Check if the chemistry matches
                             if (otherRSmi === currReactantSmi && otherPSmi === currProductSmi) {
                                 matchRows.push({
                                     file: f,
@@ -884,50 +828,37 @@ export class SharedElnRenderer {
                 }
 
                 if (matchRows.length > 0) {
+                    // Sort by highest yield
                     matchRows.sort((a, b) => b.yield - a.yield);
                     
-                    const optDiv = wrapper.createDiv();
-                    optDiv.setCssStyles({ marginTop: "30px", borderTop: "2px dashed var(--background-modifier-border)", paddingTop: "15px" });
-
-                    const optH4 = optDiv.createEl("h4");
-                    optH4.setCssStyles({ margin: "0 0 10px 0", display: "flex", alignItems: "center", gap: "5px" });
-                    optH4.createSpan({ text: "🔄" }).setCssStyles({ color: "var(--text-accent)" });
-                    optH4.appendText(" Optimization History (Same Step)");
-
-                    const optTable = optDiv.createEl("table");
-                    optTable.setCssStyles({ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "12px", background: "var(--background-secondary)", borderRadius: "6px", overflow: "hidden" });
-
-                    const optTr = optTable.createEl("tr");
-                    optTr.setCssStyles({ background: "var(--background-secondary-alt)", borderBottom: "1px solid var(--background-modifier-border)" });
-                    ["Experiment", "Yield", "Scale", "Solvent", "Temp"].forEach(t => {
-                        optTr.createEl("th", { text: t }).setCssStyles({ padding: "6px 10px" });
-                    });
-
+                    let optHtml = `<div style="margin-top: 30px; border-top: 2px dashed var(--background-modifier-border); padding-top: 15px;">
+                        <h4 style="margin: 0 0 10px 0; display:flex; align-items:center; gap:5px;"><span style="color:var(--text-accent);">🔄</span> Optimization History (Same Step)</h4>
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; background: var(--background-secondary); border-radius: 6px; overflow: hidden;">
+                            <tr style="background: var(--background-secondary-alt); border-bottom: 1px solid var(--background-modifier-border);">
+                                <th style="padding: 6px 10px;">Experiment</th><th style="padding: 6px 10px;">Yield</th><th style="padding: 6px 10px;">Scale</th><th style="padding: 6px 10px;">Solvent</th><th style="padding: 6px 10px;">Temp</th>
+                            </tr>`;
+                            
                     matchRows.forEach(row => {
-                        const tr = optTable.createEl("tr");
-                        tr.setCssStyles({ borderBottom: "1px solid var(--background-modifier-border-hover)" });
-                        
-                        const tdLink = tr.createEl("td");
-                        tdLink.setCssStyles({ padding: "6px 10px" });
-                        tdLink.createEl("a", { text: row.code, cls: "internal-link", href: row.file.path });
-                        
-                        tr.createEl("td", { text: row.yieldStr }).setCssStyles({ padding: "6px 10px", fontWeight: "bold", color: row.yield >= 80 ? "var(--text-success)" : "var(--text-muted)" });
-                        tr.createEl("td", { text: row.scale }).setCssStyles({ padding: "6px 10px" });
-                        tr.createEl("td", { text: row.solvent }).setCssStyles({ padding: "6px 10px" });
-                        tr.createEl("td", { text: row.temp }).setCssStyles({ padding: "6px 10px" });
+                        optHtml += `<tr style="border-bottom: 1px solid var(--background-modifier-border-hover);">
+                            <td style="padding: 6px 10px;"><a class="internal-link" href="${row.file.path}">${row.code}</a></td>
+                            <td style="padding: 6px 10px; font-weight:bold; color: ${row.yield >= 80 ? 'var(--text-success)' : 'var(--text-muted)'};">${row.yieldStr}</td>
+                            <td style="padding: 6px 10px;">${row.scale}</td>
+                            <td style="padding: 6px 10px;">${row.solvent}</td>
+                            <td style="padding: 6px 10px;">${row.temp}</td>
+                        </tr>`;
                     });
+                    optHtml += `</table></div>`;
+                    
+                    const optDiv = document.createElement("div");
+                    optDiv.innerHTML = optHtml;
+                    wrapper.appendChild(optDiv);
                 }
             }
 
             return wrapper;
 
         } catch (err: any) {
-            wrapper.empty();
-            const errDiv = wrapper.createDiv();
-            errDiv.setCssStyles({ padding: "20px", color: "var(--text-error)", background: "var(--background-secondary)", borderRadius: "8px" });
-            errDiv.createEl("b", { text: "ELN Formatting Error:" });
-            errDiv.createEl("br");
-            errDiv.appendText(err.message);
+            wrapper.innerHTML = `<div style="padding: 20px; color: var(--text-error); background: var(--background-secondary); border-radius: 8px;"><b>ELN Formatting Error:</b><br>${err.message}</div>`;
             return wrapper;
         }
     }
@@ -941,6 +872,7 @@ export class ElnGalleryRenderer {
     constructor(plugin: any) { this.plugin = plugin; }
     
     async renderGalleryBlock(source: string, el: HTMLElement, ctx: any) {
+        const { parseYaml } = require('obsidian');
         const match = source.match(/path:\s*['"]?(.*?)['"]?(?:\n|$)/);
         const folderPath = match ? match[1].trim() : "";
         
@@ -950,15 +882,12 @@ export class ElnGalleryRenderer {
 
         const files = folder.children.filter((f: any) => f instanceof TFile && f.extension.toLowerCase() === 'md');
         
-        const header = el.createDiv(); 
-        header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", flexWrap: "wrap", gap: "10px" });
-        const countLabel = header.createDiv({ text: `Loading...` }); 
-        countLabel.setCssStyles({ fontSize: "13px", color: "var(--text-muted)", fontWeight: "500" });
-        const searchInput = header.createEl("input", { type: "search", placeholder: "Search experiments..." }); 
-        searchInput.setCssStyles({ width: "250px", padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--background-modifier-border)", background: "var(--background-primary)" });
+        const header = el.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;" } });
+        const countLabel = header.createDiv({ text: `Loading...`, attr: { style: "font-size: 13px; color: var(--text-muted); font-weight: 500;" } });
+        const searchInput = header.createEl("input", { type: "search", placeholder: "Search experiments...", attr: { style: "width: 250px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary);" } });
 
         const container = el.createDiv({ cls: "chem-gallery-container" });
-        container.setCssStyles({ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "15px", padding: "5px 0" });
+        container.style.display = "grid"; container.style.gridTemplateColumns = "repeat(auto-fill, minmax(140px, 1fr))"; container.style.gap = "15px"; container.style.padding = "5px 0";
 
         const cards: { el: HTMLElement, text: string }[] = [];
         let renderCount = 0;
@@ -970,7 +899,7 @@ export class ElnGalleryRenderer {
             
             try {
                 // Apply strict YAML quoting fix to gallery previews as well!
-                const safeSource = blockMatch[1].replace(/smiles:\s*(.*)$/gm, (match: any, p1: string) => {
+                const safeSource = blockMatch[1].replace(/smiles:\s*(.*)$/gm, (match, p1) => {
                     let s = p1.trim();
                     if (!s) return match;
                     let comment = "";
@@ -1000,34 +929,36 @@ export class ElnGalleryRenderer {
                 renderCount++;
 
                 const card = container.createDiv({ cls: "chem-gallery-card" });
-                card.setCssStyles({ border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "10px", display: "flex", flexDirection: "column", alignItems: "center", backgroundColor: "var(--background-primary)", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" });
-                card.onmouseover = () => card.setCssStyles({ borderColor: "var(--interactive-accent)" });
-                card.onmouseout = () => card.setCssStyles({ borderColor: "var(--background-modifier-border)" });
+                card.style.border = "1px solid var(--background-modifier-border)"; card.style.borderRadius = "8px"; card.style.padding = "10px";
+                card.style.display = "flex"; card.style.flexDirection = "column"; card.style.alignItems = "center";
+                card.style.backgroundColor = "var(--background-primary)"; card.style.cursor = "pointer"; card.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
+                card.onmouseover = () => card.style.borderColor = "var(--interactive-accent)";
+                card.onmouseout = () => card.style.borderColor = "var(--background-modifier-border)";
 
                 const previewWrapper = card.createDiv();
-                previewWrapper.setCssStyles({ width: "100%", height: "100px", display: "flex", justifyContent: "center", alignItems: "center" });
+                previewWrapper.style.width = "100%"; previewWrapper.style.height = "100px"; previewWrapper.style.display = "flex"; previewWrapper.style.justifyContent = "center"; previewWrapper.style.alignItems = "center";
                 
                 const label = card.createDiv();
                 label.textContent = yamlObj.code || file.basename;
-                label.setCssStyles({ fontSize: "12px", marginTop: "10px", textAlign: "center", wordBreak: "break-word", color: "var(--text-normal)", fontWeight: "500" });
+                label.style.fontSize = "12px"; label.style.marginTop = "10px"; label.style.textAlign = "center"; label.style.wordBreak = "break-word"; label.style.color = "var(--text-normal)"; label.style.fontWeight = "500";
 
                 cards.push({ el: card, text: searchableText });
                 card.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
 
                 if (!dataToRender) {
-                    previewWrapper.createSpan({ text: "No Structure", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" });
+                    previewWrapper.innerHTML = `<span class="color-text-muted" style="font-size:12px;">No Structure</span>`;
                     continue;
                 }
 
-                previewWrapper.createSpan({ text: "⏳", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" });
+                previewWrapper.innerHTML = `<span class="color-text-muted" style="font-size:12px;">⏳</span>`;
 
-                window.requestAnimationFrame(async () => {
+                requestAnimationFrame(async () => {
                     try {
                         const previewEl = await this.plugin.api.renderStructure(dataToRender, 120, 100);
                         previewWrapper.empty();
-                        if (previewEl) { previewEl.setCssStyles({ maxWidth: '100%', maxHeight: '100%' }); previewWrapper.appendChild(previewEl); } 
-                        else { previewWrapper.createSpan({ text: "Invalid", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" }); }
-                    } catch(e) { previewWrapper.createSpan({ text: "Invalid", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" }); } 
+                        if (previewEl) { previewEl.style.maxWidth = '100%'; previewEl.style.maxHeight = '100%'; previewWrapper.appendChild(previewEl); } 
+                        else { previewWrapper.innerHTML = `<span class="color-text-muted" style="font-size:12px;">Invalid</span>`; }
+                    } catch(e) { previewWrapper.innerHTML = `<span class="color-text-muted" style="font-size:12px;">Invalid</span>`; } 
                 });
             } catch(e) {}
         }
@@ -1035,12 +966,13 @@ export class ElnGalleryRenderer {
         countLabel.textContent = `${renderCount} experiments`;
         searchInput.addEventListener("input", (e: any) => {
             const query = e.target.value.toLowerCase(); let visibleCount = 0;
-            cards.forEach(c => { if (c.text.includes(query)) { c.el.setCssStyles({ display: "flex" }); visibleCount++; } else { c.el.setCssStyles({ display: "none" }); } });
+            cards.forEach(c => { if (c.text.includes(query)) { c.el.style.display = "flex"; visibleCount++; } else { c.el.style.display = "none"; } });
             countLabel.textContent = `${visibleCount} / ${renderCount} experiments`;
         });
     }
 
     async renderChemGallery(source: string, el: HTMLElement, ctx: any) {
+        const { parseYaml } = require('obsidian');
         const match = source.match(/path:\s*['"]?(.*?)['"]?(?:\n|$)/);
         const folderPath = match ? match[1].trim() : "";
         if (!folderPath) { el.createEl("div", { text: "⚠️ Please specify a folder path", cls: "color-text-error" }); return; }
@@ -1049,7 +981,7 @@ export class ElnGalleryRenderer {
 
         const files = (folder as any).children.filter((f: any) => f instanceof TFile && f.extension.toLowerCase() === 'md');
         const container = el.createDiv({ cls: "chem-gallery-container" });
-        container.setCssStyles({ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "15px", padding: "5px 0" });
+        container.style.display = "grid"; container.style.gridTemplateColumns = "repeat(auto-fill, minmax(140px, 1fr))"; container.style.gap = "15px"; container.style.padding = "5px 0";
 
         for (const file of files) {
             const content = await this.plugin.app.vault.cachedRead(file);
@@ -1062,25 +994,27 @@ export class ElnGalleryRenderer {
             if (!dataToRender) continue;
 
             const card = container.createDiv({ cls: "chem-gallery-card" });
-            card.setCssStyles({ border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "10px", display: "flex", flexDirection: "column", alignItems: "center", backgroundColor: "var(--background-primary)", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" });
+            card.style.border = "1px solid var(--background-modifier-border)"; card.style.borderRadius = "8px"; card.style.padding = "10px";
+            card.style.display = "flex"; card.style.flexDirection = "column"; card.style.alignItems = "center";
+            card.style.backgroundColor = "var(--background-primary)"; card.style.cursor = "pointer"; card.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
             
             const previewWrapper = card.createDiv();
-            previewWrapper.setCssStyles({ width: "100%", height: "100px", display: "flex", justifyContent: "center", alignItems: "center" });
-            previewWrapper.createSpan({ text: "⏳", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" });
+            previewWrapper.style.width = "100%"; previewWrapper.style.height = "100px"; previewWrapper.style.display = "flex"; previewWrapper.style.justifyContent = "center"; previewWrapper.style.alignItems = "center";
+            previewWrapper.innerHTML = `<span class="color-text-muted" style="font-size:12px;">⏳</span>`;
             
             const label = card.createDiv();
             label.textContent = file.basename;
-            label.setCssStyles({ fontSize: "12px", marginTop: "10px", textAlign: "center", wordBreak: "break-word", color: "var(--text-normal)", fontWeight: "500" });
+            label.style.fontSize = "12px"; label.style.marginTop = "10px"; label.style.textAlign = "center"; label.style.wordBreak = "break-word"; label.style.color = "var(--text-normal)"; label.style.fontWeight = "500";
 
             card.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
 
-            window.requestAnimationFrame(async () => {
+            requestAnimationFrame(async () => {
                 try {
                     const previewEl = await this.plugin.api.renderStructure(dataToRender, 120, 100);
                     previewWrapper.empty();
-                    if (previewEl) { previewEl.setCssStyles({ maxWidth: '100%', maxHeight: '100%' }); previewWrapper.appendChild(previewEl); } 
-                    else { previewWrapper.createSpan({ text: "Invalid", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" }); }
-                } catch(e) { previewWrapper.createSpan({ text: "Invalid", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px" }); } 
+                    if (previewEl) { previewEl.style.maxWidth = '100%'; previewEl.style.maxHeight = '100%'; previewWrapper.appendChild(previewEl); } 
+                    else { previewWrapper.innerHTML = `<span class="color-text-muted" style="font-size:12px;">Invalid</span>`; }
+                } catch(e) { previewWrapper.innerHTML = `<span class="color-text-muted" style="font-size:12px;">Invalid</span>`; } 
             });
         }
     }
@@ -1090,11 +1024,13 @@ export class ElnGalleryRenderer {
 // CREATE BLANK EXPERIMENT HELPER
 // ------------------------------------------------------------------
 export async function createNewElnExperiment(app: App, code: string, folderPath: string = "", sectionsString: string = "TLC, LCMS, NMR") {
+    const { stringifyYaml } = require('obsidian');
+    
     const baseCode = code.trim() || "Experiment";
     
     const defaultData = {
         code: baseCode,
-        project: "", 
+        project: "",  // <-- Added Project to Default Template
         status: "Planned",
         solvent: "",
         temperature: "rt",
@@ -1181,12 +1117,10 @@ export class CreateExperimentModal extends Modal {
         const { contentEl } = this;
         contentEl.createEl("h3", { text: "Create New Experiment" });
 
-        const wrap = contentEl.createDiv();
-        wrap.setCssStyles({ marginBottom: "20px" });
-        wrap.createEl("div", { text: "Experiment Code (e.g. EXP-001)", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px", marginBottom: "5px" });
+        const wrap = contentEl.createDiv({ attr: {style: "margin-bottom: 20px;"}});
+        wrap.createEl("div", { text: "Experiment Code (e.g. EXP-001)", cls: "color-text-muted", attr: {style: "font-size:12px; margin-bottom:5px;"}});
         
-        const input = wrap.createEl("input", { type: "text", value: this.code });
-        input.setCssStyles({ width: "100%" });
+        const input = wrap.createEl("input", { type: "text", value: this.code, attr: {style: "width:100%;"} });
         input.onchange = (e: any) => this.code = e.target.value;
 
         const attemptSubmit = () => {
@@ -1197,13 +1131,12 @@ export class CreateExperimentModal extends Modal {
 
         input.addEventListener("keypress", (e: KeyboardEvent) => { if (e.key === "Enter") attemptSubmit(); });
 
-        const btnRow = contentEl.createDiv();
-        btnRow.setCssStyles({ display: "flex", justifyContent: "flex-end", gap: "10px" });
+        const btnRow = contentEl.createDiv({ attr: {style: "display:flex; justify-content:flex-end; gap: 10px;"}});
         const cancel = btnRow.createEl("button", { text: "Cancel" }); cancel.onclick = () => this.close();
         const create = btnRow.createEl("button", { text: "Create Template", cls: "mod-cta" });
         create.onclick = attemptSubmit;
 
-        window.setTimeout(() => {
+        setTimeout(() => {
             input.focus();
             input.select();
         }, 50);
@@ -1232,17 +1165,14 @@ export class CloneExperimentModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.createEl("h3", { text: "Clone Experiment" });
-        contentEl.createEl("p", { text: "This will create a new file, copy the reaction scheme, and wipe the product yields for a fresh run.", cls: "color-text-muted" }).setCssStyles({ fontSize: "13px", marginTop: "0" });
+        contentEl.createEl("p", { text: "This will create a new file, copy the reaction scheme, and wipe the product yields for a fresh run.", cls: "color-text-muted", attr: {style:"font-size:13px; margin-top:0;"}});
 
-        const wrap = contentEl.createDiv();
-        wrap.setCssStyles({ marginBottom: "20px" });
-        wrap.createEl("div", { text: "New Experiment Code", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px", marginBottom: "5px" });
-        const input = wrap.createEl("input", { type: "text", value: this.newCode });
-        input.setCssStyles({ width: "100%" });
+        const wrap = contentEl.createDiv({ attr: {style: "margin-bottom: 20px;"}});
+        wrap.createEl("div", { text: "New Experiment Code", cls: "color-text-muted", attr: {style: "font-size:12px; margin-bottom:5px;"}});
+        const input = wrap.createEl("input", { type: "text", value: this.newCode, attr: {style: "width:100%;"} });
         input.onchange = (e: any) => this.newCode = e.target.value;
 
-        const btnRow = contentEl.createDiv();
-        btnRow.setCssStyles({ display: "flex", justifyContent: "flex-end", gap: "10px" });
+        const btnRow = contentEl.createDiv({ attr: {style: "display:flex; justify-content:flex-end; gap: 10px;"}});
         const cancel = btnRow.createEl("button", { text: "Cancel" }); cancel.onclick = () => this.close();
         const cloneBtn = btnRow.createEl("button", { text: "Clone File", cls: "mod-cta" });
         
@@ -1262,7 +1192,7 @@ export class CloneExperimentModal extends Modal {
             cloneData.code = code; cloneData.status = "Planned";
             if (cloneData.products) { cloneData.products.forEach((p: any) => { delete p.mass_isolated; delete p.yield; delete p.mmol_isolated; }); }
             
-            const newYaml = stringifyYaml(cloneData);
+            const { stringifyYaml } = require('obsidian'); const newYaml = stringifyYaml(cloneData);
             
             let currentSections = "## 📝 Procedure & Observations\n- \n\n## 🔬 Analytical Data\n- **TLC:**\n- **LCMS:**\n- **NMR:**";
             if (this.currentFile) {
@@ -1289,7 +1219,7 @@ date: ${window.moment().format("YYYY-MM-DD")}
         input.addEventListener("keypress", (e: KeyboardEvent) => { if (e.key === "Enter") doClone(); });
         cloneBtn.onclick = () => doClone();
 
-        window.setTimeout(() => input.focus(), 50);
+        setTimeout(() => input.focus(), 50);
     }
     onClose() { this.contentEl.empty(); }
 }
@@ -1360,12 +1290,10 @@ export class ElnMetaEditorModal extends Modal {
     render() {
         const { contentEl } = this; contentEl.empty();
         
-        const header = contentEl.createDiv();
-        header.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px", borderBottom: "1px solid var(--background-modifier-border)", paddingBottom: "10px" });
-        header.createEl("h2", { text: "Edit ELN Meta" }).setCssStyles({ margin: "0", fontSize: "1.2em" });
+        const header = contentEl.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--background-modifier-border); padding-bottom: 10px;" }});
+        header.createEl("h2", { text: "Edit ELN Meta", attr: { style: "margin: 0; font-size: 1.2em;" } });
         
-        const hActions = header.createDiv();
-        hActions.setCssStyles({ display: "flex", gap: "10px" });
+        const hActions = header.createDiv({ attr: {style: "display: flex; gap: 10px;"}});
         
         const rxnBtn = hActions.createEl("button", { text: "✏️ Draw Reaction" });
         rxnBtn.onclick = () => {
@@ -1387,14 +1315,11 @@ export class ElnMetaEditorModal extends Modal {
             this.close(); 
         };
 
-        const metaGrid = contentEl.createDiv();
-        metaGrid.setCssStyles({ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "20px" });
+        const metaGrid = contentEl.createDiv({ attr: { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;" }});
         
         const addInput = (parent: HTMLElement, label: string, key: string, placeholder = "") => {
-            const wrap = parent.createDiv(); wrap.createEl("div", { text: label, cls: "color-text-muted" }).setCssStyles({ fontSize: "12px", marginBottom: "3px" });
-            const inp = wrap.createEl("input", { type: "text", value: this.data[key] || "" });
-            inp.placeholder = placeholder;
-            inp.setCssStyles({ width: "100%" });
+            const wrap = parent.createDiv(); wrap.createEl("div", { text: label, cls: "color-text-muted", attr: { style: "font-size:12px; margin-bottom:3px;"} });
+            const inp = wrap.createEl("input", { type: "text", value: this.data[key] || "", attr: { style: "width:100%;", placeholder } });
             inp.onchange = (e: any) => this.data[key] = e.target.value;
         };
         
@@ -1402,9 +1327,8 @@ export class ElnMetaEditorModal extends Modal {
         addInput(metaGrid, "Project Name", "project");
         
         const statusWrap = metaGrid.createDiv(); 
-        statusWrap.createEl("div", { text: "Status", cls: "color-text-muted" }).setCssStyles({ fontSize: "12px", marginBottom: "3px" });
-        const statusSelect = statusWrap.createEl("select");
-        statusSelect.setCssStyles({ width: "100%", padding: "4px", borderRadius: "4px", background: "var(--background-primary)", border: "1px solid var(--background-modifier-border)", color: "var(--text-normal)" });
+        statusWrap.createEl("div", { text: "Status", cls: "color-text-muted", attr: { style: "font-size:12px; margin-bottom:3px;"} });
+        const statusSelect = statusWrap.createEl("select", { attr: { style: "width:100%; padding: 4px; border-radius: 4px; background: var(--background-primary); border: 1px solid var(--background-modifier-border); color: var(--text-normal);" }});
         ["None", "Planned", "Running", "Completed", "Failed"].forEach(opt => {
             const o = statusSelect.createEl("option", { text: opt, value: opt === "None" ? "" : opt });
             if (this.data.status === opt || (opt === "None" && !this.data.status)) o.selected = true;
@@ -1415,35 +1339,27 @@ export class ElnMetaEditorModal extends Modal {
         addInput(metaGrid, "Temperature", "temperature"); 
         addInput(metaGrid, "Duration", "duration");
 
-        const advToggle = contentEl.createEl("button", { text: this.advancedMode ? "Hide Advanced Fields" : "⚙️ Show Advanced Fields (Purity, Molarity...)" });
-        advToggle.setCssStyles({ width: "100%", marginBottom: "15px", fontSize: "11px" });
+        const advToggle = contentEl.createEl("button", { text: this.advancedMode ? "Hide Advanced Fields" : "⚙️ Show Advanced Fields (Purity, Molarity...)", attr: {style: "width: 100%; margin-bottom: 15px; font-size: 11px;"}});
         advToggle.onclick = () => { this.advancedMode = !this.advancedMode; this.render(); };
 
         const renderChemRow = (item: any, type: 'reactants'|'products', idx: number) => {
-            const row = contentEl.createDiv();
-            row.setCssStyles({ background: "var(--background-secondary-alt)", padding: "12px", borderRadius: "8px", marginBottom: "12px", border: "1px solid var(--background-modifier-border)", display: "flex", flexDirection: "column", gap: "10px" });
+            const row = contentEl.createDiv({ attr: { style: "background: var(--background-secondary-alt); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--background-modifier-border); display: flex; flex-direction: column; gap: 10px;" }});
             
-            const topWrap = row.createDiv();
-            topWrap.setCssStyles({ display: "flex", gap: "10px", alignItems: "center" });
-            const nameInp = topWrap.createEl("input", { type: "text", value: item.name || "" });
-            nameInp.placeholder = "Chemical Name";
-            nameInp.setCssStyles({ width: "100%", fontWeight: "bold" });
+            const topWrap = row.createDiv({ attr: { style: "display: flex; gap: 10px; align-items: center;" }});
+            const nameInp = topWrap.createEl("input", { type: "text", value: item.name || "", attr: { placeholder: "Chemical Name", style: "width: 100%; font-weight: bold;" }});
             nameInp.onchange = (e: any) => item.name = e.target.value;
             
             if (type === 'reactants') {
-                const lrWrap = topWrap.createDiv();
-                lrWrap.setCssStyles({ display: "flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap" });
+                const lrWrap = topWrap.createDiv({ attr: {style: "display: flex; align-items:center; gap: 4px; white-space:nowrap;"}});
                 const lrRadio = lrWrap.createEl("input", { type: "radio", name: "limiting_reagent", value: idx.toString() });
                 if (item.is_limiting) lrRadio.checked = true;
                 lrRadio.onchange = () => { this.data.reactants.forEach((r:any) => r.is_limiting = false); item.is_limiting = true; this.render(); };
-                lrWrap.createEl("span", { text: "LIMITING" }).setCssStyles({ background: "var(--interactive-accent)", color: "var(--text-on-accent)", padding: "2px 6px", borderRadius: "4px", fontSize: "10px", fontWeight: "bold" });
+                lrWrap.createEl("span", { text: "LIMITING", attr: {style: "background: var(--interactive-accent); color: var(--text-on-accent); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;"}});
             }
 
-            const actionRow = row.createDiv();
-            actionRow.setCssStyles({ display: "flex", gap: "6px", justifyContent: "flex-start", flexWrap: "wrap" });
+            const actionRow = row.createDiv({ attr: { style: "display: flex; gap: 6px; justify-content: flex-start; flex-wrap: wrap;" }});
             
-            const drawBtn = actionRow.createEl("button", { text: "✏️ Draw" });
-            drawBtn.setCssStyles({ fontSize: "11px", padding: "4px 8px" });
+            const drawBtn = actionRow.createEl("button", { text: "✏️ Draw", attr: {style: "font-size:11px; padding: 4px 8px;"} });
             drawBtn.onclick = () => {
                 // USE SAFE API CALL!
                 this.plugin.api.ketcher.openEditor(item.smiles || "", "smiles", (newSmiles: string) => {
@@ -1452,8 +1368,7 @@ export class ElnMetaEditorModal extends Modal {
                 });
             };
 
-            const libBtn = actionRow.createEl("button", { text: "📚 Lib" });
-            libBtn.setCssStyles({ fontSize: "11px", padding: "4px 8px" });
+            const libBtn = actionRow.createEl("button", { text: "📚 Lib", attr: {style: "font-size:11px; padding: 4px 8px;"} });
             libBtn.onclick = async () => {
                 const lib = await getCompoundLibrary(this.plugin);
                 new CompoundSuggestModal(this.plugin.app, lib, (selected) => {
@@ -1463,8 +1378,7 @@ export class ElnMetaEditorModal extends Modal {
                 }).open();
             };
 
-            const fetchSmilesBtn = actionRow.createEl("button", { text: "🧪 N \u2192 S (Web)", title: "Name to Structure (Requires Internet)" });
-            fetchSmilesBtn.setCssStyles({ fontSize: "11px", padding: "4px 8px" });
+            const fetchSmilesBtn = actionRow.createEl("button", { text: "🧪 N \u2192 S (Web)", attr: {style: "font-size:11px; padding: 4px 8px;", title: "Name to Structure (Requires Internet)"} });
             fetchSmilesBtn.onclick = async () => {
                 if (!item.name) { new Notice("Enter a name first."); return; }
                 fetchSmilesBtn.innerText = "⏳...";
@@ -1473,8 +1387,7 @@ export class ElnMetaEditorModal extends Modal {
                 else { new Notice("Structure not found."); fetchSmilesBtn.innerText = "🧪 N \u2192 S (Web)"; }
             };
 
-            const fetchDataBtn = actionRow.createEl("button", { text: "🔍 S \u2192 D", title: "Calculate Data from Structure (Offline)" });
-            fetchDataBtn.setCssStyles({ fontSize: "11px", padding: "4px 8px" });
+            const fetchDataBtn = actionRow.createEl("button", { text: "🔍 S \u2192 D", attr: {style: "font-size:11px; padding: 4px 8px;", title: "Calculate Data from Structure (Offline)"} });
             fetchDataBtn.onclick = async () => {
                 if (!item.smiles) { new Notice("Draw a structure first."); return; }
                 fetchDataBtn.innerText = "⏳...";
@@ -1510,19 +1423,15 @@ export class ElnMetaEditorModal extends Modal {
                 this.render();
             };
 
-            const delBtn = actionRow.createEl("button", { text: "🗑️ Remove" });
-            delBtn.setCssStyles({ color: "var(--text-error)", fontSize: "11px", padding: "4px 8px", marginLeft: "auto" });
+            const delBtn = actionRow.createEl("button", { text: "🗑️ Remove", attr: { style: "color: var(--text-error); font-size:11px; padding: 4px 8px; margin-left:auto;" }});
             delBtn.onclick = () => { this.data[type].splice(idx, 1); this.render(); };
 
-            const botRow = row.createDiv();
-            botRow.setCssStyles({ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(75px, 1fr))", gap: "8px", marginTop: "5px" });
+            const botRow = row.createDiv({ attr: { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(75px, 1fr)); gap: 8px; margin-top: 5px;" }});
             
             const makeNumInp = (key: string, label: string, onUpdate?: (val: number) => void) => {
-                const wrap = botRow.createDiv();
-                wrap.setCssStyles({ display: "flex", flexDirection: "column" });
-                wrap.createEl("span", { text: label }).setCssStyles({ fontSize: "10px", color: "var(--text-muted)", marginBottom: "2px", whiteSpace: "nowrap" });
-                const inp = wrap.createEl("input", { type: "number", value: item[key] !== undefined ? String(item[key]) : "" });
-                inp.setCssStyles({ width: "100%", padding: "4px", boxSizing: "border-box" });
+                const wrap = botRow.createDiv({ attr: { style: "display: flex; flex-direction: column;" }});
+                wrap.createEl("span", { text: label, attr: { style: "font-size: 10px; color: var(--text-muted); margin-bottom: 2px; white-space: nowrap;" }});
+                const inp = wrap.createEl("input", { type: "number", value: item[key] !== undefined ? item[key] : "", attr: { style: "width: 100%; padding: 4px; box-sizing: border-box;" }});
                 inp.onchange = (e: any) => {
                     const val = parseFloat(e.target.value.replace(/,/g, '.'));
                     if (isNaN(val)) delete item[key];
@@ -1543,21 +1452,19 @@ export class ElnMetaEditorModal extends Modal {
             }
         };
 
-        const rHeader = contentEl.createDiv();
-        rHeader.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" });
-        rHeader.createEl("h3", { text: "Reactants" }).setCssStyles({ margin: "0", fontSize: "1.1em" });
+        const rHeader = contentEl.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;" }});
+        rHeader.createEl("h3", { text: "Reactants", attr: { style: "margin: 0; font-size: 1.1em;" } });
         const addRBtn = rHeader.createEl("button", { text: "+ Add Reactant" });
         addRBtn.onclick = () => { this.data.reactants.push({ name: "", smiles: "", eq: 1 }); this.render(); };
         this.data.reactants.forEach((r: any, idx: number) => renderChemRow(r, 'reactants', idx));
 
-        const pHeader = contentEl.createDiv();
-        pHeader.setCssStyles({ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", marginTop: "20px" });
-        pHeader.createEl("h3", { text: "Products" }).setCssStyles({ margin: "0", fontSize: "1.1em" });
+        const pHeader = contentEl.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;" }});
+        pHeader.createEl("h3", { text: "Products", attr: { style: "margin: 0; font-size: 1.1em;" } });
         const addPBtn = pHeader.createEl("button", { text: "+ Add Product" });
         addPBtn.onclick = () => { this.data.products.push({ name: "", smiles: "", eq: 1 }); this.render(); };
         this.data.products.forEach((p: any, idx: number) => renderChemRow(p, 'products', idx));
         
-        contentEl.createDiv().setCssStyles({ height: "50px" }); 
+        contentEl.createDiv({ attr: { style: "height: 50px;" } }); 
     }
     onClose() { this.contentEl.empty(); }
 }
