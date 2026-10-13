@@ -28,12 +28,13 @@ css = css.replace(/text-indent:[^;]+;/g, '');
 // 5. Remove advanced text-decoration (only keep none or underline)
 css = css.replace(/text-decoration:\s*(?!none|underline)[^;]+;/g, 'text-decoration: none;');
 
-// 6. REMOVE LEGACY IE HACKS: Fixes the "Missed semicolon" linter error!
-css = css.replace(/\\9/g, ''); // Removes the \9 IE8 hack
-css = css.replace(/filter:\s*progid:[^;}]+;?/gi, ''); // Removes IE Microsoft.gradient filters
+// 6. REMOVE LEGACY IE HACKS
+// Ketcher uses `background: none\9;`. Esbuild sometimes transforms this to `background: none\;`.
+css = css.replace(/background:\s*none\\[0-9]*\s*;/g, 'background: none;');
+css = css.replace(/background:\s*none\\\s*;/g, 'background: none;');
+css = css.replace(/filter:\s*progid:[^;}]+;?/gi, '');
 
-// 7. DUPLICATE PROPERTIES: Fix all exact duplicates flagged by the Obsidian linter
-// Safely matches ONLY the innermost CSS rule blocks (avoids breaking @keyframes and @media blocks)
+// 7. DUPLICATE PROPERTIES & ROGUE SLASHES
 css = css.replace(/\{([^{}]+)\}/g, (match, inner) => {
     
     // PROTECT semicolons inside URLs and strings so they aren't destroyed
@@ -56,8 +57,14 @@ css = css.replace(/\{([^{}]+)\}/g, (match, inner) => {
         }
         
         const prop = decl.substring(0, colonIdx).trim();
-        const val = decl.substring(colonIdx + 1).trim();
+        let val = decl.substring(colonIdx + 1).trim();
         
+        // CRITICAL FIX: If esbuild left a dangling backslash at the end of the value (like `none\`), remove it.
+        // This prevents `\;` from being generated and breaking the Obsidian CSS linter.
+        if (val.endsWith('\\')) {
+            val = val.slice(0, -1).trim();
+        }
+
         if (props.hasOwnProperty(prop)) {
             const idx = orderedProps.findIndex(p => p.prop === prop);
             if (idx !== -1) orderedProps.splice(idx, 1);
@@ -89,4 +96,4 @@ fs.writeFileSync('styles.css', css);
 // Cleanup the original main.css esbuild artifact
 if (cssFile === 'main.css') fs.unlinkSync('main.css');
 
-console.log('✅ Safely cleaned styles.css! All duplicate properties, IE hacks, and scrollbars removed.');
+console.log('✅ Safely cleaned styles.css! All duplicate properties, IE hacks, and rogue slashes removed.');

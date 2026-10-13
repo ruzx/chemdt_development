@@ -265,7 +265,7 @@ fieldset[disabled] .Atom-module_atom__g2RUu {background-image:none;box-shadow:no
 .FloatingTools-module_wrapper__OFeE9 .FloatingTools-module_item__UcfDN > svg {height:20px;left:50%;top:50%;transform:translate(-50%, -50%);width:20px;}
 .Modal-module_button-common-styles__ko9E5 {align-items:center;border-radius:4px;display:inline-flex;font-size:12px;height:24px;justify-content:center;line-height:14px;min-width:70px;outline:none;}
 .Modal-module_scrollbar__yPIJc {scrollbar-width:thin;}
-.Modal-module_modalOverlay__AzVeg {align-items:center;background-color:rgba(94, 94, 94, .2);background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Cpath d='M0 10 10 0zm12-2-4 4zM-2 2l4-4z' stroke='%23555' stroke-width='2' stroke-opacity='.02'/%3E%3C/svg%3E");background:none\;bottom:0;display:flex;justify-content:center;left:0;position:absolute;right:0;top:0;z-index:40;}
+.Modal-module_modalOverlay__AzVeg {align-items:center;background-color:rgba(94, 94, 94, .2);background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10'%3E%3Cpath d='M0 10 10 0zm12-2-4 4zM-2 2l4-4z' stroke='%23555' stroke-width='2' stroke-opacity='.02'/%3E%3C/svg%3E");background:none;bottom:0;display:flex;justify-content:center;left:0;position:absolute;right:0;top:0;z-index:40;}
 .Modal-module_modalOverlay__AzVeg:not([ie9]) {}
 .Modal-module_modalOverlay__AzVeg.Modal-module_animate__pnPNj {transition:background-color .3s;}
 .Modal-module_modalOverlay__AzVeg.Modal-module_hide__0CTey {background-color:rgba(94, 94, 94, .01);}
