@@ -665,9 +665,7 @@ fieldset[disabled] .ToggleButtonGroup-module_button__5nfNK.ToggleButtonGroup-mod
 .Check-module_dialog_body__wHZMM .Check-module_buttons__cjuqO .Check-module_buttonPrimary__1h5p1:hover {background-color:#4fb3bf;}
 .Check-module_dialog_body__wHZMM .Check-module_buttons__cjuqO .Check-module_buttonPrimary__1h5p1:disabled {background-color:#e1e5ea;color:#333;}
 .Check-module_dialog_body__wHZMM .Check-module_buttons__cjuqO > .Check-module_buttonsRight__L1v9A {display:flex;gap:8px;}
-.Check-module_dialog_body__wHZMM .Check-module_wrapper__27SOp {-moz-
-  
-  display:flex;flex-direction:row;}
+.Check-module_dialog_body__wHZMM .Check-module_wrapper__27SOp {display:flex;flex-direction:row;}
 .Check-module_dialog_body__wHZMM .Check-module_wrapper__27SOp .Check-module_checkInfo__Iqq6t {flex-grow:1;}
 .Check-module_dialog_body__wHZMM .Check-module_wrapper__27SOp .Check-module_settings__knuQF {margin-left:12px;}
 .Check-module_dialog_body__wHZMM .Check-module_wrapper__27SOp .Check-module_centeredContainer__t61r8,
@@ -737,8 +735,7 @@ fieldset[disabled] .FormulaInput-module_chem_input__oprB3 {background:#f3f3f3;cu
 .Recognize-module_recognize__66jG2 .Recognize-module_openButton__H-j5I > input {display:none;}
 .Recognize-module_recognize__66jG2 .Recognize-module_openButton__H-j5I > svg {height:16px;width:16px;}
 .Recognize-module_recognize__66jG2 .Recognize-module_imagesContainer__rXWWk {background-color:#eff2f5;display:flex;gap:12px;padding:12px;}
-.Recognize-module_recognize__66jG2 .Recognize-module_topBody__ZCCjN {grid-
-  grid-row-gap:24px;display:grid;font-size:10px;grid-template-columns:1fr 1fr;line-height:12px;margin:8px 0 4px;padding:0 12px;}
+.Recognize-module_recognize__66jG2 .Recognize-module_topBody__ZCCjN {grid-row-gap:24px;display:grid;font-size:10px;grid-template-columns:1fr 1fr;line-height:12px;margin:8px 0 4px;padding:0 12px;}
 .Recognize-module_recognize__66jG2 .Recognize-module_topBody__ZCCjN > label > select {font-size:inherit;}
 .Recognize-module_recognize__66jG2 .Recognize-module_output__WgRnP,
 .Recognize-module_recognize__66jG2 .Recognize-module_picture__x2Y7S {background-color:#fff;border:1px solid #d9dcea;border-radius:6px;box-sizing:border-box;height:192px;overflow:hidden;text-align:center;width:232px;}
@@ -1018,21 +1015,15 @@ fieldset[disabled] .ElementsTable-module_button__xCaL4 {background-image:none;bo
 .GenSet-module_genGroupLegendBox__CSTQr > legend {font-size:10px;margin:0 auto;width:fit-content;}
 .GenSet-module_legendBox__0zIAk {line-height:unset;position:relative;}
 .GenSet-module_legendBox__0zIAk > legend {font-size:10px;margin:0 auto;width:fit-content;}
-.GenSet-module_SpecialNodes__oFKp3 {-moz-
-  
-  display:grid;grid-template-columns:repeat(2, 26px) 36px;grid-template-rows:24px;row-gap:4px;}
+.GenSet-module_SpecialNodes__oFKp3 {display:grid;grid-template-columns:repeat(2, 26px) 36px;grid-template-rows:24px;row-gap:4px;}
 .GenSet-module_AtomGenerics__MoQCf,
-.GenSet-module_GroupGenerics__pFPtX {-moz-
-  
-  display:grid;grid-template-columns:26px 36px;grid-template-rows:24px;}
+.GenSet-module_GroupGenerics__pFPtX {display:grid;grid-template-columns:26px 36px;grid-template-rows:24px;}
 .GenSet-module_AcyclicCarbo__nowGn,
 .GenSet-module_AcyclicHetero__hnr4G,
 .GenSet-module_Acyclic__R97MM,
 .GenSet-module_CyclicCarbo__Aanb0,
 .GenSet-module_CyclicHetero__bbOnT,
-.GenSet-module_Cyclic__VJRtt {-moz-
-  
-  display:grid;grid-template-columns:repeat(2, 36px);grid-template-rows:24px;}
+.GenSet-module_Cyclic__VJRtt {display:grid;grid-template-columns:repeat(2, 36px);grid-template-rows:24px;}
 .ButtonGenSet-module_button-common-styles__3bEj7 {align-items:center;border-radius:4px;display:inline-flex;font-size:12px;height:24px;justify-content:center;line-height:14px;min-width:70px;outline:none;}
 .ButtonGenSet-module_scrollbar__CKIcM {scrollbar-width:thin;}
 .ButtonGenSet-module_button__hBoCQ {background:#fff;border:1px solid #585858;border-radius:4px;color:#585858;font-size:14px;height:100%;line-height:12px;min-height:24px;padding:0;vertical-align:middle;width:100%;}
@@ -1053,8 +1044,7 @@ fieldset[disabled] .ElementsTable-module_button__xCaL4 {background-image:none;bo
 .GenericGroups-module_genericGroups__z4EaG:first-child {margin-top:0;}
 .GenericGroups-module_genericGroups__z4EaG > fieldset {border:none;margin:1em;padding:0;}
 .GenericGroups-module_genericGroups__z4EaG .GenericGroups-module_groupGenerics__6UpH6,
-.GenericGroups-module_genericGroups__z4EaG .GenericGroups-module_topGroupsContainer__bMeoG {grid-
-  display:grid;grid-template-columns:1fr 1fr;}
+.GenericGroups-module_genericGroups__z4EaG .GenericGroups-module_topGroupsContainer__bMeoG {display:grid;grid-template-columns:1fr 1fr;}
 .GenericGroups-module_genericGroups__z4EaG .GenericGroups-module_subgroupContainer__xULxX {display:grid;grid-template-columns:6px 1fr;}
 .TypeChoice-module_fieldset__yJqT7 {border:none;display:flex;gap:12px;padding:0;width:100%;}
 .TypeChoice-module_fieldset__yJqT7 > label {align-items:center;display:flex;font-size:12px;}
@@ -1098,8 +1088,7 @@ fieldset[disabled] .ElementsTable-module_button__xCaL4 {background-image:none;bo
 .rgroup-module_scrollbar__GmU8o {scrollbar-width:thin;}
 .rgroup-module_rgroup__Pm-uA {width:260px;}
 .rgroup-module_rgroup__Pm-uA > div {background-color:#eff2f5;margin:0;padding:12px 11px;}
-.rgroup-module_rgroup__Pm-uA ul {grid-
-  grid-row-gap:8px;display:grid;grid-template-columns:repeat(5, 41px);grid-template-rows:repeat(3, 29px 33px) 29px;overflow:hidden;}
+.rgroup-module_rgroup__Pm-uA ul {grid-row-gap:8px;display:grid;grid-template-columns:repeat(5, 41px);grid-template-rows:repeat(3, 29px 33px) 29px;overflow:hidden;}
 .rgroup-module_rgroup__Pm-uA form button {background-color:#fff;background-image:none;background:#fff;border:none;border-radius:4px;color:#585858;display:inline-block;font-size:14px;font-weight:700;height:29px;margin:0;padding:6px 4px;text-align:center;-webkit-user-select:none;-moz-user-select:none;user-select:none;vertical-align:middle;width:100%;}
 .rgroup-module_rgroup__Pm-uA form button:active {background-image:none;outline:0;}
 .rgroup-module_rgroup__Pm-uA form button[disabled],

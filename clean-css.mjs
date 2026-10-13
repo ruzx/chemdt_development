@@ -11,30 +11,10 @@ if (!cssFile) {
 let css = fs.readFileSync(cssFile, 'utf-8');
 
 // 1. SCROLLBARS: Safely remove all Webkit scrollbar rules
+// Pseudo-selectors require global removal as they are outside standard property blocks
 css = css.replace(/([^\}]+::-webkit-scrollbar[^\}]*?)\{([^}]+)\}/g, '');
 
-// 2. Remove !important to pass linter
-css = css.replace(/!important/g, '');
-
-// 3. Remove column- properties (multicolumn warning)
-css = css.replace(/column-count:[^;]+;/g, '');
-css = css.replace(/column-gap:[^;]+;/g, '');
-css = css.replace(/-moz-column-[^:]+:[^;]+;/g, '');
-css = css.replace(/-webkit-column-[^:]+:[^;]+;/g, '');
-
-// 4. Remove text-indent (css-text-indent warning)
-css = css.replace(/text-indent:[^;]+;/g, '');
-
-// 5. Remove advanced text-decoration (only keep none or underline)
-css = css.replace(/text-decoration:\s*(?!none|underline)[^;]+;/g, 'text-decoration: none;');
-
-// 6. REMOVE LEGACY IE HACKS
-// Ketcher uses `background: none\9;`. Esbuild sometimes transforms this to `background: none\;`.
-css = css.replace(/background:\s*none\\[0-9]*\s*;/g, 'background: none;');
-css = css.replace(/background:\s*none\\\s*;/g, 'background: none;');
-css = css.replace(/filter:\s*progid:[^;}]+;?/gi, '');
-
-// 7. DUPLICATE PROPERTIES & ROGUE SLASHES
+// 2. PARSE AND CLEAN DECLARATIONS
 css = css.replace(/\{([^{}]+)\}/g, (match, inner) => {
     
     // PROTECT semicolons inside URLs and strings so they aren't destroyed
@@ -59,12 +39,33 @@ css = css.replace(/\{([^{}]+)\}/g, (match, inner) => {
         const prop = decl.substring(0, colonIdx).trim();
         let val = decl.substring(colonIdx + 1).trim();
         
-        // CRITICAL FIX: If esbuild left a dangling backslash at the end of the value (like `none\`), remove it.
-        // This prevents `\;` from being generated and breaking the Obsidian CSS linter.
+        // --- CLEANING OPERATIONS ---
+        
+        // 1. Strip !important
+        val = val.replace(/!important/gi, '').trim();
+        
+        // 2. Strip legacy IE \9 hack
+        val = val.replace(/\\9/g, '').trim();
+        
+        // 3. Strip dangling slashes from esbuild \9 removal (e.g., none\)
         if (val.endsWith('\\')) {
             val = val.slice(0, -1).trim();
         }
 
+        // --- OBSIDIAN LINTER DROPS ---
+        // By checking `prop.includes`, we safely drop the ENTIRE property 
+        // (including `-moz-` or `-webkit-` variants) without leaving dangling prefixes.
+        if (
+            prop.includes('column-count') || 
+            prop.includes('column-gap') || 
+            prop === 'text-indent' ||
+            (prop === 'text-decoration' && val !== 'none' && val !== 'underline') ||
+            (prop === 'filter' && val.toLowerCase().includes('progid:'))
+        ) {
+            continue; // Skip this property entirely
+        }
+
+        // --- DEDUPLICATION ---
         if (props.hasOwnProperty(prop)) {
             const idx = orderedProps.findIndex(p => p.prop === prop);
             if (idx !== -1) orderedProps.splice(idx, 1);
