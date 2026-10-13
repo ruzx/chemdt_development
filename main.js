@@ -43047,7 +43047,20 @@ var require_paper_full = __commonJS({
           }
           code += "\nreturn module.exports;";
           var agent = paper2.agent;
-          func = Function(params, code);
+          if (document2 && (agent.chrome || agent.firefox && agent.versionNumber < 40)) {
+            var script = document2.createElement("script"), head = document2.head || document2.getElementsByTagName("head")[0];
+            if (agent.firefox)
+              code = "\n" + code;
+            script.appendChild(document2.createTextNode(
+              "document.__paperscript__ = function(" + params + ") {" + code + "\n}"
+            ));
+            head.appendChild(script);
+            func = document2.__paperscript__;
+            delete document2.__paperscript__;
+            head.removeChild(script);
+          } else {
+            func = function() { console.warn("Dynamic Code Execution disabled"); };
+          }
           var exports3 = func && func.apply(scope, args);
           var obj = exports3 || {};
           Base.each(toolHandlers, function(key) {
@@ -359362,6 +359375,19 @@ var init_redux = __esm({
   }
 });
 
+// mock-fs:fs
+var require_fs = __commonJS({
+  "mock-fs:fs"(exports, module2) {
+    module2.exports = {
+      readFileSync: () => "",
+      writeFileSync: () => {
+      },
+      existsSync: () => false,
+      promises: {}
+    };
+  }
+});
+
 // node_modules/cfb/cfb.js
 var require_cfb = __commonJS({
   "node_modules/cfb/cfb.js"(exports, module2) {
@@ -359751,7 +359777,7 @@ var require_cfb = __commonJS({
       }
       var fs2;
       function get_fs() {
-        return fs2 || (fs2 = require("fs"));
+        return fs2 || (fs2 = require_fs());
       }
       function parse3(file, options3) {
         if (file[0] == 80 && file[1] == 75) return parse_zip(file, options3);

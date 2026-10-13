@@ -29,9 +29,13 @@ css = css.replace(/text-indent:[^;]+;/g, '');
 css = css.replace(/text-decoration:\s*(?!none|underline)[^;]+;/g, 'text-decoration: none;');
 
 // 6. DUPLICATE PROPERTIES: Fix all exact duplicates flagged by the Obsidian linter
-// Generic de-duplication inside CSS blocks
 css = css.replace(/\{([^}]+)\}/g, (match, inner) => {
-    const declarations = inner.split(';');
+    // PROTECT semicolons inside URLs and strings so they aren't destroyed!
+    let protectedInner = inner.replace(/url\([^)]+\)/g, m => m.replace(/;/g, '__SEMICOLON__'));
+    protectedInner = protectedInner.replace(/"[^"]*"/g, m => m.replace(/;/g, '__SEMICOLON__'));
+    protectedInner = protectedInner.replace(/'[^']*'/g, m => m.replace(/;/g, '__SEMICOLON__'));
+
+    const declarations = protectedInner.split(';');
     const props = {};
     const orderedProps = [];
     
@@ -39,21 +43,31 @@ css = css.replace(/\{([^}]+)\}/g, (match, inner) => {
         const decl = declarations[i].trim();
         if (!decl) continue;
         const colonIdx = decl.indexOf(':');
-        if (colonIdx === -1) continue;
+        if (colonIdx === -1) {
+            orderedProps.push({ raw: decl });
+            continue;
+        }
         
         const prop = decl.substring(0, colonIdx).trim();
         const val = decl.substring(colonIdx + 1).trim();
         
         if (props.hasOwnProperty(prop)) {
-            const idx = orderedProps.indexOf(prop);
+            const idx = orderedProps.findIndex(p => p.prop === prop);
             if (idx !== -1) orderedProps.splice(idx, 1);
         }
         
         props[prop] = val;
-        orderedProps.push(prop);
+        orderedProps.push({ prop, val });
     }
     
-    const cleanedInner = orderedProps.map(p => `${p}:${props[p]}`).join(';');
+    let cleanedInner = orderedProps.map(item => {
+        if (item.raw !== undefined) return item.raw;
+        return `${item.prop}:${item.val}`;
+    }).join(';');
+    
+    // RESTORE semicolons
+    cleanedInner = cleanedInner.replace(/__SEMICOLON__/g, ';');
+    
     return `{${cleanedInner}}`;
 });
 
