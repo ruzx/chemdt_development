@@ -561134,6 +561134,32 @@ ${text2}
               new import_obsidian5.Notice(`Added ${filename}`);
             }).open();
           });
+          createBtn("\u{1F310} Share", "Create Web Link for Collaborators", () => {
+            try {
+              const exportData = { reactants: [], products: [] };
+              const mapCompound = (c10) => ({
+                id: Math.random().toString(36).substring(2, 9),
+                smiles: c10.smiles || "",
+                name: c10.name || "Compound",
+                mw: c10.mw || 0,
+                eq: c10.eq || null,
+                mmol: c10.mmol || null,
+                mass: c10.mass || null,
+                mass_isolated: c10.mass_isolated || null,
+                yield: c10.yield || null,
+                theory_mmol: c10.theory_mmol || null
+              });
+              if (data.reactants) exportData.reactants = data.reactants.map(mapCompound);
+              if (data.products) exportData.products = data.products.map(mapCompound);
+              const jsonStr = JSON.stringify(exportData);
+              const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+              const viewerUrl = `https://ruzx.github.io/elnviewer.html#eln=${b64}`;
+              navigator.clipboard.writeText(viewerUrl);
+              new import_obsidian5.Notice("\u{1F517} Web link copied to clipboard!");
+            } catch (e6) {
+              new import_obsidian5.Notice("Failed to generate share link.");
+            }
+          });
           createBtn("\u{1F4CB} Copy", "Copy Stoichiometry Table to Clipboard", () => {
             let tsv = "Type	Name	SMILES	Eq	MW	m [mg]	n [mmol]	V [mL]	Yield [%]\n";
             data.reactants.forEach((r12) => {
