@@ -29,8 +29,10 @@ css = css.replace(/text-indent:[^;]+;/g, '');
 css = css.replace(/text-decoration:\s*(?!none|underline)[^;]+;/g, 'text-decoration: none;');
 
 // 6. DUPLICATE PROPERTIES: Fix all exact duplicates flagged by the Obsidian linter
-css = css.replace(/\{([^}]+)\}/g, (match, inner) => {
-    // PROTECT semicolons inside URLs and strings so they aren't destroyed!
+// Safely matches ONLY the innermost CSS rule blocks (avoids breaking @keyframes and @media blocks)
+css = css.replace(/\{([^{}]+)\}/g, (match, inner) => {
+    
+    // PROTECT semicolons inside URLs and strings so they aren't destroyed
     let protectedInner = inner.replace(/url\([^)]+\)/g, m => m.replace(/;/g, '__SEMICOLON__'));
     protectedInner = protectedInner.replace(/"[^"]*"/g, m => m.replace(/;/g, '__SEMICOLON__'));
     protectedInner = protectedInner.replace(/'[^']*'/g, m => m.replace(/;/g, '__SEMICOLON__'));
@@ -42,6 +44,7 @@ css = css.replace(/\{([^}]+)\}/g, (match, inner) => {
     for (let i = 0; i < declarations.length; i++) {
         const decl = declarations[i].trim();
         if (!decl) continue;
+        
         const colonIdx = decl.indexOf(':');
         if (colonIdx === -1) {
             orderedProps.push({ raw: decl });
@@ -67,6 +70,11 @@ css = css.replace(/\{([^}]+)\}/g, (match, inner) => {
     
     // RESTORE semicolons
     cleanedInner = cleanedInner.replace(/__SEMICOLON__/g, ';');
+    
+    // Ensure trailing semicolon is present if the block isn't empty
+    if (cleanedInner.length > 0 && !cleanedInner.endsWith(';')) {
+        cleanedInner += ';';
+    }
     
     return `{${cleanedInner}}`;
 });

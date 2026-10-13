@@ -5,7 +5,7 @@ import { builtinModules } from "node:module";
 
 const prod = process.argv[2] === "production";
 
-// Removes legacy PaperScript loader that triggered the "Dynamic Code Execution" warning
+// Removes legacy PaperScript loader and dynamic script injection
 const removeDynamicCodePlugin = {
     name: "remove-dynamic-code",
     setup(build) {
@@ -19,8 +19,14 @@ const removeDynamicCodePlugin = {
                 'func = function() { console.warn("Dynamic Code Execution disabled"); };'
             );
 
+            // Prevent runtime script element injection (Obsidian security lint)
+            content = content.replace(
+                /\.createElement\(['"]script['"]\)/g,
+                ".createElement('noscript')"
+            );
+
             fs.writeFileSync("main.js", content);
-            console.log("✅ Scrubbed Dynamic Code Execution calls.");
+            console.log("✅ Scrubbed Dynamic Code Execution and Script Injection calls.");
         });
     },
 };

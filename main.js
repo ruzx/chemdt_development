@@ -43048,7 +43048,7 @@ var require_paper_full = __commonJS({
           code += "\nreturn module.exports;";
           var agent = paper2.agent;
           if (document2 && (agent.chrome || agent.firefox && agent.versionNumber < 40)) {
-            var script = document2.createElement("script"), head = document2.head || document2.getElementsByTagName("head")[0];
+            var script = document2.createElement('noscript'), head = document2.head || document2.getElementsByTagName("head")[0];
             if (agent.firefox)
               code = "\n" + code;
             script.appendChild(document2.createTextNode(
