@@ -14778,7 +14778,7 @@ var require_lodash = __commonJS({
           result2.placeholder = curryRight.placeholder;
           return result2;
         }
-        function debounce6(func, wait, options3) {
+        function debounce7(func, wait, options3) {
           var lastArgs, lastThis, maxWait, result2, timerId, lastCallTime, lastInvokeTime = 0, leading = false, maxing = false, trailing = true;
           if (typeof func != "function") {
             throw new TypeError2(FUNC_ERROR_TEXT);
@@ -14958,7 +14958,7 @@ var require_lodash = __commonJS({
             leading = "leading" in options3 ? !!options3.leading : leading;
             trailing = "trailing" in options3 ? !!options3.trailing : trailing;
           }
-          return debounce6(func, wait, {
+          return debounce7(func, wait, {
             "leading": leading,
             "maxWait": wait,
             "trailing": trailing
@@ -15977,7 +15977,7 @@ var require_lodash = __commonJS({
         lodash.create = create3;
         lodash.curry = curry;
         lodash.curryRight = curryRight;
-        lodash.debounce = debounce6;
+        lodash.debounce = debounce7;
         lodash.defaults = defaults2;
         lodash.defaultsDeep = defaultsDeep;
         lodash.defer = defer;
@@ -559963,7 +559963,28 @@ ${smi}
     onComplete();
   });
 }
-var import_obsidian3, ChemDatabaseRenderer, AddInventoryModal;
+function renderLimsNav(parent, activeTab, plugin) {
+  const navSwitcher = parent.createDiv({ attr: { style: "display: flex; gap: 20px; margin-bottom: 12px; flex-wrap: wrap;" } });
+  const s8 = plugin.settings;
+  const makeNav = (text2, id5, onClick) => {
+    const isActive = id5 === activeTab;
+    const el2 = navSwitcher.createEl("span", { text: text2, attr: { style: `font-size: 13px; font-weight: ${isActive ? "700" : "600"}; color: ${isActive ? "var(--text-normal)" : "var(--text-muted)"}; border-bottom: 2px solid ${isActive ? "var(--interactive-accent)" : "transparent"}; cursor: ${isActive ? "default" : "pointer"}; transition: color 0.2s; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;` } });
+    if (!isActive) {
+      el2.onmouseover = () => el2.style.color = "var(--text-normal)";
+      el2.onmouseout = () => el2.style.color = "var(--text-muted)";
+      el2.onclick = onClick;
+    }
+  };
+  if (s8.enableElnDashboard) makeNav("\u{1F9EA} ELN", "eln", () => plugin.activateElnDashboard());
+  if (s8.enableOrdersDashboard) makeNav("\u{1F6D2} Orders", "orders", () => plugin.activateOrdersDashboard());
+  if (s8.enableInventoryDashboard) makeNav("\u{1F4E6} Inventory", "inventory", () => plugin.activateInventoryDashboard());
+  if (s8.enableEquipmentDashboard) makeNav("\u{1F52C} Equipment", "equipment", () => plugin.activateEquipmentDashboard());
+  if (s8.enableProtocolsDashboard) makeNav("\u{1F4C4} Protocols", "protocols", () => plugin.activateProtocolsDashboard());
+  if (s8.enableLibraryDashboard) makeNav("\u{1F4DA} Library", "library", () => plugin.activateLibraryDashboard());
+  if (s8.enableGalleryDashboard) makeNav("\u{1F5BC}\uFE0F Gallery", "gallery", () => plugin.activateGalleryDashboard());
+  if (s8.enableCharacterizationDashboard) makeNav("\u{1F4CA} Data", "data", () => plugin.activateCharacterizationDashboard());
+}
+var import_obsidian3, ChemDatabaseRenderer, AddInventoryModal, QrCodeModal;
 var init_SharedBase = __esm({
   "SharedBase.ts"() {
     import_obsidian3 = require("obsidian");
@@ -560010,21 +560031,48 @@ var init_SharedBase = __esm({
         wrapper2.style.fontFamily = "var(--font-interface)";
         wrapper2.style.marginTop = "10px";
         const toolbar = wrapper2.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border); flex-wrap: wrap; gap: 10px;" } });
-        const titleText = dbType === "inventory" ? "\u{1F4E6} Chemical Inventory" : dbType === "eln" ? "\u{1F9EA} ELN Database" : "\u{1F4DA} Compound Library";
+        let titleText = "\u{1F4DA} Compound Library";
+        if (dbType === "inventory") titleText = "\u{1F4E6} Chemical Inventory";
+        else if (dbType === "equipment") titleText = "\u{1F52C} Lab Equipment Tracker";
+        else if (dbType === "eln") titleText = "\u{1F9EA} ELN Database";
         toolbar.createEl("h3", { text: titleText, attr: { style: "margin: 0; font-size: 16px; font-weight: 600;" } });
         const rightTools = toolbar.createDiv({ attr: { style: "display: flex; gap: 10px; align-items: center; flex-wrap: wrap;" } });
         const activeSearchBadge = rightTools.createDiv({ attr: { style: "display: none; align-items: center; gap: 5px; background: var(--interactive-accent); color: var(--text-on-accent); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;" } });
         activeSearchBadge.innerHTML = `<span>\u2B21 Substructure Active</span><button style="background:transparent; border:none; color:inherit; padding:0; height:auto; cursor:pointer;">\u2716</button>`;
         const clearBadgeBtn = activeSearchBadge.querySelector("button");
-        const smartsBtn = rightTools.createEl("button", { text: "\u2B21 Substructure", attr: { style: "font-size: 12px; height: 28px;" } });
+        let isSubstructActive = false;
+        let currentQuery = "";
+        const rows = [];
         const searchInput = rightTools.createEl("input", {
           type: "search",
-          placeholder: "Search name, SMILES, formula...",
+          placeholder: "Search database...",
           attr: { style: "width: 220px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border);" }
         });
+        const applyFilters = () => {
+          const textQuery = searchInput.value.toLowerCase();
+          rows.forEach((r12) => {
+            let textMatch = r12.text.includes(textQuery);
+            let subMatch = true;
+            if (isSubstructActive && currentQuery) {
+              subMatch = ChemDataEngine.isSubstructureMatch(r12.smiles, currentQuery);
+            }
+            r12.el.style.display = textMatch && subMatch ? "" : "none";
+          });
+        };
+        if (dbType !== "equipment") {
+          const smartsBtn = rightTools.createEl("button", { text: "\u2B21 Substructure", attr: { style: "font-size: 12px; height: 28px;" } });
+          smartsBtn.onclick = async () => {
+            this.plugin.openKetcherModal("", "smiles", (query) => {
+              if (!query || query.trim() === "") return;
+              currentQuery = query;
+              isSubstructActive = true;
+              activeSearchBadge.style.display = "flex";
+              applyFilters();
+            });
+          };
+        }
         const addBtn = rightTools.createEl("button", { text: "\u2795 Add Item", cls: "mod-cta", attr: { style: "font-size: 12px; height: 28px;" } });
         const files = folder.children.filter((f9) => f9 instanceof import_obsidian3.TFile && f9.extension === "md");
-        const rows = [];
         if (layout === "grid" || layout === "cards") {
           const gridContainer = wrapper2.createDiv({ attr: { style: "display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; padding: 16px; max-height: 600px; overflow-y: auto; background: var(--background-primary-alt);" } });
           for (const file of files) {
@@ -560042,6 +560090,8 @@ var init_SharedBase = __esm({
               fm.name = elnData.code || file.basename;
               fm.formula = elnData.status || "Planned";
               fm.mw = fm.date || "";
+            } else if (dbType === "equipment") {
+              smiles = "";
             } else if (!smiles) continue;
             const card = gridContainer.createDiv({ attr: { style: "border: 1px solid var(--background-modifier-border); border-radius: 8px; overflow: hidden; background: var(--background-primary); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column;" } });
             card.onmouseover = () => {
@@ -560055,39 +560105,46 @@ var init_SharedBase = __esm({
               card.style.borderColor = "var(--background-modifier-border)";
             };
             card.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
-            const previewWrapper = card.createDiv({ attr: { style: "height: 160px; display: flex; align-items: center; justify-content: center; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border); padding: 10px;" } });
-            previewWrapper.innerHTML = `<span class="color-text-muted" style="font-size:12px;">\u23F3</span>`;
-            requestAnimationFrame(async () => {
-              const originalW = this.plugin.settings.width;
-              const originalH = this.plugin.settings.height;
-              this.plugin.settings.width = 200;
-              this.plugin.settings.height = 140;
-              try {
-                let previewEl;
+            if (dbType !== "equipment") {
+              const previewWrapper = card.createDiv({ attr: { style: "height: 160px; display: flex; align-items: center; justify-content: center; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border); padding: 10px;" } });
+              previewWrapper.innerHTML = `<span class="color-text-muted" style="font-size:12px;">\u23F3</span>`;
+              requestAnimationFrame(async () => {
+                const originalW = this.plugin.settings.width;
+                const originalH = this.plugin.settings.height;
+                this.plugin.settings.width = 200;
+                this.plugin.settings.height = 140;
                 try {
-                  previewEl = await this.plugin.renderMoleculeToPreview(smiles, "smiles", false);
+                  let previewEl;
+                  try {
+                    previewEl = await this.plugin.renderMoleculeToPreview(smiles, "smiles", false);
+                  } catch (e6) {
+                    if (smiles.includes(">>")) previewEl = await this.plugin.renderMoleculeToPreview(smiles.split(">>")[1], "smiles", false);
+                  }
+                  previewWrapper.empty();
+                  if (previewEl) {
+                    previewEl.style.maxWidth = "100%";
+                    previewEl.style.maxHeight = "100%";
+                    previewWrapper.appendChild(previewEl);
+                  } else previewWrapper.innerHTML = `<span class="color-text-muted">No structure</span>`;
                 } catch (e6) {
-                  if (smiles.includes(">>")) previewEl = await this.plugin.renderMoleculeToPreview(smiles.split(">>")[1], "smiles", false);
+                  previewWrapper.innerHTML = `\u274C`;
+                } finally {
+                  this.plugin.settings.width = originalW;
+                  this.plugin.settings.height = originalH;
                 }
-                previewWrapper.empty();
-                if (previewEl) {
-                  previewEl.style.maxWidth = "100%";
-                  previewEl.style.maxHeight = "100%";
-                  previewWrapper.appendChild(previewEl);
-                } else previewWrapper.innerHTML = `<span class="color-text-muted">No structure</span>`;
-              } catch (e6) {
-                previewWrapper.innerHTML = `\u274C`;
-              } finally {
-                this.plugin.settings.width = originalW;
-                this.plugin.settings.height = originalH;
-              }
-            });
+              });
+            }
             const details = card.createDiv({ attr: { style: "padding: 12px; display: flex; flex-direction: column; gap: 4px;" } });
             details.createEl("div", { text: fm.name || file.basename, attr: { style: "font-weight: 600; font-size: 14px; color: var(--text-normal); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" } });
             const metaRow = details.createDiv({ attr: { style: "display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);" } });
-            metaRow.createEl("span", { text: fm.formula || "-" });
-            metaRow.createEl("span", { text: fm.mw ? `${fm.mw} g/mol` : "-" });
-            const searchableText = `${fm.name} ${fm.formula} ${smiles} ${file.basename}`.toLowerCase();
+            if (dbType === "equipment") {
+              metaRow.createEl("span", { text: fm.location || "Unassigned" });
+              metaRow.createEl("span", { text: fm.status || "Available" });
+            } else {
+              metaRow.createEl("span", { text: fm.formula || "-" });
+              metaRow.createEl("span", { text: fm.mw ? `${fm.mw} g/mol` : "-" });
+            }
+            const searchableText = `${fm.name} ${fm.formula} ${smiles} ${file.basename} ${fm.location} ${fm.status}`.toLowerCase();
             rows.push({ el: card, text: searchableText, smiles });
           }
           if (rows.length === 0) gridContainer.createEl("div", { text: "No items found.", attr: { style: "grid-column: 1 / -1; text-align: center; padding: 20px; color: var(--text-muted);" } });
@@ -560097,7 +560154,8 @@ var init_SharedBase = __esm({
           const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-secondary); z-index: 2;" } });
           const tr2 = thead.createEl("tr");
           let columns = [];
-          if (dbType === "inventory") columns = ["Structure", "Name", "Location", "Amount", "Supplier", "Purity", "Lot", "Exp."];
+          if (dbType === "inventory") columns = ["Structure", "Name", "Location", "Amount", "Status", "Actions"];
+          else if (dbType === "equipment") columns = ["Instrument", "Location", "Status", "Booked By", "Last Maint.", "Actions"];
           else if (dbType === "eln") columns = ["Code", "Reaction", "Status", "Date"];
           else columns = ["Structure", "Name", "MW", "Formula", "SMILES"];
           columns.forEach((text2) => tr2.createEl("th", { text: text2, attr: { style: "padding: 10px; border-bottom: 2px solid var(--background-modifier-border); font-weight: 600; color: var(--text-muted); white-space: nowrap;" } }));
@@ -560140,7 +560198,54 @@ var init_SharedBase = __esm({
               };
             };
             let rowSmiles = "";
-            if (dbType === "eln") {
+            if (dbType === "equipment") {
+              const tdName = row.createEl("td", { text: fm.name || file.basename, attr: { style: "padding: 10px; font-weight: 600; cursor: pointer; color: var(--text-accent);" } });
+              tdName.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
+              createEditableCell(fm.location, "location", "Unassigned");
+              const statusColor = fm.status === "In Use" ? "var(--text-warning)" : fm.status === "Maintenance" ? "var(--text-error)" : "var(--text-success)";
+              const displayStatus = fm.status || "Available";
+              row.createEl("td", { innerHTML: `<span style="border: 1px solid ${statusColor}; color: ${statusColor}; padding: 2px 8px; border-radius: 12px; font-size: 11px;">${displayStatus}</span>`, attr: { style: "padding: 10px;" } });
+              createEditableCell(fm.booked_by, "booked_by", "-");
+              createEditableCell(fm.last_maintenance, "last_maintenance", "-");
+              const actionTd = row.createEl("td", { attr: { style: "padding: 10px;" } });
+              const toggleBtn = actionTd.createEl("button", { text: displayStatus === "Available" ? "Book" : "Release", attr: { style: "font-size: 10px; padding: 2px 6px;" } });
+              toggleBtn.onclick = async () => {
+                const newStatus = displayStatus === "Available" ? "In Use" : "Available";
+                await this.plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
+                  frontmatter.status = newStatus;
+                });
+                this.renderDatabase(source, el2, ctx);
+              };
+              searchableText += ` ${fm.name} ${fm.location} ${fm.status}`;
+            } else if (dbType === "inventory") {
+              if (!fm.smiles && !content4.includes("smiles")) continue;
+              rowSmiles = fm.smiles || this.extractSmilesFromContent(content4);
+              this.createStructureCell(row, rowSmiles, "smiles", 90, 90);
+              const tdName = row.createEl("td", { text: fm.name || file.basename, attr: { style: "padding: 10px; font-weight: 600; cursor: pointer; color: var(--text-accent);" } });
+              tdName.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
+              createEditableCell(fm.location, "location", "-");
+              createEditableCell(fm.amount, "amount", "-");
+              const invStatus = fm.status || "Available";
+              const invStatusColor = invStatus === "Available" ? "var(--text-success)" : "var(--text-warning)";
+              row.createEl("td", { innerHTML: `<span style="color: ${invStatusColor}; font-weight: bold; font-size: 11px;">${invStatus}</span><br><span style="font-size:9px; color:var(--text-muted);">${fm.checked_out_by || ""}</span>`, attr: { style: "padding: 10px;" } });
+              const actionTd = row.createEl("td", { attr: { style: "padding: 10px; display: flex; gap: 4px; flex-direction: column;" } });
+              const checkoutBtn = actionTd.createEl("button", { text: invStatus === "Available" ? "\u{1F4E4} Check Out" : "\u{1F4E5} Return", attr: { style: "font-size: 10px; padding: 2px 6px;" } });
+              checkoutBtn.onclick = async () => {
+                const newStatus = invStatus === "Available" ? "Checked Out" : "Available";
+                const user = newStatus === "Checked Out" ? "Current User" : "";
+                await this.plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
+                  frontmatter.status = newStatus;
+                  frontmatter.checked_out_by = user;
+                  frontmatter.last_updated = window.moment().format("YYYY-MM-DD");
+                });
+                this.renderDatabase(source, el2, ctx);
+              };
+              const qrBtn = actionTd.createEl("button", { text: "\u{1F5A8}\uFE0F QR Label", attr: { style: "font-size: 10px; padding: 2px 6px;" } });
+              qrBtn.onclick = () => {
+                new QrCodeModal(this.plugin.app, file).open();
+              };
+              searchableText += ` ${fm.name} ${fm.location} ${fm.supplier}`;
+            } else if (dbType === "eln") {
               const blockMatch = content4.match(/```eln\s*\n([\s\S]*?)\n```/);
               if (!blockMatch) continue;
               const elnData = parseYaml(blockMatch[1]);
@@ -560159,19 +560264,6 @@ var init_SharedBase = __esm({
               row.createEl("td", { innerHTML: `<span style="border: 1px solid ${statusColor}; color: ${statusColor}; padding: 2px 8px; border-radius: 12px; font-size: 11px;">${elnData.status || "-"}</span>`, attr: { style: "padding: 10px;" } });
               createEditableCell(fm.date, "date", "-");
               searchableText += ` ${elnData.code} ${elnData.status}`;
-            } else if (dbType === "inventory") {
-              if (!fm.smiles && !content4.includes("smiles")) continue;
-              rowSmiles = fm.smiles || this.extractSmilesFromContent(content4);
-              this.createStructureCell(row, rowSmiles, "smiles", 90, 90);
-              const tdName = row.createEl("td", { text: fm.name || file.basename, attr: { style: "padding: 10px; font-weight: 600; cursor: pointer; color: var(--text-accent);" } });
-              tdName.onclick = () => this.plugin.app.workspace.getLeaf(false).openFile(file);
-              createEditableCell(fm.location, "location", "-");
-              createEditableCell(fm.amount, "amount", "-");
-              createEditableCell(fm.supplier, "supplier", "-");
-              createEditableCell(fm.purity, "purity", "-");
-              createEditableCell(fm.lot, "lot", "-");
-              createEditableCell(fm.expiration, "expiration", "-");
-              searchableText += ` ${fm.name} ${fm.location} ${fm.supplier}`;
             } else {
               if (!fm.smiles && !content4.includes("smiles")) continue;
               rowSmiles = fm.smiles || this.extractSmilesFromContent(content4);
@@ -560193,19 +560285,6 @@ var init_SharedBase = __esm({
           }
           if (rows.length === 0) tbody.createEl("tr").createEl("td", { text: "No items found.", attr: { colspan: columns.length, style: "padding: 20px; text-align: center; color: var(--text-muted);" } });
         }
-        let isSubstructActive = false;
-        let currentQuery = "";
-        const applyFilters = () => {
-          const textQuery = searchInput.value.toLowerCase();
-          rows.forEach((r12) => {
-            let textMatch = r12.text.includes(textQuery);
-            let subMatch = true;
-            if (isSubstructActive && currentQuery) {
-              subMatch = ChemDataEngine.isSubstructureMatch(r12.smiles, currentQuery);
-            }
-            r12.el.style.display = textMatch && subMatch ? "" : "none";
-          });
-        };
         searchInput.addEventListener("input", () => applyFilters());
         clearBadgeBtn.onclick = () => {
           isSubstructActive = false;
@@ -560213,18 +560292,11 @@ var init_SharedBase = __esm({
           activeSearchBadge.style.display = "none";
           applyFilters();
         };
-        smartsBtn.onclick = async () => {
-          this.plugin.openKetcherModal("", "smiles", (query) => {
-            if (!query || query.trim() === "") return;
-            currentQuery = query;
-            isSubstructActive = true;
-            activeSearchBadge.style.display = "flex";
-            applyFilters();
-          });
-        };
         addBtn.onclick = () => {
           if (dbType === "inventory") {
             new AddInventoryModal(this.plugin.app, this.plugin, folderPath, () => this.renderDatabase(source, el2, ctx)).open();
+          } else if (dbType === "equipment") {
+            this.createEquipmentFile(folderPath, () => this.renderDatabase(source, el2, ctx));
           } else if (dbType === "eln") {
             new CreateExperimentModal(this.plugin.app, this.plugin, this.plugin.settings.elnPrefix, folderPath, async (expCode) => {
               await createNewElnExperiment(this.plugin.app, expCode, folderPath, this.plugin.settings.elnSections);
@@ -560234,6 +560306,25 @@ var init_SharedBase = __esm({
             addCompoundToLibrary(this.plugin.app, this.plugin, folderPath, () => this.renderDatabase(source, el2, ctx));
           }
         };
+      }
+      async createEquipmentFile(folder, onComplete) {
+        const name = "New Equipment " + window.moment().format("HHmmss");
+        const safeName = name.replace(/[\\/:"*?<>|]/g, "_");
+        const content4 = `---
+tags: [equipment]
+name: "${name}"
+location: "Unassigned"
+status: "Available"
+booked_by: ""
+last_maintenance: "${window.moment().format("YYYY-MM-DD")}"
+---
+# ${name}
+**Operating Instructions / Notes:**
+`;
+        if (!await this.plugin.app.vault.adapter.exists(folder)) await this.plugin.app.vault.createFolder(folder);
+        await this.plugin.app.vault.create(`${folder}/${safeName}.md`, content4);
+        new import_obsidian3.Notice("Equipment added!");
+        onComplete();
       }
       extractSmilesFromContent(content4) {
         const blockMatch = content4.match(/```smiles\s*\n([\s\S]*?)\n```/);
@@ -560326,6 +560417,8 @@ formula: "${this.data.formula}"
 mw: ${this.data.mw || 0}
 location: "${this.data.location}"
 amount: "${this.data.amount}"
+status: "Available"
+checked_out_by: ""
 supplier: "${this.data.supplier}"
 cas: "${this.data.cas}"
 lot: "${this.data.lot}"
@@ -560366,6 +560459,53 @@ ${this.data.smiles || "C"}
         } catch (e6) {
           new import_obsidian3.Notice("Could not find chemical data.");
         }
+      }
+      onClose() {
+        this.contentEl.empty();
+      }
+    };
+    QrCodeModal = class extends import_obsidian3.Modal {
+      constructor(app, file) {
+        super(app);
+        __publicField(this, "file");
+        __publicField(this, "qrDataUrl", "");
+        this.file = file;
+      }
+      async onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        const vaultName = encodeURIComponent(this.app.vault.getName());
+        const filePath = encodeURIComponent(this.file.path);
+        const obsidianUri = `obsidian://open?vault=${vaultName}&file=${filePath}`;
+        contentEl.createEl("h3", { text: "Print Sample Label", attr: { style: "text-align: center; margin-bottom: 5px;" } });
+        contentEl.createEl("p", { text: this.file.basename, attr: { style: "text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 0;" } });
+        const qrContainer = contentEl.createDiv({ attr: { style: "display: flex; justify-content: center; padding: 20px; background: white; border-radius: 8px; width: 200px; margin: 0 auto 20px auto;" } });
+        try {
+          qrContainer.createEl("span", { text: "QR code functionality coming soon.", attr: { style: "color: var(--text-muted); font-size: 11px; text-align: center;" } });
+        } catch (err) {
+          qrContainer.createEl("span", { text: "Failed to generate QR code offline.", cls: "color-text-error" });
+        }
+        const printBtn = contentEl.createEl("button", { text: "Print Label", cls: "mod-cta", attr: { style: "width: 100%;" } });
+        printBtn.onclick = () => {
+          if (!this.qrDataUrl) {
+            new import_obsidian3.Notice("QR code not generated yet.");
+            return;
+          }
+          const printWindow = window.open("", "_blank");
+          if (printWindow) {
+            printWindow.document.write(`
+                    <html><head><title>Print Label</title></head>
+                    <body style="display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
+                        <div style="text-align:center; font-family:sans-serif;">
+                            <img src="${this.qrDataUrl}" width="100" height="100" />
+                            <div style="font-size:10px; margin-top:5px; font-weight:bold;">${this.file.basename}</div>
+                        </div>
+                        <script>window.onload = function() { window.print(); window.close(); }<\/script>
+                    </body></html>
+                `);
+            printWindow.document.close();
+          }
+        };
       }
       onClose() {
         this.contentEl.empty();
@@ -562076,7 +562216,7 @@ __export(main_exports, {
   extractDataFromSvg: () => extractDataFromSvg
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian9 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 var import_react25 = __toESM(require_react());
 var import_react_dom6 = __toESM(require_react_dom());
 
@@ -568016,6 +568156,15 @@ var DEFAULT_SETTINGS = {
   enableNavigator: true,
   enablePathways: true,
   enableContextMenu: true,
+  enableScripting: false,
+  enableElnDashboard: true,
+  enableInventoryDashboard: true,
+  enableOrdersDashboard: true,
+  enableEquipmentDashboard: true,
+  enableProtocolsDashboard: true,
+  enableLibraryDashboard: true,
+  enableGalleryDashboard: true,
+  enableCharacterizationDashboard: true,
   width: 300,
   height: 300,
   inlineWidth: 150,
@@ -568031,7 +568180,8 @@ var DEFAULT_SETTINGS = {
   mediaSavePath: "Assets/",
   showMediaRibbonIcons: false,
   showElnRibbonIcon: true,
-  showNavigatorRibbonIcon: true,
+  showDashboardRibbonIcon: true,
+  showNavigatorRibbonIcon: false,
   elnDirectory: "ELN",
   elnPrefix: "EXP",
   elnSections: "TLC, LCMS, NMR",
@@ -568047,7 +568197,8 @@ var DEFAULT_SETTINGS = {
   contextUrl4: "https://www.chemspider.com/Search.aspx?q={{smiles}}",
   navigatorDefaultTab: "context",
   pathwayColors: "#4e79a7, #f28e2c, #e15759, #76b7b2, #59a14f, #edc949, #af7aa1, #ff9da7, #9c755f, #bab0ab",
-  contextLayout: []
+  contextLayout: [],
+  scriptsFolder: "ChemEdit/Scripts"
 };
 var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
@@ -568055,178 +568206,219 @@ var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
     __publicField(this, "plugin");
     this.plugin = plugin;
   }
+  createAccordion(container, title, icon, open2 = false) {
+    const details = container.createEl("details", { attr: { style: "margin-bottom: 15px; border: 1px solid var(--background-modifier-border); border-radius: 8px; background: var(--background-primary-alt);" } });
+    if (open2) details.setAttribute("open", "");
+    const summary = details.createEl("summary", { attr: { style: "font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 12px; outline: none; user-select: none;" } });
+    summary.innerHTML = `<span style="font-size: 18px;">${icon}</span> <span>${title}</span>`;
+    const contentDiv = details.createDiv({ attr: { style: "padding: 0 15px 15px 15px; border-top: 1px solid var(--background-modifier-border);" } });
+    return contentDiv;
+  }
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "ChemEdit Settings" });
-    const howtoEl = containerEl.createDiv({ attr: { style: "margin-bottom: 20px; font-size: 14px;" } });
+    containerEl.createEl("h2", { text: "\u{1F9EA} ChemEdit Settings" });
+    const howtoEl = containerEl.createDiv({ attr: { style: "margin-bottom: 25px; padding: 15px; background: var(--background-secondary); border-radius: 8px; border: 1px solid var(--interactive-accent);" } });
     howtoEl.innerHTML = `
-            <div style="font-weight: 600; margin-bottom: 5px;">Quick How-To:</div>
-            <ul style="margin: 0; padding-left: 20px; color: var(--text-muted); margin-bottom: 15px;">
+            <div style="font-weight: 700; margin-bottom: 8px; color: var(--interactive-accent);">Quick How-To:</div>
+            <ul style="margin: 0; padding-left: 20px; color: var(--text-normal); font-size: 13px;">
                 <li><b>Draw:</b> Click the Hexagon icon in the left ribbon to draw a new structure.</li>
-                <li><b>Navigator:</b> Click the Flask icon to open the Chemical Navigator pane.</li>
-                <li><b>Databases:</b> Use the Command Palette to insert Library, Inventory, or ELN databases!</li>
+                <li><b>Embeds:</b> Type <code>![[molecule.mol]]</code> or <code>![[reaction.rxn]]</code> directly in any note.</li>
+                <li><b>Dashboards:</b> Use the Command Palette (<code>Ctrl+P</code>) to open the LIMS Dashboards!</li>
+                <li><b>Edit:</b> Double-click any rendered molecule to open Ketcher!</li>
             </ul>
-            <hr style="margin-top: 15px; border: 0; border-top: 1px solid var(--background-modifier-border);">
         `;
-    containerEl.createEl("h3", { text: "Basic Settings" });
-    new import_obsidian.Setting(containerEl).setName("Default ELN Directory").setDesc("Folder where new ELN experiments will be saved by default (e.g. Experiments/).").addText((text2) => text2.setPlaceholder("Experiments/").setValue(this.plugin.settings.elnDirectory).onChange(async (v8) => {
+    const genSec = this.createAccordion(containerEl, "General & File Paths", "\u{1F4C2}", true);
+    new import_obsidian.Setting(genSec).setName("Default ELN Directory").setDesc("Folder where new ELN experiments will be saved.").addText((text2) => text2.setPlaceholder("Experiments/").setValue(this.plugin.settings.elnDirectory).onChange(async (v8) => {
       this.plugin.settings.elnDirectory = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(containerEl).setName("Default Experiment Prefix").setDesc("Prefix for new ELN files (e.g., EXP, JH, CHEM).").addText((text2) => text2.setPlaceholder("EXP").setValue(this.plugin.settings.elnPrefix).onChange(async (v8) => {
+    new import_obsidian.Setting(genSec).setName("Default Experiment Prefix").setDesc("Prefix for new ELN files (e.g., EXP, JH, CHEM).").addText((text2) => text2.setPlaceholder("EXP").setValue(this.plugin.settings.elnPrefix).onChange(async (v8) => {
       this.plugin.settings.elnPrefix = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(containerEl).setName("Analytical Sections").setDesc("Comma-separated list of sections to auto-generate inside new experiments.").addText((text2) => text2.setPlaceholder("TLC, LCMS, NMR").setValue(this.plugin.settings.elnSections).onChange(async (v8) => {
+    new import_obsidian.Setting(genSec).setName("Analytical Sections").setDesc("Comma-separated list of sections to auto-generate inside new experiments.").addText((text2) => text2.setPlaceholder("TLC, LCMS, NMR").setValue(this.plugin.settings.elnSections).onChange(async (v8) => {
       this.plugin.settings.elnSections = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(containerEl).setName("Compound Library File Path").setDesc("Optional: Point to a .md file (e.g. Meta/Compounds.md) that contains markdown tables or lists of your common chemicals. Used for auto-filling the ELN and the Library command.").addText((text2) => text2.setPlaceholder("Meta/Compounds.md").setValue(this.plugin.settings.libraryFilePath).onChange(async (v8) => {
+    new import_obsidian.Setting(genSec).setName("Compound Library File Path").setDesc("Point to a .md file (e.g. Meta/Compounds.md) that contains markdown tables or lists of your common chemicals. Used for auto-filling.").addText((text2) => text2.setPlaceholder("Meta/Compounds.md").setValue(this.plugin.settings.libraryFilePath).onChange(async (v8) => {
       this.plugin.settings.libraryFilePath = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(containerEl).setName("Show Fume Hood Ribbon Icons").setDesc("Toggle Fume Hood Utilities (Flask, Camera, TLC) in the left sidebar.").addToggle((toggle) => toggle.setValue(this.plugin.settings.showElnRibbonIcon).onChange(async (value) => {
-      this.plugin.settings.showElnRibbonIcon = value;
-      this.plugin.settings.showMediaRibbonIcons = value;
+    new import_obsidian.Setting(genSec).setName("Media Images Save Path").setDesc("Folder where camera/TLC pictures will be stored (e.g. Assets/)").addText((text2) => text2.setPlaceholder("Assets/").setValue(this.plugin.settings.mediaSavePath).onChange(async (v8) => {
+      this.plugin.settings.mediaSavePath = v8;
       await this.plugin.saveSettings();
-      this.plugin.refreshRibbonIcons();
     }));
-    new import_obsidian.Setting(containerEl).setName("Show Chem Navigator Ribbon Icon").setDesc("Toggle the Chem Navigator compass icon in the left sidebar.").addToggle((toggle) => toggle.setValue(this.plugin.settings.showNavigatorRibbonIcon).onChange(async (value) => {
-      this.plugin.settings.showNavigatorRibbonIcon = value;
-      await this.plugin.saveSettings();
-      this.plugin.refreshRibbonIcons();
-    }));
-    const advancedToggleBtn = containerEl.createEl("button", { text: "\u2699\uFE0F Show Advanced Options", attr: { style: "margin-top: 20px; margin-bottom: 10px; width: 100%; font-weight: 600;" } });
-    const advancedSection = containerEl.createDiv({ attr: { style: "display: none; padding-top: 10px;" } });
-    advancedToggleBtn.onclick = () => {
-      if (advancedSection.style.display === "none") {
-        advancedSection.style.display = "block";
-        advancedToggleBtn.innerText = "Hide Advanced Options";
-      } else {
-        advancedSection.style.display = "none";
-        advancedToggleBtn.innerText = "\u2699\uFE0F Show Advanced Options";
-      }
-    };
-    advancedSection.createEl("h3", { text: "\u{1F9E9} Enabled Modules (Restart Required)" });
-    advancedSection.createEl("p", { text: "Turn off features you don't use. You must restart the program (or reload the plugin) for changes to take effect.", cls: "setting-item-description", attr: { style: "margin-bottom: 15px;" } });
-    new import_obsidian.Setting(advancedSection).setName("Enable ELN & Databases").setDesc("Allows rendering of ```eln, ```chem-db, and ```chem-gallery blocks.").addToggle((t8) => t8.setValue(this.plugin.settings.enableEln).onChange(async (v8) => {
+    const modSec = this.createAccordion(containerEl, "Active Modules & Dashboards", "\u{1F9E9}");
+    modSec.createEl("p", { text: "Turn off features you don't use to save memory and declutter the command palette. (Restart Obsidian for changes to take effect).", cls: "setting-item-description" });
+    new import_obsidian.Setting(modSec).setName("Enable Core Dashboards & ELN").setDesc("Allows rendering of ```eln and enables the LIMS Dashboards.").addToggle((t8) => t8.setValue(this.plugin.settings.enableEln).onChange(async (v8) => {
       this.plugin.settings.enableEln = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(advancedSection).setName("Enable Chem Navigator").setDesc("Enables the interactive side-panel for contextual chemistry analysis.").addToggle((t8) => t8.setValue(this.plugin.settings.enableNavigator).onChange(async (v8) => {
+    new import_obsidian.Setting(modSec).setName("Enable Chem Navigator").setDesc("Enables the interactive side-panel for contextual chemistry analysis.").addToggle((t8) => t8.setValue(this.plugin.settings.enableNavigator).onChange(async (v8) => {
       this.plugin.settings.enableNavigator = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(advancedSection).setName("Enable Synthesis Pathways").setDesc("Allows rendering of interactive ```chem-pathway and ```synthesis-plan blocks.").addToggle((t8) => t8.setValue(this.plugin.settings.enablePathways).onChange(async (v8) => {
+    new import_obsidian.Setting(modSec).setName("Enable Synthesis Pathways").setDesc("Allows rendering of interactive ```chem-pathway and ```synthesis-plan blocks.").addToggle((t8) => t8.setValue(this.plugin.settings.enablePathways).onChange(async (v8) => {
       this.plugin.settings.enablePathways = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(advancedSection).setName("Enable Chemistry Context Menu").setDesc("Shows chemical properties and copy options when you right-click a SMILES block.").addToggle((t8) => t8.setValue(this.plugin.settings.enableContextMenu).onChange(async (v8) => {
+    new import_obsidian.Setting(modSec).setName("Enable Chemistry Context Menu").setDesc("Shows properties and copy options when you right-click a SMILES block.").addToggle((t8) => t8.setValue(this.plugin.settings.enableContextMenu).onChange(async (v8) => {
       this.plugin.settings.enableContextMenu = v8;
       await this.plugin.saveSettings();
     }));
-    advancedSection.createEl("h3", { text: "\u{1F9EA} General Rendering" });
-    new import_obsidian.Setting(advancedSection).setName("Image Size (Block Embeds)").setDesc("Width and Height of the rendered structure blocks (pixels)").addText((text2) => text2.setPlaceholder("Width (300)").setValue(this.plugin.settings.width.toString()).onChange(async (v8) => {
+    modSec.createEl("h4", { text: "Enable Specific Dashboards", attr: { style: "margin-top: 20px; margin-bottom: 10px; color: var(--text-normal); border-bottom: 1px solid var(--background-modifier-border); padding-bottom: 5px;" } });
+    const makeDbToggle = (name, settingKey) => {
+      new import_obsidian.Setting(modSec).setName(name).addToggle((t8) => t8.setValue(this.plugin.settings[settingKey]).onChange(async (v8) => {
+        this.plugin.settings[settingKey] = v8;
+        await this.plugin.saveSettings();
+      }));
+    };
+    makeDbToggle("\u{1F9EA} ELN Notebook", "enableElnDashboard");
+    makeDbToggle("\u{1F6D2} Orders & Requests", "enableOrdersDashboard");
+    makeDbToggle("\u{1F4E6} Chemical Inventory", "enableInventoryDashboard");
+    makeDbToggle("\u{1F52C} Lab Equipment", "enableEquipmentDashboard");
+    makeDbToggle("\u{1F4C4} SOPs & Protocols", "enableProtocolsDashboard");
+    makeDbToggle("\u{1F4DA} Compounds Library", "enableLibraryDashboard");
+    makeDbToggle("\u{1F5BC}\uFE0F Drawings Gallery", "enableGalleryDashboard");
+    makeDbToggle("\u{1F4CA} Characterization Data", "enableCharacterizationDashboard");
+    const linkSec = this.createAccordion(containerEl, "Context Menu Web Links", "\u{1F310}");
+    linkSec.createEl("p", { text: "Customize the web searches available when you right-click a chemical structure. Use {{smiles}} to inject the SMILES string.", cls: "setting-item-description" });
+    new import_obsidian.Setting(linkSec).setName("Custom Link 1 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl1Name).onChange(async (v8) => {
+      this.plugin.settings.contextUrl1Name = v8;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(linkSec).setName("Custom Link 1 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl1).onChange(async (v8) => {
+      this.plugin.settings.contextUrl1 = v8;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(linkSec).setName("Custom Link 2 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl2Name).onChange(async (v8) => {
+      this.plugin.settings.contextUrl2Name = v8;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(linkSec).setName("Custom Link 2 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl2).onChange(async (v8) => {
+      this.plugin.settings.contextUrl2 = v8;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(linkSec).setName("Custom Link 3 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl3Name).onChange(async (v8) => {
+      this.plugin.settings.contextUrl3Name = v8;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(linkSec).setName("Custom Link 3 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl3).onChange(async (v8) => {
+      this.plugin.settings.contextUrl3 = v8;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(linkSec).setName("Custom Link 4 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4Name).onChange(async (v8) => {
+      this.plugin.settings.contextUrl4Name = v8;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(linkSec).setName("Custom Link 4 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4).onChange(async (v8) => {
+      this.plugin.settings.contextUrl4 = v8;
+      await this.plugin.saveSettings();
+    }));
+    const scriptSec = this.createAccordion(containerEl, "Scripting Engine", "\u{1F4DC}");
+    new import_obsidian.Setting(scriptSec).setName("Enable Script Engine").setDesc("Turn off to save memory if you do not use custom JavaScript macros.").addToggle((t8) => t8.setValue(this.plugin.settings.enableScripting).onChange(async (v8) => {
+      this.plugin.settings.enableScripting = v8;
+      await this.plugin.saveSettings();
+      this.display();
+    }));
+    if (this.plugin.settings.enableScripting) {
+      const storeWrap = scriptSec.createDiv({ attr: { style: "padding: 15px; background: var(--background-secondary-alt); border: 1px solid var(--background-modifier-border); border-radius: 8px; margin: 15px 0; display: flex; justify-content: space-between; align-items: center;" } });
+      const storeText = storeWrap.createDiv();
+      storeText.createEl("div", { text: "ChemEdit Script Store", attr: { style: "font-weight: 600; color: var(--text-normal);" } });
+      storeText.createEl("div", { text: "Browse and install community macros.", attr: { style: "font-size: 12px; color: var(--text-muted); margin-top: 4px;" } });
+      const openStoreBtn = storeWrap.createEl("button", { text: "Browse Scripts", cls: "mod-cta" });
+      openStoreBtn.onclick = () => {
+        new import_obsidian.Notice("Script Store coming soon!");
+      };
+      new import_obsidian.Setting(scriptSec).setName("Scripts Folder").setDesc("Folder containing custom .js scripts.").addText((text2) => text2.setPlaceholder("ChemEdit/Scripts").setValue(this.plugin.settings.scriptsFolder).onChange(async (v8) => {
+        this.plugin.settings.scriptsFolder = v8;
+        await this.plugin.saveSettings();
+      }));
+    }
+    const renderSec = this.createAccordion(containerEl, "Rendering & Theming", "\u{1F3A8}");
+    new import_obsidian.Setting(renderSec).setName("Image Size (Block Embeds)").setDesc("Width and Height of the rendered structure blocks (pixels)").addText((text2) => text2.setPlaceholder("Width (300)").setValue(this.plugin.settings.width.toString()).onChange(async (v8) => {
       this.plugin.settings.width = parseInt(v8) || 300;
       await this.plugin.saveSettings();
     })).addText((text2) => text2.setPlaceholder("Height (300)").setValue(this.plugin.settings.height.toString()).onChange(async (v8) => {
       this.plugin.settings.height = parseInt(v8) || 300;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(advancedSection).setName("Render SMILES as SVG").setDesc("Uses SVG instead of High-DPI Canvas for SMILES blocks. Looks crisper at extreme zoom levels.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useSvgSmiles).onChange(async (value) => {
+    new import_obsidian.Setting(renderSec).setName("Render SMILES as SVG").setDesc("Uses SVG instead of High-DPI Canvas for SMILES blocks.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useSvgSmiles).onChange(async (value) => {
       this.plugin.settings.useSvgSmiles = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(advancedSection).setName("ChemDraw ACS 1996 Style (Ketcher)").setDesc("Applies the classic ACS Document 1996 drawing settings (bond lengths, fonts, thickness) to Ketcher editors and previews.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useAcsSettings).onChange(async (value) => {
+    new import_obsidian.Setting(renderSec).setName("ChemDraw ACS 1996 Style (Ketcher)").setDesc("Applies the classic ACS Document 1996 drawing settings.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useAcsSettings).onChange(async (value) => {
       this.plugin.settings.useAcsSettings = value;
       await this.plugin.saveSettings();
     }));
-    advancedSection.createEl("h3", { text: "\u{1F52C} Fume Hood Utilities" });
-    new import_obsidian.Setting(advancedSection).setName("Media Images Save Path").setDesc("Folder where camera/TLC pictures will be stored (e.g. Assets/)").addText((text2) => text2.setPlaceholder("Assets/").setValue(this.plugin.settings.mediaSavePath).onChange(async (v8) => {
-      this.plugin.settings.mediaSavePath = v8;
-      await this.plugin.saveSettings();
-    }));
-    advancedSection.createEl("h3", { text: "\u{1F5FA}\uFE0F Navigator & Pathways" });
-    new import_obsidian.Setting(advancedSection).setName("Navigator Default Tab").setDesc("Which tab to open by default in the Chem Navigator.").addDropdown((d10) => d10.addOption("context", "Context").addOption("projects", "Projects").addOption("library", "Library").addOption("inventory", "Inventory").addOption("search", "Search").addOption("tools", "Tools").setValue(this.plugin.settings.navigatorDefaultTab).onChange(async (v8) => {
-      this.plugin.settings.navigatorDefaultTab = v8;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian.Setting(advancedSection).setName("Pathway Colors").setDesc("Comma separated hex colors for Mind-Map branches.").addTextArea((t8) => t8.setValue(this.plugin.settings.pathwayColors).onChange(async (v8) => {
-      this.plugin.settings.pathwayColors = v8;
-      await this.plugin.saveSettings();
-    }));
-    advancedSection.createEl("h3", { text: "\u{1F5B1}\uFE0F Context Menu (Right-Click)" });
-    advancedSection.createEl("div", { cls: "setting-item-description", text: "Customize the links in the right-click menu for SMILES blocks. Use {{smiles}} to inject the structure." }).style.marginBottom = "10px";
-    new import_obsidian.Setting(advancedSection).setName("Custom Link 1 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl1Name).onChange(async (v8) => {
-      this.plugin.settings.contextUrl1Name = v8;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian.Setting(advancedSection).setName("Custom Link 1 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl1).onChange(async (v8) => {
-      this.plugin.settings.contextUrl1 = v8;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian.Setting(advancedSection).setName("Custom Link 2 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl2Name).onChange(async (v8) => {
-      this.plugin.settings.contextUrl2Name = v8;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian.Setting(advancedSection).setName("Custom Link 2 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl2).onChange(async (v8) => {
-      this.plugin.settings.contextUrl2 = v8;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian.Setting(advancedSection).setName("Custom Link 3 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl3Name).onChange(async (v8) => {
-      this.plugin.settings.contextUrl3Name = v8;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian.Setting(advancedSection).setName("Custom Link 3 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl3).onChange(async (v8) => {
-      this.plugin.settings.contextUrl3 = v8;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian.Setting(advancedSection).setName("Custom Link 4 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4Name).onChange(async (v8) => {
-      this.plugin.settings.contextUrl4Name = v8;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian.Setting(advancedSection).setName("Custom Link 4 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4).onChange(async (v8) => {
-      this.plugin.settings.contextUrl4 = v8;
-      await this.plugin.saveSettings();
-    }));
-    advancedSection.createEl("h3", { text: "\u{1F4CB} Smart Paste & Embeds" });
-    new import_obsidian.Setting(advancedSection).setName("Auto-format pasted SMILES").setDesc("Automatically wrap pasted SMILES strings in a codeblock so they render as images instantly.").addToggle((toggle) => toggle.setValue(this.plugin.settings.smartPasteSmiles).onChange(async (value) => {
-      this.plugin.settings.smartPasteSmiles = value;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian.Setting(advancedSection).setName("Auto-format pasted MOL text").setDesc("Automatically wrap pasted MOL files (from ChemDraw/Marvin) in a codeblock.").addToggle((toggle) => toggle.setValue(this.plugin.settings.smartPasteMol).onChange(async (value) => {
-      this.plugin.settings.smartPasteMol = value;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian.Setting(advancedSection).setName("Supported File Extensions").setDesc("Comma-separated list of extensions that should render chemical views automatically via ![[file.ext]] embeds.").addText((text2) => text2.setPlaceholder("mol, cdxml, ket, sdf, rxn, inchi, smarts, svg, fasta, helm").setValue(this.plugin.settings.supportedEmbedExtensions).onChange(async (v8) => {
-      this.plugin.settings.supportedEmbedExtensions = v8;
-      await this.plugin.saveSettings();
-    }));
-    advancedSection.createEl("h3", { text: "\u{1F4DD} Inline Structures" });
-    new import_obsidian.Setting(advancedSection).setName("Inline Image Size").setDesc("Max width/height for structures rendered inline").addText((text2) => text2.setPlaceholder("Width (150)").setValue(this.plugin.settings.inlineWidth.toString()).onChange(async (v8) => {
-      this.plugin.settings.inlineWidth = parseInt(v8) || 150;
-      await this.plugin.saveSettings();
-    })).addText((text2) => text2.setPlaceholder("Height (150)").setValue(this.plugin.settings.inlineHeight.toString()).onChange(async (v8) => {
-      this.plugin.settings.inlineHeight = parseInt(v8) || 150;
-      await this.plugin.saveSettings();
-    }));
-    new import_obsidian.Setting(advancedSection).setName("Inline Prefixes").setDesc("Text prefixes used to trigger inline rendering").addText((text2) => text2.setPlaceholder("SMILES ($smiles=)").setValue(this.plugin.settings.inlineSmilesPrefix).onChange(async (v8) => {
-      this.plugin.settings.inlineSmilesPrefix = v8;
-      await this.plugin.saveSettings();
-    })).addText((text2) => text2.setPlaceholder("Files ($mol=)").setValue(this.plugin.settings.inlineMolPrefix).onChange(async (v8) => {
-      this.plugin.settings.inlineMolPrefix = v8;
-      await this.plugin.saveSettings();
-    }));
-    advancedSection.createEl("h3", { text: "\u{1F3A8} Theming" });
     const themeOptions = { "light": "Light", "dark": "Dark", "oldschool": "Oldschool (B&W)", "solarized": "Solarized Light", "solarized-dark": "Solarized Dark", "matrix": "Matrix", "cyberpunk": "Cyberpunk" };
-    new import_obsidian.Setting(advancedSection).setName("Themes").setDesc("Light and Dark mode rendering themes.").addDropdown((dropdown) => dropdown.addOptions(themeOptions).setValue(this.plugin.settings.lightTheme).onChange(async (value) => {
+    new import_obsidian.Setting(renderSec).setName("Themes").setDesc("Light and Dark mode rendering themes.").addDropdown((dropdown) => dropdown.addOptions(themeOptions).setValue(this.plugin.settings.lightTheme).onChange(async (value) => {
       this.plugin.settings.lightTheme = value;
       await this.plugin.saveSettings();
     })).addDropdown((dropdown) => dropdown.addOptions(themeOptions).setValue(this.plugin.settings.darkTheme).onChange(async (value) => {
       this.plugin.settings.darkTheme = value;
       await this.plugin.saveSettings();
     }));
+    const pasteSec = this.createAccordion(containerEl, "Smart Paste & Inline Embeds", "\u{1F4CB}");
+    new import_obsidian.Setting(pasteSec).setName("Auto-format pasted SMILES").addToggle((toggle) => toggle.setValue(this.plugin.settings.smartPasteSmiles).onChange(async (value) => {
+      this.plugin.settings.smartPasteSmiles = value;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(pasteSec).setName("Auto-format pasted MOL text").addToggle((toggle) => toggle.setValue(this.plugin.settings.smartPasteMol).onChange(async (value) => {
+      this.plugin.settings.smartPasteMol = value;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(pasteSec).setName("Supported File Extensions").setDesc("Comma-separated list of extensions that render automatically via ![[file.ext]]").addText((text2) => text2.setPlaceholder("mol, cdxml, ket...").setValue(this.plugin.settings.supportedEmbedExtensions).onChange(async (v8) => {
+      this.plugin.settings.supportedEmbedExtensions = v8;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(pasteSec).setName("Inline Image Size").setDesc("Max width/height for inline text structures.").addText((text2) => text2.setPlaceholder("Width (150)").setValue(this.plugin.settings.inlineWidth.toString()).onChange(async (v8) => {
+      this.plugin.settings.inlineWidth = parseInt(v8) || 150;
+      await this.plugin.saveSettings();
+    })).addText((text2) => text2.setPlaceholder("Height (150)").setValue(this.plugin.settings.inlineHeight.toString()).onChange(async (v8) => {
+      this.plugin.settings.inlineHeight = parseInt(v8) || 150;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(pasteSec).setName("Inline Prefixes").setDesc("Text prefixes used to trigger inline rendering.").addText((text2) => text2.setPlaceholder("SMILES ($smiles=)").setValue(this.plugin.settings.inlineSmilesPrefix).onChange(async (v8) => {
+      this.plugin.settings.inlineSmilesPrefix = v8;
+      await this.plugin.saveSettings();
+    })).addText((text2) => text2.setPlaceholder("Files ($mol=)").setValue(this.plugin.settings.inlineMolPrefix).onChange(async (v8) => {
+      this.plugin.settings.inlineMolPrefix = v8;
+      await this.plugin.saveSettings();
+    }));
+    const iconSec = this.createAccordion(containerEl, "Sidebar Ribbon Icons", "\u{1F5C2}\uFE0F");
+    new import_obsidian.Setting(iconSec).setName("Show LIMS Dashboards Icon").addToggle((toggle) => toggle.setValue(this.plugin.settings.showDashboardRibbonIcon).onChange(async (value) => {
+      this.plugin.settings.showDashboardRibbonIcon = value;
+      await this.plugin.saveSettings();
+      this.plugin.refreshRibbonIcons();
+    }));
+    new import_obsidian.Setting(iconSec).setName('Show "Create Blank ELN" Icon').addToggle((toggle) => toggle.setValue(this.plugin.settings.showElnRibbonIcon).onChange(async (value) => {
+      this.plugin.settings.showElnRibbonIcon = value;
+      await this.plugin.saveSettings();
+      this.plugin.refreshRibbonIcons();
+    }));
+    new import_obsidian.Setting(iconSec).setName('Show "Take Photo/TLC" Icons').addToggle((toggle) => toggle.setValue(this.plugin.settings.showMediaRibbonIcons).onChange(async (value) => {
+      this.plugin.settings.showMediaRibbonIcons = value;
+      await this.plugin.saveSettings();
+      this.plugin.refreshRibbonIcons();
+    }));
+    new import_obsidian.Setting(iconSec).setName("Show Chem Navigator Icon").addToggle((toggle) => toggle.setValue(this.plugin.settings.showNavigatorRibbonIcon).onChange(async (value) => {
+      this.plugin.settings.showNavigatorRibbonIcon = value;
+      await this.plugin.saveSettings();
+      this.plugin.refreshRibbonIcons();
+    }));
+    const resetWrap = containerEl.createDiv({ attr: { style: "margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--background-modifier-border); display: flex; justify-content: space-between; align-items: center;" } });
+    resetWrap.createDiv({ text: "Danger Zone", attr: { style: "color: var(--text-error); font-weight: bold;" } });
+    const resetBtn = resetWrap.createEl("button", { text: "Reset to Default Settings", attr: { style: "background-color: transparent; border: 1px solid var(--text-error); color: var(--text-error);" } });
+    resetBtn.onclick = async () => {
+      if (confirm("Are you sure you want to reset all ChemEdit settings to their defaults? This cannot be undone.")) {
+        this.plugin.settings = Object.assign({}, DEFAULT_SETTINGS);
+        await this.plugin.saveSettings();
+        new import_obsidian.Notice("ChemEdit settings reset to defaults. Please restart Obsidian.");
+        this.display();
+      }
+    };
   }
 };
 
@@ -569221,8 +569413,258 @@ path: ${folder}
   }
 };
 
-// SharedPathway.ts
+// ElnDashboard.ts
 var import_obsidian7 = require("obsidian");
+init_SharedEln();
+init_SharedBase();
+var ELN_DASHBOARD_VIEW_TYPE = "chem-eln-dashboard";
+var ElnDashboardView = class extends import_obsidian7.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    __publicField(this, "plugin");
+    __publicField(this, "toolbarEl");
+    __publicField(this, "tableBodyEl");
+    __publicField(this, "allEntries", []);
+    __publicField(this, "currentFilter", "All");
+    __publicField(this, "searchQuery", "");
+    __publicField(this, "observer");
+    this.plugin = plugin;
+    this.observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const el2 = entry.target;
+          const smiles = el2.dataset.smiles;
+          if (smiles && !el2.dataset.rendered) {
+            el2.dataset.rendered = "true";
+            this.plugin.api.renderStructure(smiles, 280, 110).then((renderEl) => {
+              el2.empty();
+              if (renderEl) {
+                renderEl.style.maxWidth = "100%";
+                renderEl.style.maxHeight = "100%";
+                el2.appendChild(renderEl);
+              } else {
+                el2.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">Invalid Structure</span>`;
+              }
+            });
+          }
+        }
+      });
+    }, { root: null, rootMargin: "150px", threshold: 0.1 });
+  }
+  getViewType() {
+    return ELN_DASHBOARD_VIEW_TYPE;
+  }
+  getDisplayText() {
+    return "ELN Dashboard";
+  }
+  getIcon() {
+    return "book-open";
+  }
+  async onOpen() {
+    var _a;
+    const container = this.containerEl.children[1];
+    container.empty();
+    container.addClass("chem-eln-dashboard-view");
+    Object.assign(container.style, {
+      display: "flex",
+      flexDirection: "column",
+      padding: "0",
+      background: "var(--background-primary)"
+    });
+    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    renderLimsNav(titleArea, "eln", this.plugin);
+    titleArea.createEl("h2", { text: "Laboratory Notebook", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
+    titleArea.createEl("span", { text: "Manage and track all your chemical experiments", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
+    const newBtn = header.createEl("button", { text: "+ New Experiment", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" } });
+    newBtn.onclick = () => {
+      var _a2;
+      const currentDir = (_a2 = window.localStorage.getItem("chem-eln-dir")) != null ? _a2 : this.plugin.settings.elnDirectory || "/";
+      new CreateExperimentModal(this.app, this.plugin, this.plugin.settings.elnPrefix, currentDir, async (expCode) => {
+        await createNewElnExperiment(this.app, expCode, currentDir, this.plugin.settings.elnSections);
+        this.loadExperiments();
+      }).open();
+    };
+    this.toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const leftTools = this.toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center;" } });
+    const filterTabs = leftTools.createDiv({ attr: { style: "display: flex; gap: 8px;" } });
+    const tabs = ["All", "Planned", "Running", "Completed", "Failed"];
+    tabs.forEach((t8) => {
+      const btn = filterTabs.createEl("button", { text: t8, attr: { style: `border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 600; border: 1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}; background: ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)"}; color: ${this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)"}; box-shadow: none;` } });
+      btn.onclick = () => {
+        this.currentFilter = t8;
+        this.renderToolbar();
+        this.applyFilters();
+      };
+    });
+    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px; margin-left: 10px;" } });
+    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
+    const dirInp = dirWrap.createEl("input", { type: "text", value: (_a = window.localStorage.getItem("chem-eln-dir")) != null ? _a : this.plugin.settings.elnDirectory || "", attr: { placeholder: "e.g. ELN/2026", style: "width: 140px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    dirInp.onchange = (e6) => {
+      window.localStorage.setItem("chem-eln-dir", e6.target.value.trim());
+      this.loadExperiments();
+    };
+    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search reference, project...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" } });
+    searchInp.oninput = (e6) => {
+      this.searchQuery = e6.target.value.toLowerCase();
+      this.applyFilters();
+    };
+    const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" } });
+    const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px;" } });
+    const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" } });
+    const tr2 = thead.createEl("tr");
+    const cols = [
+      { name: "Reference", width: "120px" },
+      { name: "Reaction Scheme", width: "320px" },
+      { name: "Project", width: "150px" },
+      { name: "Yield", width: "80px" },
+      { name: "Last Edited", width: "120px" },
+      { name: "Status", width: "120px" }
+    ];
+    cols.forEach((c10) => {
+      tr2.createEl("th", { text: c10.name, attr: { style: `padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; width: ${c10.width};` } });
+    });
+    this.tableBodyEl = table.createEl("tbody");
+    await this.loadExperiments();
+    const requestRefresh = (0, import_obsidian7.debounce)(() => {
+      this.loadExperiments();
+    }, 2e3, true);
+    this.registerEvent(this.app.vault.on("modify", requestRefresh));
+    this.registerEvent(this.app.vault.on("create", requestRefresh));
+    this.registerEvent(this.app.vault.on("delete", requestRefresh));
+  }
+  renderToolbar() {
+    const btns = this.toolbarEl.querySelectorAll("button");
+    btns.forEach((btn) => {
+      const isMatch = btn.innerText === this.currentFilter;
+      btn.style.background = isMatch ? "var(--interactive-accent)" : "var(--background-primary)";
+      btn.style.color = isMatch ? "var(--text-on-accent)" : "var(--text-muted)";
+      btn.style.borderColor = isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)";
+    });
+  }
+  async loadExperiments() {
+    var _a, _b, _c, _d, _e2;
+    const { parseYaml } = require("obsidian");
+    const files = this.app.vault.getMarkdownFiles();
+    const entries = [];
+    const targetDir = (_a = window.localStorage.getItem("chem-eln-dir")) != null ? _a : this.plugin.settings.elnDirectory || "";
+    for (const file of files) {
+      const inFolder = !targetDir || file.path.startsWith(targetDir);
+      const cache2 = this.app.metadataCache.getFileCache(file);
+      const fmTags = ((_b = cache2 == null ? void 0 : cache2.frontmatter) == null ? void 0 : _b.tags) || [];
+      const isTagged = Array.isArray(fmTags) ? fmTags.includes("experiment") : fmTags === "experiment";
+      if (!inFolder && !isTagged) continue;
+      const hasCodeBlock = (_c = cache2 == null ? void 0 : cache2.sections) == null ? void 0 : _c.some((s8) => s8.type === "code");
+      if (!hasCodeBlock) continue;
+      const content4 = await this.app.vault.cachedRead(file);
+      const elnMatch = content4.match(/```eln\s*\n([\s\S]*?)\n```/);
+      if (elnMatch) {
+        try {
+          const safeSource = elnMatch[1].replace(/smiles:\s*(.*)$/gm, (m9, p1) => {
+            let s8 = p1.trim();
+            if (!s8) return m9;
+            const cMatch = s8.match(/(\s+#.*)$/);
+            if (cMatch) s8 = s8.substring(0, s8.length - cMatch[1].length).trim();
+            if (s8.startsWith('"') && s8.endsWith('"') || s8.startsWith("'") && s8.endsWith("'")) s8 = s8.substring(1, s8.length - 1);
+            return `smiles: '${s8.replace(/\\"/g, '"').replace(/'/g, "''")}'`;
+          });
+          const data = parseYaml(safeSource);
+          const rs3 = (data.reactants || []).map((r12) => r12.smiles).filter(Boolean).join(".");
+          const ps2 = (data.products || []).map((p7) => p7.smiles).filter(Boolean).join(".");
+          const rxnSmiles = rs3 || ps2 ? `${rs3}>>${ps2}` : "";
+          const code = data.code || file.basename;
+          const project = data.project || "Unassigned";
+          entries.push({
+            file,
+            code,
+            project,
+            status: data.status || "Planned",
+            date: data.date || window.moment(file.stat.mtime).format("MMM D, YYYY"),
+            yieldStr: ((_e2 = (_d = data.products) == null ? void 0 : _d[0]) == null ? void 0 : _e2.yield) ? `${data.products[0].yield}%` : "-",
+            rxnSmiles,
+            timestamp: file.stat.mtime,
+            searchText: `${code} ${project} ${data.status || ""}`.toLowerCase()
+          });
+        } catch (e6) {
+        }
+      }
+    }
+    this.allEntries = entries.sort((a9, b9) => b9.timestamp - a9.timestamp);
+    this.buildTableDOM();
+    this.applyFilters();
+  }
+  buildTableDOM() {
+    const fragment2 = document.createDocumentFragment();
+    this.observer.disconnect();
+    if (this.allEntries.length === 0) {
+      const emptyTr = document.createElement("tr");
+      emptyTr.innerHTML = `<td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No experiments found. Create notes tagged with [experiment].</td>`;
+      fragment2.appendChild(emptyTr);
+    } else {
+      this.allEntries.forEach((e6) => {
+        const tr2 = document.createElement("tr");
+        tr2.style.cursor = "pointer";
+        tr2.style.transition = "background 0.2s";
+        e6.rowEl = tr2;
+        tr2.onmouseover = () => tr2.style.backgroundColor = "var(--background-secondary-alt)";
+        tr2.onmouseout = () => tr2.style.backgroundColor = "transparent";
+        tr2.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
+        const tdCode = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+        tdCode.createDiv({ text: e6.code, attr: { style: "font-weight: 700; color: var(--text-accent);" } });
+        const tdScheme = tr2.createEl("td", { attr: { style: "padding: 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+        const schemeWrap = tdScheme.createDiv({ attr: { "data-smiles": e6.rxnSmiles, style: "width: 280px; height: 90px; display: flex; align-items: center; justify-content: center; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 6px;" } });
+        if (e6.rxnSmiles) {
+          schemeWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">\u23F3 Loading...</span>`;
+          this.observer.observe(schemeWrap);
+        } else {
+          schemeWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">No Structure</span>`;
+        }
+        tr2.createEl("td", { text: e6.project, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); color: var(--text-normal);" } });
+        const yColor = e6.yieldStr !== "-" ? parseFloat(e6.yieldStr) >= 80 ? "var(--text-success)" : "var(--text-normal)" : "var(--text-muted)";
+        tr2.createEl("td", { text: e6.yieldStr, attr: { style: `padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); font-weight: 600; color: ${yColor};` } });
+        tr2.createEl("td", { text: e6.date, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); color: var(--text-muted);" } });
+        const tdStatus = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+        let bg = "var(--background-primary)", color5 = "var(--text-muted)", border3 = "var(--background-modifier-border)";
+        if (e6.status === "Completed") {
+          color5 = "var(--text-success)";
+          border3 = "var(--text-success)";
+        } else if (e6.status === "Running") {
+          color5 = "var(--text-warning)";
+          border3 = "var(--text-warning)";
+        } else if (e6.status === "Failed") {
+          color5 = "var(--text-error)";
+          border3 = "var(--text-error)";
+        } else if (e6.status === "Planned") {
+          color5 = "var(--text-accent)";
+          border3 = "var(--text-accent)";
+        }
+        tdStatus.createDiv({ text: e6.status.toUpperCase(), attr: { style: `display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; color: ${color5}; border: 1px solid ${border3}; background: ${bg};` } });
+        fragment2.appendChild(tr2);
+      });
+    }
+    this.tableBodyEl.empty();
+    this.tableBodyEl.appendChild(fragment2);
+  }
+  // CPU-Free Filtering: Toggles display:none directly on the DOM rows
+  applyFilters() {
+    this.allEntries.forEach((e6) => {
+      if (!e6.rowEl) return;
+      const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
+      const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
+      if (matchFilter && matchSearch) {
+        e6.rowEl.style.display = "";
+      } else {
+        e6.rowEl.style.display = "none";
+      }
+    });
+  }
+  async onClose() {
+    this.observer.disconnect();
+  }
+};
+
+// SharedPathway.ts
+var import_obsidian8 = require("obsidian");
 init_SharedEln();
 var PATH_COLORS = [
   "#4e79a7",
@@ -569259,7 +569701,7 @@ var SynthesisMapRenderer = class {
       el2.createEl("div", { text: `\u26A0\uFE0F Folder not found: ${folderPath || "Root Vault"}`, cls: "color-text-error" });
       return;
     }
-    const files = folder.children.filter((f9) => f9 instanceof import_obsidian7.TFile && f9.extension.toLowerCase() === "md");
+    const files = folder.children.filter((f9) => f9 instanceof import_obsidian8.TFile && f9.extension.toLowerCase() === "md");
     const mapTitle = targetProject ? `\u{1F5FA}\uFE0F Synthesis Map: ${targetProject}` : "\u{1F5FA}\uFE0F Synthesis Map";
     const wrapper2 = this.createBaseWrapper(el2, folderPath, mapTitle, false, ctx);
     const container = wrapper2.querySelector(".chem-pathway-grid");
@@ -569579,7 +570021,7 @@ ${node2.rawToken} -> ${txt}`);
         if (targetRawToken && node2.rawToken) {
           this.updateMarkdownBlock(ctx, el2, null, `
 ${node2.rawToken} -> ${targetRawToken}`);
-          new import_obsidian7.Notice("Connected!");
+          new import_obsidian8.Notice("Connected!");
         }
       }
     };
@@ -569599,7 +570041,7 @@ ${node2.rawToken} -> ${targetRawToken}`);
     });
   }
   updateMarkdownBlock(ctx, el2, oldText, newText) {
-    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian7.MarkdownView);
+    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
     if (!view) return;
     let info = ctx.getSectionInfo(el2);
     if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
@@ -569619,7 +570061,7 @@ ${node2.rawToken} -> ${targetRawToken}`);
     editor4.setValue(lines.join("\n"));
   }
   updateMarkdownNodeText(ctx, el2, oldToken, newToken) {
-    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian7.MarkdownView);
+    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
     if (!view) return;
     let info = ctx.getSectionInfo(el2);
     if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
@@ -569766,12 +570208,12 @@ ${txt}`);
     const openBtn = overlay.createEl("button", { text: "\u{1F441}\uFE0F", attr: { title: "Open Note", style: "padding: 5px; background: transparent; border: none; cursor: pointer; font-size: 16px;" } });
     openBtn.onclick = () => {
       const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
-      if (file instanceof import_obsidian7.TFile) this.plugin.app.workspace.getLeaf(false).openFile(file);
+      if (file instanceof import_obsidian8.TFile) this.plugin.app.workspace.getLeaf(false).openFile(file);
     };
     const cloneBtn = overlay.createEl("button", { text: "\u{1F5D0}", attr: { title: "Clone Exp", style: "padding: 5px; background: transparent; border: none; cursor: pointer; font-size: 16px;" } });
     cloneBtn.onclick = () => {
       const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
-      if (file instanceof import_obsidian7.TFile) new CloneExperimentModal(this.plugin.app, this.plugin, code, file, data).open();
+      if (file instanceof import_obsidian8.TFile) new CloneExperimentModal(this.plugin.app, this.plugin, code, file, data).open();
     };
   }
   attachSearchLogic(wrapper2) {
@@ -569819,7 +570261,7 @@ ${txt}`);
     return null;
   }
 };
-var TextPromptModal = class extends import_obsidian7.Modal {
+var TextPromptModal = class extends import_obsidian8.Modal {
   constructor(app, title, desc2, initialVal, onSubmit) {
     super(app);
     __publicField(this, "title");
@@ -569862,7 +570304,7 @@ init_SharedEln();
 init_SharedMedia();
 
 // SharedGallery.ts
-var import_obsidian8 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 var SharedGalleryRenderer = class {
   constructor(plugin) {
     __publicField(this, "plugin");
@@ -569881,7 +570323,7 @@ var SharedGalleryRenderer = class {
       return;
     }
     const validExts = ["mol", "cdxml", "sdf", "rxn", "ket", "smi", "smiles", "md"];
-    const files = folder.children.filter((f9) => f9 instanceof import_obsidian8.TFile && validExts.includes(f9.extension.toLowerCase()));
+    const files = folder.children.filter((f9) => f9 instanceof import_obsidian9.TFile && validExts.includes(f9.extension.toLowerCase()));
     if (files.length === 0) {
       el2.createEl("div", { text: "No supported files found in this folder.", cls: "color-text-muted" });
       return;
@@ -570044,11 +570486,13 @@ function extractDataFromSvg(svgStr) {
   }
   return null;
 }
-var ChemEditPlugin = class extends import_obsidian9.Plugin {
+var ChemEditPlugin = class extends import_obsidian10.Plugin {
   constructor() {
     super(...arguments);
     __publicField(this, "settings");
     __publicField(this, "api");
+    __publicField(this, "scriptEngine", null);
+    // Stubbed until ScriptEngine module is added
     __publicField(this, "hiddenKetcherContainer");
     __publicField(this, "headlessKetcher", null);
     __publicField(this, "headlessRoot", null);
@@ -570057,6 +570501,7 @@ var ChemEditPlugin = class extends import_obsidian9.Plugin {
     __publicField(this, "cameraRibbonEl", null);
     __publicField(this, "tlcRibbonEl", null);
     __publicField(this, "elnRibbonEl", null);
+    __publicField(this, "dashboardRibbonEl", null);
     __publicField(this, "navigatorRibbonEl", null);
   }
   getSupportedExts() {
@@ -570077,17 +570522,17 @@ var ChemEditPlugin = class extends import_obsidian9.Plugin {
         openData = ex.data;
         openFormat = "svg";
       } else {
-        new import_obsidian9.Notice("Not a Ketcher SVG");
+        new import_obsidian10.Notice("Not a Ketcher SVG");
         return;
       }
     }
     new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
       if (isFile) {
-        new import_obsidian9.Notice(`Saved as new file: ${newData}. Please update the link.`);
+        new import_obsidian10.Notice(`Saved as new file: ${newData}. Please update the link.`);
         return;
       }
       if (newFormat && newFormat !== format3 && format3 !== "svg") {
-        new import_obsidian9.Notice(`Format upgraded to ${newFormat}. Remember to rename your file.`);
+        new import_obsidian10.Notice(`Format upgraded to ${newFormat}. Remember to rename your file.`);
       }
       await this.app.vault.modify(file, newData);
       wrapper2.innerHTML = `<span class="color-text-muted">Updating...</span>`;
@@ -570112,7 +570557,6 @@ var ChemEditPlugin = class extends import_obsidian9.Plugin {
       }
     }).open();
   }
-  // FIXED SVG NAMESPACING: Prevents double-prefixing of xlink:href
   namespaceSvgIds(svgText) {
     const uniquePrefix = `k-${Math.random().toString(36).substring(2, 9)}-`;
     return svgText.replace(/\bid="(?!ketcher-data)([^"]+)"/g, `id="${uniquePrefix}$1"`).replace(/\bid='(?!ketcher-data)([^']+)'/g, `id='${uniquePrefix}$1'`).replace(/(xlink:href|href)="\#([^"]+)"/g, `$1="#${uniquePrefix}$2"`).replace(/(xlink:href|href)='\#([^']+)'/g, `$1='#${uniquePrefix}$2'`).replace(/url\(\#([^)]+)\)/g, `url(#${uniquePrefix}$1)`);
@@ -570121,9 +570565,9 @@ var ChemEditPlugin = class extends import_obsidian9.Plugin {
     if (this.settings.showMediaRibbonIcons) {
       if (!this.cameraRibbonEl) {
         this.cameraRibbonEl = this.addRibbonIcon("camera", "Take Lab Photo", () => {
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
           if (!view) {
-            new import_obsidian9.Notice("Place cursor in a Markdown file first.");
+            new import_obsidian10.Notice("Place cursor in a Markdown file first.");
             return;
           }
           takeStandardPhoto(async (buffer, ext) => {
@@ -570138,9 +570582,9 @@ var ChemEditPlugin = class extends import_obsidian9.Plugin {
       }
       if (!this.tlcRibbonEl) {
         this.tlcRibbonEl = this.addRibbonIcon("image-file", "Add TLC Plate", () => {
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
           if (!view) {
-            new import_obsidian9.Notice("Place cursor in a Markdown file first.");
+            new import_obsidian10.Notice("Place cursor in a Markdown file first.");
             return;
           }
           new TlcModal(this.app, async (pngData, rfData) => {
@@ -570167,7 +570611,7 @@ var ChemEditPlugin = class extends import_obsidian9.Plugin {
       if (!this.elnRibbonEl) {
         this.elnRibbonEl = this.addRibbonIcon("flask-round", "Create Blank ELN Experiment", () => {
           var _a, _b;
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
           const currentFolder = this.settings.elnDirectory ? this.settings.elnDirectory : ((_b = (_a = view == null ? void 0 : view.file) == null ? void 0 : _a.parent) == null ? void 0 : _b.path) || "";
           new CreateExperimentModal(this.app, this, this.settings.elnPrefix, currentFolder, async (expCode) => {
             await createNewElnExperiment(this.app, expCode, currentFolder, this.settings.elnSections);
@@ -570178,6 +570622,17 @@ var ChemEditPlugin = class extends import_obsidian9.Plugin {
       }
     } else {
       if (this.elnRibbonEl) this.elnRibbonEl.style.display = "none";
+    }
+    if (this.settings.showDashboardRibbonIcon && this.settings.enableEln) {
+      if (!this.dashboardRibbonEl) {
+        this.dashboardRibbonEl = this.addRibbonIcon("chem-dashboard", "Open LIMS Dashboard", () => {
+          this.activateElnDashboard();
+        });
+      } else {
+        this.dashboardRibbonEl.style.display = "";
+      }
+    } else {
+      if (this.dashboardRibbonEl) this.dashboardRibbonEl.style.display = "none";
     }
     if (this.settings.enableNavigator && this.settings.showNavigatorRibbonIcon) {
       if (!this.navigatorRibbonEl) {
@@ -570192,10 +570647,12 @@ var ChemEditPlugin = class extends import_obsidian9.Plugin {
     }
   }
   async onload() {
-    (0, import_obsidian9.addIcon)("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
+    (0, import_obsidian10.addIcon)("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
     const compassIcon = `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,82 36,50" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,50" fill="currentColor"/><polygon points="50,82 36,50 50,50" fill="currentColor"/>`;
-    (0, import_obsidian9.addIcon)("chem-navigator", compassIcon);
-    (0, import_obsidian9.addIcon)("flask-conical", compassIcon);
+    (0, import_obsidian10.addIcon)("chem-navigator", compassIcon);
+    (0, import_obsidian10.addIcon)("flask-conical", compassIcon);
+    const dashboardIcon = `<path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 20 85 A 10 10 0 0 1 30 75 L 85 75" /><path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 30 15 L 85 15 L 85 85 L 30 85 A 10 10 0 0 1 20 75 L 20 25 A 10 10 0 0 1 30 15 Z" /><polygon fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" points="57,32 72,40 72,58 57,66 42,58 42,40" />`;
+    (0, import_obsidian10.addIcon)("chem-dashboard", dashboardIcon);
     await this.loadSettings();
     this.api = buildChemEditAPI(this);
     this.addSettingTab(new ChemEditSettingTab(this.app, this));
@@ -570213,141 +570670,75 @@ var ChemEditPlugin = class extends import_obsidian9.Plugin {
     this.addRibbonIcon("hexagon", "Draw New Molecule", () => {
       this.openNewDrawingModal();
     });
+    this.refreshRibbonIcons();
     if (this.settings.enableNavigator) {
       this.registerView(CHEM_NAVIGATOR_VIEW_TYPE, (leaf) => new ChemNavigatorView(leaf, this));
       this.addCommand({ id: "open-chem-navigator", name: "Open Chem Navigator", callback: () => {
         this.activateNavigator();
       } });
     }
-    this.refreshRibbonIcons();
     if (this.settings.enableContextMenu) {
-      this.registerEvent(
-        this.app.workspace.on("file-menu", (menu, file) => {
-          if (file instanceof import_obsidian9.TFile) {
-            const ext = file.extension.toLowerCase();
-            if (ext === "svg") {
-              menu.addItem((item) => {
-                item.setTitle("Edit SVG in Ketcher").setIcon("hexagon").onClick(async () => {
-                  const data = await this.app.vault.read(file);
-                  const extracted = extractDataFromSvg(data);
-                  if (extracted) {
-                    new KetcherModal(this, data, "svg", async (newData) => {
-                      await this.app.vault.modify(file, newData);
-                      new import_obsidian9.Notice(`Saved ${file.name}`);
-                    }).open();
-                  } else {
-                    new import_obsidian9.Notice("This SVG does not contain editable Ketcher metadata.");
-                  }
-                });
+      this.registerEvent(this.app.workspace.on("file-menu", (menu, file) => {
+        if (file instanceof import_obsidian10.TFile) {
+          const ext = file.extension.toLowerCase();
+          if (ext === "svg") {
+            menu.addItem((item) => {
+              item.setTitle("Edit SVG in Ketcher").setIcon("hexagon").onClick(async () => {
+                const data = await this.app.vault.read(file);
+                const extracted = extractDataFromSvg(data);
+                if (extracted) {
+                  new KetcherModal(this, data, "svg", async (newData) => {
+                    await this.app.vault.modify(file, newData);
+                    new import_obsidian10.Notice(`Saved ${file.name}`);
+                  }).open();
+                } else {
+                  new import_obsidian10.Notice("This SVG does not contain editable Ketcher metadata.");
+                }
               });
-            }
-            const activeExts = this.getSupportedExts();
-            if (activeExts.includes(ext) && ext !== "svg") {
-              menu.addSeparator();
-              menu.addItem((item) => {
-                item.setTitle("\u2795 Add to Compound Database").setIcon("flask-round").onClick(async () => {
-                  const data = await this.app.vault.read(file);
-                  const targetFolder = this.settings.elnDirectory || "Library";
-                  addCompoundToLibrary(this.app, this, targetFolder, () => {
-                  }, data);
-                });
-              });
-              menu.addItem((item) => {
-                item.setTitle("\u{1F4C8} Predict 1H NMR").setIcon("activity").onClick(async () => {
-                  const data = await this.app.vault.read(file);
-                  const smiles = ext === "mol" || ext === "sdf" ? ChemDataEngine.molToSmiles(data) : data.trim();
-                  if (smiles) window.open(`https://www.nmrdb.org/simulator/?smiles=${encodeURIComponent(smiles)}`);
-                  else new import_obsidian9.Notice("Could not extract SMILES for NMR prediction.");
-                });
-              });
-            }
+            });
           }
-        })
-      );
-      this.registerEvent(
-        this.app.workspace.on("editor-menu", (menu, editor4, view) => {
-          const selection3 = editor4.getSelection().trim();
-          if (selection3 && selection3.length < 500 && !selection3.includes("\n")) {
+          const activeExts = this.getSupportedExts();
+          if (activeExts.includes(ext) && ext !== "svg") {
             menu.addSeparator();
-            populateChemicalMenu(menu, this, selection3);
-          }
-        })
-      );
-    }
-    this.addCommand({
-      id: "insert-new-molecule",
-      name: "Draw new SMILES molecule",
-      editorCallback: (editor4) => {
-        new KetcherModal(this, "", "smiles", (newData, isFile, newFormat) => {
-          if (isFile) {
-            const cursor2 = editor4.getCursor();
-            editor4.replaceRange(`!${newData}
-`, cursor2);
-            editor4.setCursor({ line: cursor2.line + 1, ch: 0 });
-          } else {
-            this.insertSmilesAtCursor(editor4, newData, newFormat || "smiles");
-          }
-        }).open();
-      }
-    });
-    this.addCommand({
-      id: "insert-inline-molecule",
-      name: "Draw new inline molecule",
-      editorCallback: (editor4) => {
-        new KetcherModal(this, "", "smiles", (newData, isFile, newFormat) => {
-          const cursor2 = editor4.getCursor();
-          if (isFile) {
-            editor4.replaceRange(`!${newData} `, cursor2);
-            editor4.setCursor({ line: cursor2.line, ch: cursor2.ch + newData.length + 2 });
-          } else {
-            if (newFormat === "ket") {
-              new import_obsidian9.Notice("Cannot save inline reaction. Inserting as block.");
-              this.insertSmilesAtCursor(editor4, newData, "ket");
-              return;
-            }
-            const textToInsert = `${this.settings.inlineSmilesPrefix}${newData} `;
-            editor4.replaceRange(textToInsert, cursor2);
-            editor4.setCursor({ line: cursor2.line, ch: cursor2.ch + textToInsert.length });
-          }
-        }).open();
-      }
-    });
-    this.addCommand({
-      id: "edit-inline-molecule-at-cursor",
-      name: "Edit inline molecule under cursor",
-      editorCallback: (editor4) => {
-        const cursor2 = editor4.getCursor();
-        const lineText = editor4.getLine(cursor2.line);
-        const prefix2 = this.settings.inlineSmilesPrefix;
-        const startIndex = lineText.lastIndexOf(prefix2, cursor2.ch);
-        if (startIndex !== -1) {
-          const searchArea = lineText.substring(startIndex + prefix2.length);
-          const match2 = searchArea.match(/[\s`'"]/);
-          const endIndex = match2 ? startIndex + prefix2.length + match2.index : lineText.length;
-          if (cursor2.ch >= startIndex && cursor2.ch <= endIndex) {
-            const rawData = lineText.substring(startIndex + prefix2.length, endIndex).trim();
-            new KetcherModal(this, rawData, "smiles", (newData, isFile, newFormat) => {
-              if (isFile) {
-                editor4.replaceRange(`!${newData}`, { line: cursor2.line, ch: startIndex }, { line: cursor2.line, ch: endIndex });
-                return;
-              }
-              if (newFormat === "ket") {
-                new import_obsidian9.Notice("Inline reactions not supported. Replaced with codeblock.");
-                editor4.replaceRange(`
-\`\`\`ket
-${newData}
-\`\`\`
-`, { line: cursor2.line, ch: startIndex }, { line: cursor2.line, ch: endIndex });
-                return;
-              }
-              editor4.replaceRange(newData, { line: cursor2.line, ch: startIndex + prefix2.length }, { line: cursor2.line, ch: endIndex });
-            }).open();
-            return;
+            menu.addItem((item) => {
+              item.setTitle("\u2795 Add to Compound Database").setIcon("flask-round").onClick(async () => {
+                const data = await this.app.vault.read(file);
+                const targetFolder = this.settings.elnDirectory || "Library";
+                addCompoundToLibrary(this.app, this, targetFolder, () => {
+                }, data);
+              });
+            });
+            menu.addItem((item) => {
+              item.setTitle("\u{1F4C8} Predict 1H NMR").setIcon("activity").onClick(async () => {
+                const data = await this.app.vault.read(file);
+                const smiles = ext === "mol" || ext === "sdf" ? ChemDataEngine.molToSmiles(data) : data.trim();
+                if (smiles) window.open(`https://www.nmrdb.org/simulator/?smiles=${encodeURIComponent(smiles)}`);
+                else new import_obsidian10.Notice("Could not extract SMILES for NMR prediction.");
+              });
+            });
           }
         }
-        new import_obsidian9.Notice("Place your cursor inside an inline $smiles= string first!");
-      }
-    });
+      }));
+      this.registerEvent(this.app.workspace.on("editor-menu", (menu, editor4) => {
+        const selection3 = editor4.getSelection().trim();
+        if (selection3 && selection3.length < 500 && !selection3.includes("\n")) {
+          menu.addSeparator();
+          populateChemicalMenu(menu, this, selection3);
+        }
+      }));
+    }
+    if (this.settings.enableScripting) {
+      this.addCommand({
+        id: "reload-chemedit-scripts",
+        name: "Reload Custom Scripts",
+        callback: () => new import_obsidian10.Notice("Script Engine coming soon!")
+      });
+      this.addCommand({
+        id: "open-chemedit-script-store",
+        name: "Open Script Store",
+        callback: () => new import_obsidian10.Notice("Script Store coming soon!")
+      });
+    }
     if (this.settings.enableEln) {
       this.addCommand({ id: "insert-compound-library", name: "Insert Compound Library Database", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
 type: library
@@ -570358,6 +570749,12 @@ layout: table
       this.addCommand({ id: "insert-inventory-database", name: "Insert Chemical Inventory Database", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
 type: inventory
 path: Inventory/
+layout: table
+\`\`\`
+`) });
+      this.addCommand({ id: "insert-equipment-database", name: "Insert Lab Equipment / Instrument Tracker", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
+type: equipment
+path: Equipment/
 layout: table
 \`\`\`
 `) });
@@ -570391,6 +570788,31 @@ path: Experiments/
         const elnRenderer = new SharedElnRenderer(this);
         await elnRenderer.renderElnBlock(source, el2, ctx);
       });
+      if (this.settings.enableElnDashboard) {
+        this.registerView(ELN_DASHBOARD_VIEW_TYPE, (leaf) => new ElnDashboardView(leaf, this));
+        this.addCommand({ id: "open-eln-dashboard", name: "Open ELN Dashboard", callback: () => this.activateElnDashboard() });
+      }
+      if (this.settings.enableInventoryDashboard) {
+        this.addCommand({ id: "open-inventory-dashboard", name: "Open Chemical Inventory Dashboard", callback: () => this.activateInventoryDashboard() });
+      }
+      if (this.settings.enableEquipmentDashboard) {
+        this.addCommand({ id: "open-equipment-dashboard", name: "Open Lab Equipment Dashboard", callback: () => this.activateEquipmentDashboard() });
+      }
+      if (this.settings.enableProtocolsDashboard) {
+        this.addCommand({ id: "open-protocols-dashboard", name: "Open Lab Protocols Dashboard", callback: () => this.activateProtocolsDashboard() });
+      }
+      if (this.settings.enableLibraryDashboard) {
+        this.addCommand({ id: "open-library-dashboard", name: "Open Compounds Library Dashboard", callback: () => this.activateLibraryDashboard() });
+      }
+      if (this.settings.enableGalleryDashboard) {
+        this.addCommand({ id: "open-gallery-dashboard", name: "Open Drawings Gallery Dashboard", callback: () => this.activateGalleryDashboard() });
+      }
+      if (this.settings.enableCharacterizationDashboard) {
+        this.addCommand({ id: "open-characterization-dashboard", name: "Open Compound Data Organizer", callback: () => this.activateCharacterizationDashboard() });
+      }
+      if (this.settings.enableOrdersDashboard) {
+        this.addCommand({ id: "open-orders-dashboard", name: "Open Orders Dashboard", callback: () => this.activateOrdersDashboard() });
+      }
     }
     if (this.settings.enablePathways) {
       this.addCommand({ id: "insert-synthesis-map", name: "Insert Synthesis Map (Auto-Graph)", editorCallback: (editor4) => {
@@ -570413,6 +570835,80 @@ path: Experiments/
         await r12.renderPlan(source, el2, ctx);
       });
     }
+    this.addCommand({
+      id: "insert-new-molecule",
+      name: "Draw new SMILES molecule",
+      editorCallback: (editor4) => {
+        new KetcherModal(this, "", "smiles", (newData, isFile, newFormat) => {
+          if (isFile) {
+            const cursor2 = editor4.getCursor();
+            editor4.replaceRange(`!${newData}
+`, cursor2);
+            editor4.setCursor({ line: cursor2.line + 1, ch: 0 });
+          } else {
+            this.insertSmilesAtCursor(editor4, newData, newFormat || "smiles");
+          }
+        }).open();
+      }
+    });
+    this.addCommand({
+      id: "insert-inline-molecule",
+      name: "Draw new inline molecule",
+      editorCallback: (editor4) => {
+        new KetcherModal(this, "", "smiles", (newData, isFile, newFormat) => {
+          const cursor2 = editor4.getCursor();
+          if (isFile) {
+            editor4.replaceRange(`!${newData} `, cursor2);
+            editor4.setCursor({ line: cursor2.line, ch: cursor2.ch + newData.length + 2 });
+          } else {
+            if (newFormat === "ket") {
+              new import_obsidian10.Notice("Cannot save inline reaction. Inserting as block.");
+              this.insertSmilesAtCursor(editor4, newData, "ket");
+              return;
+            }
+            const textToInsert = `${this.settings.inlineSmilesPrefix}${newData} `;
+            editor4.replaceRange(textToInsert, cursor2);
+            editor4.setCursor({ line: cursor2.line, ch: cursor2.ch + textToInsert.length });
+          }
+        }).open();
+      }
+    });
+    this.addCommand({
+      id: "edit-inline-molecule-at-cursor",
+      name: "Edit inline molecule under cursor",
+      editorCallback: (editor4) => {
+        const cursor2 = editor4.getCursor();
+        const lineText = editor4.getLine(cursor2.line);
+        const prefix2 = this.settings.inlineSmilesPrefix;
+        const startIndex = lineText.lastIndexOf(prefix2, cursor2.ch);
+        if (startIndex !== -1) {
+          const searchArea = lineText.substring(startIndex + prefix2.length);
+          const match2 = searchArea.match(/[\s`'"]/);
+          const endIndex = match2 ? startIndex + prefix2.length + match2.index : lineText.length;
+          if (cursor2.ch >= startIndex && cursor2.ch <= endIndex) {
+            const rawData = lineText.substring(startIndex + prefix2.length, endIndex).trim();
+            new KetcherModal(this, rawData, "smiles", (newData, isFile, newFormat) => {
+              if (isFile) {
+                editor4.replaceRange(`!${newData}`, { line: cursor2.line, ch: startIndex }, { line: cursor2.line, ch: endIndex });
+                return;
+              }
+              if (newFormat === "ket") {
+                new import_obsidian10.Notice("Inline reactions not supported. Replaced with codeblock.");
+                editor4.replaceRange(`
+\`\`\`ket
+${newData}
+\`\`\`
+`, { line: cursor2.line, ch: startIndex }, { line: cursor2.line, ch: endIndex });
+                return;
+              }
+              editor4.replaceRange(newData, { line: cursor2.line, ch: startIndex + prefix2.length }, { line: cursor2.line, ch: endIndex });
+            }).open();
+            return;
+          }
+        }
+        new import_obsidian10.Notice("Place your cursor inside an inline $smiles= string first!");
+      }
+    });
     this.registerMarkdownPostProcessor(async (el2, ctx) => {
       var _a;
       const walker = document.createTreeWalker(el2, NodeFilter.SHOW_TEXT, null);
@@ -570484,7 +570980,7 @@ ${cleanText}
       if (filenameToSearch) {
         const cleanLink = decodeURIComponent(filenameToSearch).split("#")[0].split("?")[0].trim();
         const file = this.app.metadataCache.getFirstLinkpathDest(cleanLink, ctx.sourcePath);
-        if (file && file instanceof import_obsidian9.TFile) {
+        if (file && file instanceof import_obsidian10.TFile) {
           const format3 = file.extension.toLowerCase();
           const fileData = await this.app.vault.read(file);
           if (format3 === "svg") {
@@ -570522,13 +571018,13 @@ ${cleanText}
                 openData = ex.data;
                 openFormat = "svg";
               } else {
-                new import_obsidian9.Notice("Not a Ketcher SVG");
+                new import_obsidian10.Notice("Not a Ketcher SVG");
                 return;
               }
             }
             new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
               if (isFile) {
-                new import_obsidian9.Notice(`Saved as new file: ${newData}. Please update the link.`);
+                new import_obsidian10.Notice(`Saved as new file: ${newData}. Please update the link.`);
                 return;
               }
               await this.app.vault.modify(file, newData);
@@ -570572,7 +571068,7 @@ ${cleanText}
       });
       wrapper2.addEventListener("dblclick", async (e6) => {
         e6.stopPropagation();
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+        const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
         if (!view) return;
         const info = ctx.getSectionInfo(el2);
         new KetcherModal(this, source, defaultFormat, (newData, isFile, newFormat) => {
@@ -570622,7 +571118,7 @@ ${newData}
       this.hiddenKetcherContainer.remove();
     }
   }
-  // --- HELPER METHODS ---
+  // --- ACTIVATION HELPERS ---
   async activateNavigator() {
     const { workspace } = this.app;
     let leaf = workspace.getLeavesOfType(CHEM_NAVIGATOR_VIEW_TYPE)[0];
@@ -570635,10 +571131,41 @@ ${newData}
     }
     if (leaf) workspace.revealLeaf(leaf);
   }
+  async activateElnDashboard() {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(ELN_DASHBOARD_VIEW_TYPE)[0];
+    if (!leaf) {
+      const newLeaf = workspace.getLeaf(true);
+      await newLeaf.setViewState({ type: ELN_DASHBOARD_VIEW_TYPE, active: true });
+      leaf = newLeaf;
+    }
+    workspace.revealLeaf(leaf);
+  }
+  activateOrdersDashboard() {
+    new import_obsidian10.Notice("Orders Dashboard coming soon!");
+  }
+  activateInventoryDashboard() {
+    new import_obsidian10.Notice("Inventory Dashboard coming soon!");
+  }
+  activateEquipmentDashboard() {
+    new import_obsidian10.Notice("Equipment Dashboard coming soon!");
+  }
+  activateProtocolsDashboard() {
+    new import_obsidian10.Notice("Protocols Dashboard coming soon!");
+  }
+  activateLibraryDashboard() {
+    new import_obsidian10.Notice("Library Dashboard coming soon!");
+  }
+  activateGalleryDashboard() {
+    new import_obsidian10.Notice("Gallery Dashboard coming soon!");
+  }
+  activateCharacterizationDashboard() {
+    new import_obsidian10.Notice("Characterization Dashboard coming soon!");
+  }
   openNewDrawingModal() {
-    const view = this.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+    const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
     if (!view) {
-      new import_obsidian9.Notice("Please open a Markdown file first to insert a drawing.");
+      new import_obsidian10.Notice("Please open a Markdown file first to insert a drawing.");
       return;
     }
     new KetcherModal(this, "", "smiles", (newData, isFile, newFormat) => {
@@ -570723,10 +571250,10 @@ ${data}
     wrapper2.addEventListener("dblclick", (e6) => {
       e6.stopPropagation();
       if (isGridItem) {
-        new import_obsidian9.Notice("Cannot inline-edit grids yet. Edit code block manually.");
+        new import_obsidian10.Notice("Cannot inline-edit grids yet. Edit code block manually.");
         return;
       }
-      const view = this.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+      const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
       if (!view) return;
       const info = ctx.getSectionInfo(el2.parentElement || el2);
       new KetcherModal(this, smiles, "smiles", (newData, isFile, newFormat) => {
@@ -570883,7 +571410,7 @@ ${newData}
       });
       wrapper2.addEventListener("dblclick", (e6) => {
         e6.stopPropagation();
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+        const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
         if (!view) return;
         new KetcherModal(this, rawData, "smiles", (newData, isFile, newFormat) => {
           const editor4 = view.editor;
@@ -570894,7 +571421,7 @@ ${newData}
             return;
           }
           if (newFormat === "ket") {
-            new import_obsidian9.Notice("Inline reactions not supported. Inserted as block.");
+            new import_obsidian10.Notice("Inline reactions not supported. Inserted as block.");
             const updatedContent2 = content4.replace(prefix2 + rawData, `
 \`\`\`ket
 ${newData}
@@ -570910,7 +571437,7 @@ ${newData}
     } else if (type3 === "file") {
       const cleanFileName = rawData.replace("[[", "").replace("]]", "");
       const file = this.app.metadataCache.getFirstLinkpathDest(cleanFileName, sourcePath);
-      if (file && file instanceof import_obsidian9.TFile) {
+      if (file && file instanceof import_obsidian10.TFile) {
         const format3 = file.extension.toLowerCase();
         const fileData = await this.app.vault.read(file);
         requestAnimationFrame(async () => {
@@ -570950,17 +571477,17 @@ ${newData}
               openData = ex.data;
               openFormat = "svg";
             } else {
-              new import_obsidian9.Notice("Not a Ketcher SVG");
+              new import_obsidian10.Notice("Not a Ketcher SVG");
               return;
             }
           }
           new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
             if (isFile) {
-              new import_obsidian9.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
+              new import_obsidian10.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
               return;
             }
             if (newFormat && newFormat !== format3 && format3 !== "svg") {
-              new import_obsidian9.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
+              new import_obsidian10.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
             }
             await this.app.vault.modify(file, newData);
             wrapper2.innerHTML = `\u23F3`;
@@ -571149,7 +571676,7 @@ ${newData}
   }
   async injectNativeEmbed(embed, src2, sourcePath) {
     const file = this.app.metadataCache.getFirstLinkpathDest(src2, sourcePath);
-    if (!(file instanceof import_obsidian9.TFile)) {
+    if (!(file instanceof import_obsidian10.TFile)) {
       embed.innerHTML = `<div class="chem-native-embed-wrapper color-red">File not found: ${src2}</div>`;
       return;
     }
@@ -571221,11 +571748,11 @@ ${newData}
       }
       new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
         if (isFile) {
-          new import_obsidian9.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
+          new import_obsidian10.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
           return;
         }
         if (newFormat && newFormat !== format3 && format3 !== "svg") {
-          new import_obsidian9.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
+          new import_obsidian10.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
         }
         await this.app.vault.modify(file, newData);
         wrapper2.innerHTML = `<div class="color-text-muted" style="padding:15px; border:1px solid var(--background-modifier-border); border-radius:8px;">\u23F3 Updating...</div>`;
@@ -571286,7 +571813,7 @@ ${newData}
           } else {
             const cleanName = this.data.replace("[[", "").replace("]]", "");
             const file = plugin.app.metadataCache.getFirstLinkpathDest(cleanName, "");
-            if (file && file instanceof import_obsidian9.TFile) {
+            if (file && file instanceof import_obsidian10.TFile) {
               const format3 = file.extension.toLowerCase();
               const fileData = await plugin.app.vault.read(file);
               if (format3 === "svg") {
@@ -571375,7 +571902,7 @@ ${newData}
     }, { decorations: (v8) => v8.decorations });
   }
 };
-var ChemFileView = class extends import_obsidian9.TextFileView {
+var ChemFileView = class extends import_obsidian10.TextFileView {
   constructor(leaf, plugin) {
     super(leaf);
     __publicField(this, "plugin");
@@ -571420,11 +571947,11 @@ var ChemFileView = class extends import_obsidian9.TextFileView {
     wrapper2.ondblclick = () => {
       new KetcherModal(this.plugin, this.data, format3, async (newData, isFile, newFormat) => {
         if (isFile) {
-          new import_obsidian9.Notice(`Saved as new file: ${newData}`);
+          new import_obsidian10.Notice(`Saved as new file: ${newData}`);
           return;
         }
         if (newFormat && newFormat !== format3) {
-          new import_obsidian9.Notice(`Format was upgraded to ${newFormat}. Please rename the file extension!`);
+          new import_obsidian10.Notice(`Format was upgraded to ${newFormat}. Please rename the file extension!`);
         }
         this.data = newData;
         this.requestSave();
@@ -571437,7 +571964,7 @@ var ChemFileView = class extends import_obsidian9.TextFileView {
     this.contentEl.empty();
   }
 };
-var KetcherModal = class extends import_obsidian9.Modal {
+var KetcherModal = class extends import_obsidian10.Modal {
   constructor(plugin, initialData, format3, onSave) {
     super(plugin.app);
     __publicField(this, "plugin");
@@ -571503,7 +572030,7 @@ var KetcherModal = class extends import_obsidian9.Modal {
     const cancelBtn = btnContainer.createEl("button", { text: "Cancel" });
     const doSave = async (formatToGet) => {
       if (!this.ketcherInstance || !this.ketcherInstance.editor && !this.ketcherInstance.server) {
-        new import_obsidian9.Notice("Ketcher is still initializing...");
+        new import_obsidian10.Notice("Ketcher is still initializing...");
         return;
       }
       try {
@@ -571578,7 +572105,7 @@ var KetcherModal = class extends import_obsidian9.Modal {
           if (err.message && err.message.toLowerCase().includes("reaction")) {
             resultData = await this.ketcherInstance.getKet();
             finalFormat = "ket";
-            new import_obsidian9.Notice("Reactions cannot be saved in this format. Automatically upgraded to .KET format.");
+            new import_obsidian10.Notice("Reactions cannot be saved in this format. Automatically upgraded to .KET format.");
             if (this.isSavingAsFile) {
               this.isSavingAsFile = this.isSavingAsFile.replace(/\.[a-zA-Z0-9]+$/i, ".ket");
             }
@@ -571586,14 +572113,14 @@ var KetcherModal = class extends import_obsidian9.Modal {
             console.warn("Primary save failed, forcing fallback to .ket", err);
             resultData = await this.ketcherInstance.getKet();
             finalFormat = "ket";
-            new import_obsidian9.Notice(`Export to requested format failed. Saved as .ket instead to prevent data loss.`);
+            new import_obsidian10.Notice(`Export to requested format failed. Saved as .ket instead to prevent data loss.`);
             if (this.isSavingAsFile) {
               this.isSavingAsFile = this.isSavingAsFile.replace(/\.[a-zA-Z0-9]+$/i, ".ket");
             }
           }
         }
         if (!resultData) {
-          new import_obsidian9.Notice("Failed to generate structure data. Format may not be supported by this structure.");
+          new import_obsidian10.Notice("Failed to generate structure data. Format may not be supported by this structure.");
           return;
         }
         if (this.isSavingAsFile) {
@@ -571615,7 +572142,7 @@ var KetcherModal = class extends import_obsidian9.Modal {
         this.close();
       } catch (e6) {
         console.error(e6);
-        new import_obsidian9.Notice("Error saving from Ketcher: " + (e6.message || e6));
+        new import_obsidian10.Notice("Error saving from Ketcher: " + (e6.message || e6));
       }
     };
     saveBtn.onclick = () => doSave(this.format);
@@ -571661,7 +572188,7 @@ var KetcherModal = class extends import_obsidian9.Modal {
     this.plugin.bootHeadlessKetcher();
   }
 };
-var SaveFileModal = class extends import_obsidian9.Modal {
+var SaveFileModal = class extends import_obsidian10.Modal {
   constructor(app, onSubmit) {
     super(app);
     __publicField(this, "onSubmit");
@@ -571672,17 +572199,17 @@ var SaveFileModal = class extends import_obsidian9.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.createEl("h3", { text: "Save as File..." });
-    new import_obsidian9.Setting(contentEl).setName("Filename").setDesc("Enter a name for the new chemical file.").addText((text2) => text2.setPlaceholder("molecule").onChange((value) => {
+    new import_obsidian10.Setting(contentEl).setName("Filename").setDesc("Enter a name for the new chemical file.").addText((text2) => text2.setPlaceholder("molecule").onChange((value) => {
       this.filename = value;
     }).inputEl.addEventListener("keypress", (e6) => {
       if (e6.key === "Enter" && this.filename) {
         this.submit();
       }
     }));
-    new import_obsidian9.Setting(contentEl).setName("Format").setDesc("Select the file format to save as.").addDropdown((drop) => drop.addOption("mol", ".mol (MDL Molfile)").addOption("cdxml", ".cdxml (ChemDraw)").addOption("ket", ".ket (Ketcher Native)").addOption("rxn", ".rxn (MDL Rxnfile)").addOption("sdf", ".sdf (Structure Data)").addOption("fasta", ".fasta (FASTA Sequence)").addOption("sequence", ".sequence (Raw Sequence)").addOption("idt", ".idt (IDT Sequence)").addOption("helm", ".helm (HELM Macromolecule)").addOption("biln", ".biln (BILN Macromolecule)").addOption("ketcher.svg", ".svg (Ketcher SVG)").setValue("mol").onChange((value) => {
+    new import_obsidian10.Setting(contentEl).setName("Format").setDesc("Select the file format to save as.").addDropdown((drop) => drop.addOption("mol", ".mol (MDL Molfile)").addOption("cdxml", ".cdxml (ChemDraw)").addOption("ket", ".ket (Ketcher Native)").addOption("rxn", ".rxn (MDL Rxnfile)").addOption("sdf", ".sdf (Structure Data)").addOption("fasta", ".fasta (FASTA Sequence)").addOption("sequence", ".sequence (Raw Sequence)").addOption("idt", ".idt (IDT Sequence)").addOption("helm", ".helm (HELM Macromolecule)").addOption("biln", ".biln (BILN Macromolecule)").addOption("ketcher.svg", ".svg (Ketcher SVG)").setValue("mol").onChange((value) => {
       this.format = value;
     }));
-    new import_obsidian9.Setting(contentEl).addButton((btn) => btn.setButtonText("Save File").setCta().onClick(() => this.submit()));
+    new import_obsidian10.Setting(contentEl).addButton((btn) => btn.setButtonText("Save File").setCta().onClick(() => this.submit()));
     setTimeout(() => {
       const input = contentEl.querySelector('input[type="text"]');
       if (input) input.focus();
@@ -571693,7 +572220,7 @@ var SaveFileModal = class extends import_obsidian9.Modal {
       this.onSubmit(this.filename, this.format);
       this.close();
     } else {
-      new import_obsidian9.Notice("Please enter a filename.");
+      new import_obsidian10.Notice("Please enter a filename.");
     }
   }
   onClose() {

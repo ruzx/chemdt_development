@@ -53,12 +53,12 @@ css = css.replace(/\{([^{}]+)\}/g, (match, inner) => {
         }
 
         // --- OBSIDIAN LINTER DROPS ---
-        // By checking `prop.includes`, we safely drop the ENTIRE property 
-        // (including `-moz-` or `-webkit-` variants) without leaving dangling prefixes.
         if (
             prop.includes('column-count') || 
             prop.includes('column-gap') || 
             prop === 'text-indent' ||
+            prop === 'scrollbar-width' ||
+            prop === 'scrollbar-color' ||
             (prop === 'text-decoration' && val !== 'none' && val !== 'underline') ||
             (prop === 'filter' && val.toLowerCase().includes('progid:'))
         ) {
@@ -91,10 +91,16 @@ css = css.replace(/\{([^{}]+)\}/g, (match, inner) => {
     return `{${cleanedInner}}`;
 });
 
+// 3. REMOVE EMPTY BLOCKS
+// Because we stripped out `scrollbar-width`, some blocks might be left completely empty (e.g., `.class {}`).
+// This safely removes them.
+css = css.replace(/[^}{]+\{\s*\}/g, '');
+css = css.replace(/[^}{]+\{\s*\}/g, ''); // Run twice to catch nested empty media queries if any
+
 // Output the clean file to styles.css
 fs.writeFileSync('styles.css', css);
 
 // Cleanup the original main.css esbuild artifact
 if (cssFile === 'main.css') fs.unlinkSync('main.css');
 
-console.log('✅ Safely cleaned styles.css! All duplicate properties, IE hacks, and rogue slashes removed.');
+console.log('✅ Safely cleaned styles.css! All duplicate properties, IE hacks, rogue slashes, and standard scrollbars removed.');
