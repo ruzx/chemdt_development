@@ -5,19 +5,12 @@ export class OrgHelperCalculator {
     static calculate(data: any) {
         if (!data.type) return data;
 
-        // ==========================================
         // 1. NMR YIELD CALCULATOR
-        // ==========================================
         if (data.type === 'nmr_yield') {
-            const stdMass = data.standard_mass_mg || 0;
-            const stdMw = data.standard_mw || 1;
-            const stdInt = data.standard_integral || 1;
-            const stdH = data.standard_protons || 1;
-
-            const prodMw = data.product_mw || 1;
-            const prodInt = data.product_integral || 0;
-            const prodH = data.product_protons || 1;
-            const theoryMmol = data.theory_mmol || 1;
+            const stdMass = data.standard_mass_mg || 0; const stdMw = data.standard_mw || 1;
+            const stdInt = data.standard_integral || 1; const stdH = data.standard_protons || 1;
+            const prodMw = data.product_mw || 1; const prodInt = data.product_integral || 0;
+            const prodH = data.product_protons || 1; const theoryMmol = data.theory_mmol || 1;
 
             const stdMmol = stdMass / stdMw;
             const normStdInt = stdInt / stdH;
@@ -32,66 +25,68 @@ export class OrgHelperCalculator {
             }
         }
 
-        // ==========================================
         // 2. FARADAIC EFFICIENCY CALCULATOR
-        // ==========================================
         if (data.type === 'faradaic_efficiency') {
-            const mA = data.current_mA || 0;
-            const h = data.time_hours || 0;
-            const z = data.electrons_z || 2;
-            const prodMmol = data.product_mmol || 0;
-
-            // Q (Coulombs) = I (Amps) * t (seconds) => 1 mA * 1 hour = 3.6 C
+            const mA = data.current_mA || 0; const h = data.time_hours || 0;
+            const z = data.electrons_z || 2; const prodMmol = data.product_mmol || 0;
             data.total_coulombs = mA * h * 3.6;
-
-            // Faraday's Constant = 96485 C/mol
-            const molesOfElectrons = data.total_coulombs / 96485;
-            
-            // Theoretical max moles of product = Moles e- / z
-            data.theory_max_mmol = (molesOfElectrons / z) * 1000;
-
-            if (data.theory_max_mmol > 0) {
-                data.faradaic_efficiency = (prodMmol / data.theory_max_mmol) * 100;
-            } else {
-                data.faradaic_efficiency = 0;
-            }
+            data.theory_max_mmol = ((data.total_coulombs / 96485) / z) * 1000;
+            data.faradaic_efficiency = data.theory_max_mmol > 0 ? (prodMmol / data.theory_max_mmol) * 100 : 0;
         }
 
-        // ==========================================
-        // 3. REACTION SCREENING (MASTER MIX)
-        // ==========================================
-        if (data.type === 'reaction_screening') {
-            if (!data.components) data.components = [];
-            
-            const rxns = data.reactions || 1;
-            const overage = data.overage_percent !== undefined ? data.overage_percent : 10;
-            const calcRxns = rxns * (1 + overage / 100);
-            
-            const scaleMmol = data.scale_mmol || 0.1;
-            const volPerVial = data.vol_per_vial_ml || 1.0;
-
-            data.calculated_reactions = calcRxns;
-            data.total_stock_vol_ml = calcRxns * volPerVial;
-
-            data.components.forEach((c: any) => {
-                c.eq = c.eq || 1;
-                c.total_mmol = scaleMmol * c.eq * calcRxns;
-                if (c.mw) c.total_mass_mg = c.total_mmol * c.mw;
-                else c.total_mass_mg = 0;
-                if (c.density) c.total_vol_ul = (c.total_mass_mg / c.density) * 1000; 
-            });
-        }
-
-        // ==========================================
-        // 4. CATALYST METRICS (TON/TOF)
-        // ==========================================
+        // 3. CATALYST METRICS (TON/TOF)
         if (data.type === 'catalyst_metrics') {
-            const pMmol = data.product_mmol || 0;
-            const cMmol = data.catalyst_mmol || 1;
-            const t = data.time_hours || 1;
-            
+            const pMmol = data.product_mmol || 0; const cMmol = data.catalyst_mmol || 1; const t = data.time_hours || 1;
             data.ton = pMmol / cMmol;
             data.tof = data.ton / t;
+        }
+
+        // 4. ORGANOMETALLIC TITRATION
+        if (data.type === 'titration') {
+            const stdMass = data.standard_mass_mg || 0; const stdMw = data.standard_mw || 1;
+            const volUsed = data.titrant_vol_ml || 0; const ratio = data.stoichiometry_ratio || 1; 
+            data.molarity = (stdMw > 0 && volUsed > 0) ? ((stdMass / stdMw) * ratio) / volUsed : 0;
+        }
+
+        // 5. CHROMATOGRAPHY CV CALCULATOR
+        if (data.type === 'chromatography') {
+            const rf1 = data.rf_product || 0; const rf2 = data.rf_impurity || 0;
+            const d = data.column_diameter_cm || 0; const h = data.silica_height_cm || 0;
+
+            if (rf1 > 0 && rf2 > 0) {
+                data.delta_cv = Math.abs((1 / rf1) - (1 / rf2));
+                if (data.delta_cv > 0.4) data.difficulty = "Easy (Flash)";
+                else if (data.delta_cv > 0.2) data.difficulty = "Moderate";
+                else data.difficulty = "Difficult (Slow Gradient)";
+            } else { data.delta_cv = 0; data.difficulty = "-"; }
+            data.column_volume_ml = (d > 0 && h > 0) ? Math.PI * Math.pow(d/2, 2) * h * 0.65 : 0;
+        }
+
+        // 6. GREEN CHEMISTRY METRICS
+        if (data.type === 'green_metrics') {
+            const reagentsMass = data.total_reagents_mass_g || 0;
+            const solventMass = data.total_solvent_mass_g || 0;
+            const productMass = data.product_mass_g || 0;
+            const targetMw = data.target_product_mw || 0;
+            const reactantsMw = data.total_reactants_mw || 0;
+
+            if (productMass > 0) {
+                data.pmi = (reagentsMass + solventMass) / productMass;
+                data.e_factor = data.pmi - 1; // Simplification: E-Factor = PMI - 1
+            } else {
+                data.pmi = 0; data.e_factor = 0;
+            }
+            data.atom_economy = reactantsMw > 0 ? (targetMw / reactantsMw) * 100 : 0;
+        }
+
+        // 7. RECRYSTALLIZATION
+        if (data.type === 'recrystallization') {
+            const crude = data.crude_mass_mg || 0;
+            const recovered = data.recovered_mass_mg || 0;
+            const vol = data.solvent_vol_ml || 0;
+
+            data.recovery_percent = crude > 0 ? (recovered / crude) * 100 : 0;
+            data.concentration = vol > 0 ? crude / vol : 0;
         }
 
         return data;
@@ -106,8 +101,6 @@ export class OrganicHelpersRenderer {
         const { parseYaml, stringifyYaml } = require('obsidian'); 
         
         const wrapper = el.createDiv();
-        
-        // Amber/Orange theme for Organic Tools
         const themeColor = "#f59e0b"; 
         const bgSec = "var(--background-secondary)";
         const bdColor = "var(--background-modifier-border)";
@@ -124,13 +117,13 @@ export class OrganicHelpersRenderer {
 
         // Reusable SVG Icons
         const icons = {
-            flask: `<svg stroke="${themeColor}" fill="rgba(245,158,11,0.15)" width="48" height="48" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a2 2 0 0 0 1.8 2.45h10.96a2 2 0 0 0 1.8-2.45L14.21 10.42a2 2 0 0 1-.21-.896V2"/><path d="M8.5 2h7"/><path d="M14 16H5.5"/></svg>`,
-            pipette: `<svg stroke="var(--text-muted)" fill="none" width="32" height="32" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/></svg>`,
-            vial: `<svg stroke="var(--text-muted)" fill="none" width="24" height="24" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v17.5A2.5 2.5 0 0 1 6.5 22v0A2.5 2.5 0 0 1 4 19.5V2"/><path d="M3 2h5"/><path d="M4 14h5"/></svg>`,
             zap: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${themeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`,
             clock: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
             current: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`,
             nmrTube: `<svg stroke="${themeColor}" fill="none" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v18a2 2 0 0 0 4 0V2"/><path d="M8 2h8"/><path d="M10 16h4"/></svg>`,
+            column: `<svg stroke="${themeColor}" fill="none" width="32" height="32" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6"/><path d="M10 2v14.5a1.5 1.5 0 0 0 1.5 1.5h1a1.5 1.5 0 0 0 1.5-1.5V2"/><path d="M12 18v4"/></svg>`,
+            leaf: `<svg stroke="#10b981" fill="rgba(16,185,129,0.15)" width="32" height="32" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>`,
+            crystal: `<svg stroke="${themeColor}" fill="rgba(245,158,11,0.15)" width="32" height="32" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13"/><path d="M13 3l3 6-4 13"/></svg>`
         };
 
         try {
@@ -153,12 +146,6 @@ export class OrganicHelpersRenderer {
                 const n = Number(num);
                 if (isNaN(n) || n === 0) return '-';
                 return (n % 1 === 0) ? n.toString() : n.toFixed(decimals);
-            };
-
-            const makeEditableTd = (type: string, i: number, key: string, val: any, inputType: 'number'|'text'|'string' = 'number', customHtml?: string) => {
-                let innerHTML = customHtml !== undefined ? customHtml : (inputType === 'number' ? formatNum(val) : (val||'-'));
-                let rawValAttr = val !== undefined && val !== null ? String(val).replace(/"/g, '&quot;') : "";
-                return `<td class="org-editable" data-type="${type}" data-idx="${i}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawValAttr}" title="Double-click to edit" style="padding: 12px 10px; cursor: text; border-bottom: 1px solid ${bdColor};">${innerHTML}</td>`;
             };
 
             const makeEditableRoot = (key: string, val: any, inputType = 'number', unit = "") => {
@@ -271,71 +258,89 @@ export class OrganicHelpersRenderer {
             }
 
             // ==========================================
-            // 3. REACTION SCREENING (MASTER MIX)
+            // 3. GREEN CHEMISTRY METRICS
             // ==========================================
-            else if (data.type === 'reaction_screening') {
-                
-                // Visual Diagram (Replaces the text boxes)
+            else if (data.type === 'green_metrics') {
                 html += `
-                <div style="display: flex; align-items: stretch; background: var(--background-secondary-alt); border-radius: 8px; border: 1px solid var(--background-modifier-border); padding: 20px 10px; gap: 15px; margin-bottom: 24px;">
-                    
-                    <!-- Box 1: Master Mix -->
-                    <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        ${icons.flask}
-                        <div style="font-weight: 700; font-size: 15px; color: var(--text-normal); margin-top: 10px;">Master Vial</div>
-                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Fill to Total Volume:</div>
-                        <div style="font-size: 24px; font-weight: 800; color: ${themeColor}; margin-top: 4px;">${formatNum(data.total_stock_vol_ml)} <span style="font-size:14px; font-weight:500;">mL</span></div>
-                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">(Includes ${makeEditableRoot('overage_percent', data.overage_percent, 'number')}% overage)</div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Total Reagents Mass</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot('total_reagents_mass_g', data.total_reagents_mass_g)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g</span></div>
                     </div>
-
-                    <!-- Box 2: Pipette -->
-                    <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
-                        <div style="position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: ${themeColor}; z-index: 0; border-style: dashed; opacity: 0.5;"></div>
-                        <div style="background: var(--background-primary); padding: 15px; z-index: 1; display: flex; flex-direction: column; align-items: center; border-radius: 8px; border: 1px solid var(--background-modifier-border); box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                            ${icons.pipette}
-                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 10px; text-transform: uppercase;">Dispense</div>
-                            <div style="font-size: 18px; font-weight: 800; color: var(--text-normal); margin-top: 4px;">${makeEditableRoot('vol_per_vial_ml', data.vol_per_vial_ml)} <span style="font-size:12px; font-weight:500;">mL / vial</span></div>
-                        </div>
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Total Solvent Mass</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot('total_solvent_mass_g', data.total_solvent_mass_g)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g</span></div>
                     </div>
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Product Mass</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot('product_mass_g', data.product_mass_g)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g</span></div>
+                    </div>
+                </div>
 
-                    <!-- Box 3: Target Vials -->
-                    <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        <div style="display: flex; gap: 4px; justify-content: center; align-items: center;">
-                            ${Array.from({length: Math.min(data.reactions, 4)}).map(() => icons.vial).join('')}
-                            ${data.reactions > 4 ? `<div style="font-weight:bold; color:var(--text-muted); margin-left:4px;">...</div>` : ''}
-                        </div>
-                        <div style="font-weight: 700; font-size: 15px; color: var(--text-normal); margin-top: 10px;">Reaction Vials</div>
-                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Total Vials Prepared:</div>
-                        <div style="font-size: 24px; font-weight: 800; color: var(--text-normal); margin-top: 4px;">${makeEditableRoot('reactions', data.reactions)}</div>
-                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Scale: ${makeEditableRoot('scale_mmol', data.scale_mmol)} mmol / vial</div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Total Reactants MW</div>
+                        <div style="font-size:20px; font-weight:bold;">${makeEditableRoot('total_reactants_mw', data.total_reactants_mw)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g/mol</span></div>
+                    </div>
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Target Product MW</div>
+                        <div style="font-size:20px; font-weight:bold;">${makeEditableRoot('target_product_mw', data.target_product_mw)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g/mol</span></div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid #10b981; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1); position:relative;">
+                        <div style="position:absolute; top:10px; left:10px; opacity:0.7;">${icons.leaf}</div>
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Atom Economy</div>
+                        <div style="font-size:32px; font-weight:800; color:#10b981;">${data.atom_economy ? data.atom_economy.toFixed(1) + '%' : '-'}</div>
+                    </div>
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid #10b981; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Process Mass Intensity</div>
+                        <div style="font-size:32px; font-weight:800; color:var(--text-normal);">${data.pmi ? data.pmi.toFixed(2) : '-'}</div>
+                    </div>
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid #10b981; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">E-Factor</div>
+                        <div style="font-size:32px; font-weight:800; color:var(--text-normal);">${data.e_factor ? data.e_factor.toFixed(2) : '-'}</div>
                     </div>
                 </div>`;
-
-                // Table
-                html += `<div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
-                    <tr>
-                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Component</th>
-                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">MW (g/mol)</th>
-                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Equiv.</th>
-                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 600; color: var(--text-muted);">Total mmol</th>
-                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 700; color: ${themeColor};">Mass to Weigh (mg)</th>
-                    </tr>`;
-                
-                data.components.forEach((c: any, i: number) => {
-                    html += `<tr>
-                        ${makeEditableTd('components', i, 'name', c.name, 'text', c.name, "font-weight:600; color:var(--text-normal);")}
-                        ${makeEditableTd('components', i, 'mw', c.mw, 'number')}
-                        ${makeEditableTd('components', i, 'eq', c.eq, 'number', undefined, "font-weight:bold;")}
-                        <td style="padding: 12px 10px; color:var(--text-muted); border-bottom: 1px solid ${bdColor};">${formatNum(c.total_mmol, 3)}</td>
-                        <td style="padding: 12px 10px; font-weight:700; color:var(--text-normal); border-bottom: 1px solid ${bdColor}; font-size: 16px;">${c.total_mass_mg !== undefined && c.total_mass_mg > 0 ? c.total_mass_mg.toFixed(1) : '<span style="color:var(--text-muted); font-weight:normal;">-</span>'}</td>
-                    </tr>`;
-                });
-                html += `</table></div>`;
             }
 
             // ==========================================
-            // 4. CATALYST METRICS (TON/TOF)
+            // 4. RECRYSTALLIZATION
+            // ==========================================
+            else if (data.type === 'recrystallization') {
+                html += `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Crude Mass</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot('crude_mass_mg', data.crude_mass_mg)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mg</span></div>
+                    </div>
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Solvent Volume</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot('solvent_vol_ml', data.solvent_vol_ml)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mL</span></div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">${makeEditableRoot('solvent_name', data.solvent_name, 'text')}</div>
+                    </div>
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Recovered Mass</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot('recovered_mass_mg', data.recovered_mass_mg)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mg</span></div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1); position:relative;">
+                        <div style="position:absolute; top:10px; left:10px; opacity:0.7;">${icons.crystal}</div>
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Recovery</div>
+                        <div style="font-size:32px; font-weight:800; color:${data.recovery_percent >= 70 ? 'var(--text-success)' : (data.recovery_percent >= 40 ? 'var(--text-warning)' : 'var(--text-error)')};">${data.recovery_percent ? data.recovery_percent.toFixed(1) + '%' : '-'}</div>
+                    </div>
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Concentration</div>
+                        <div style="font-size:32px; font-weight:800; color:var(--text-normal);">${data.concentration ? data.concentration.toFixed(1) : '-'} <span style="font-size:16px; color:var(--text-muted); font-weight:500;">mg/mL</span></div>
+                    </div>
+                </div>`;
+            }
+
+            // ==========================================
+            // 5. CATALYST METRICS (TON/TOF)
             // ==========================================
             else if (data.type === 'catalyst_metrics') {
                 html += `
@@ -362,6 +367,85 @@ export class OrganicHelpersRenderer {
                     <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
                         <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Turnover Frequency (TOF)</div>
                         <div style="font-size:32px; font-weight:800; color:${themeColor};">${data.tof ? data.tof.toLocaleString(undefined, {maximumFractionDigits: 2}) : '-'} <span style="font-size:16px; color:var(--text-muted); font-weight:500;">h⁻¹</span></div>
+                    </div>
+                </div>`;
+            }
+
+            // ==========================================
+            // 6. TITRATION
+            // ==========================================
+            else if (data.type === 'titration') {
+                html += `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                        <h4 style="margin: 0 0 10px 0; color: var(--text-normal); font-size: 13px;">Titration Standard</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Name:</span> ${makeEditableRoot('standard_name', data.standard_name, 'text')}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">MW (g/mol):</span> ${makeEditableRoot('standard_mw', data.standard_mw)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Mass used (mg):</span> ${makeEditableRoot('standard_mass_mg', data.standard_mass_mg)}
+                        </div>
+                    </div>
+
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                        <h4 style="margin: 0 0 10px 0; color: var(--text-normal); font-size: 13px;">Titrant</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Reagent:</span> ${makeEditableRoot('titrant_name', data.titrant_name, 'text')}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Volume added (mL):</span> ${makeEditableRoot('titrant_vol_ml', data.titrant_vol_ml)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Stoichiometry Ratio:</span> ${makeEditableRoot('stoichiometry_ratio', data.stoichiometry_ratio)}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                    <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:700;">Calculated Molarity</div>
+                    <div style="font-size:32px; font-weight:800; color:${themeColor};">${data.molarity ? data.molarity.toFixed(3) : '-'} <span style="font-size:16px; color:var(--text-muted); font-weight:500;">M</span></div>
+                </div>`;
+            }
+
+            // ==========================================
+            // 7. CHROMATOGRAPHY
+            // ==========================================
+            else if (data.type === 'chromatography') {
+                html += `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--text-normal); font-size: 14px;">TLC Retention Factors</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Product Rf:</span> ${makeEditableRoot('rf_product', data.rf_product)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Closest Impurity Rf:</span> ${makeEditableRoot('rf_impurity', data.rf_impurity)}
+                        </div>
+                    </div>
+
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--text-normal); font-size: 14px; display:flex; align-items:center; gap:6px;">${icons.column} Column Dimensions</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Diameter (cm):</span> ${makeEditableRoot('column_diameter_cm', data.column_diameter_cm)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Silica Height (cm):</span> ${makeEditableRoot('silica_height_cm', data.silica_height_cm)}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Separation (ΔCV)</div>
+                        <div style="font-size:26px; font-weight:800; color:var(--text-normal);">${data.delta_cv ? data.delta_cv.toFixed(2) : '-'}</div>
+                        <div style="font-size:12px; color:${data.delta_cv > 0.4 ? 'var(--text-success)' : (data.delta_cv > 0.2 ? 'var(--text-warning)' : 'var(--text-error)')}; font-weight:600; margin-top:8px;">${data.difficulty}</div>
+                    </div>
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Column Volume (CV)</div>
+                        <div style="font-size:26px; font-weight:800; color:${themeColor};">${data.column_volume_ml ? data.column_volume_ml.toFixed(0) : '-'} <span style="font-size:16px; color:var(--text-muted); font-weight:500;">mL</span></div>
                     </div>
                 </div>`;
             }
@@ -457,39 +541,24 @@ export class OrganicHelpersRenderer {
             createActionBarBtn("📋 Copy Data", () => {
                 let txt = "";
                 if (data.type === 'nmr_yield') {
-                    txt = `Parameter\tValue\n`;
-                    txt += `Internal Standard\t${data.standard_name || '-'}\n`;
-                    txt += `Standard Mass (mg)\t${data.standard_mass_mg}\n`;
-                    txt += `Theory (mmol)\t${data.theory_mmol}\n`;
-                    txt += `Calculated Amount (mmol)\t${data.product_mmol?.toFixed(3)}\n`;
-                    txt += `Calculated Amount (mg)\t${data.product_mass_mg?.toFixed(1)}\n`;
-                    txt += `NMR Yield (%)\t${data.yield_percent?.toFixed(1)}\n`;
+                    txt = `Parameter\tValue\nInternal Standard\t${data.standard_name || '-'}\nStandard Mass (mg)\t${data.standard_mass_mg}\nTheory (mmol)\t${data.theory_mmol}\nCalculated Amount (mmol)\t${data.product_mmol?.toFixed(3)}\nCalculated Amount (mg)\t${data.product_mass_mg?.toFixed(1)}\nNMR Yield (%)\t${data.yield_percent?.toFixed(1)}\n`;
                 } else if (data.type === 'faradaic_efficiency') {
-                    txt = `Parameter\tValue\n`;
-                    txt += `Product Formed (mmol)\t${data.product_mmol}\n`;
-                    txt += `Electrons (z)\t${data.electrons_z}\n`;
-                    txt += `Current (mA)\t${data.current_mA}\n`;
-                    txt += `Time (h)\t${data.time_hours}\n`;
-                    txt += `Total Charge (C)\t${data.total_coulombs?.toFixed(1)}\n`;
-                    txt += `Theoretical Max (mmol)\t${data.theory_max_mmol?.toFixed(3)}\n`;
-                    txt += `Faradaic Efficiency (%)\t${data.faradaic_efficiency?.toFixed(1)}\n`;
-                } else if (data.type === 'reaction_screening') {
-                    txt = `Component\tMW\tEq\tTotal mmol\tMass to Weigh (mg)\n`;
-                    data.components.forEach((c:any) => txt += `${c.name||'-'}\t${c.mw||'-'}\t${c.eq||'-'}\t${c.total_mmol?.toFixed(3)||'-'}\t${c.total_mass_mg?.toFixed(1)||'-'}\n`);
-                    txt += `\nMaster Mix Total Volume (mL)\t${data.total_stock_vol_ml?.toFixed(2)}\n`;
-                    txt += `Dispense Volume per Vial (mL)\t${data.vol_per_vial_ml}\n`;
+                    txt = `Parameter\tValue\nProduct Formed (mmol)\t${data.product_mmol}\nElectrons (z)\t${data.electrons_z}\nCurrent (mA)\t${data.current_mA}\nTime (h)\t${data.time_hours}\nTotal Charge (C)\t${data.total_coulombs?.toFixed(1)}\nTheoretical Max (mmol)\t${data.theory_max_mmol?.toFixed(3)}\nFaradaic Efficiency (%)\t${data.faradaic_efficiency?.toFixed(1)}\n`;
                 } else if (data.type === 'catalyst_metrics') {
-                    txt = `Parameter\tValue\n`;
-                    txt += `Product (mmol)\t${data.product_mmol}\n`;
-                    txt += `Catalyst (mmol)\t${data.catalyst_mmol}\n`;
-                    txt += `Time (h)\t${data.time_hours}\n`;
-                    txt += `TON\t${data.ton?.toFixed(1)}\n`;
-                    txt += `TOF (h-1)\t${data.tof?.toFixed(2)}\n`;
+                    txt = `Parameter\tValue\nProduct (mmol)\t${data.product_mmol}\nCatalyst (mmol)\t${data.catalyst_mmol}\nTime (h)\t${data.time_hours}\nTON\t${data.ton?.toFixed(1)}\nTOF (h-1)\t${data.tof?.toFixed(2)}\n`;
+                } else if (data.type === 'titration') {
+                    txt = `Parameter\tValue\nStandard\t${data.standard_name || '-'}\nStandard Mass (mg)\t${data.standard_mass_mg}\nTitrant\t${data.titrant_name || '-'}\nVolume (mL)\t${data.titrant_vol_ml}\nMolarity (M)\t${data.molarity?.toFixed(3)}\n`;
+                } else if (data.type === 'chromatography') {
+                    txt = `Parameter\tValue\nProduct Rf\t${data.rf_product}\nImpurity Rf\t${data.rf_impurity}\nDelta CV\t${data.delta_cv?.toFixed(2)}\nColumn Volume (mL)\t${data.column_volume_ml?.toFixed(0)}\n`;
+                } else if (data.type === 'green_metrics') {
+                    txt = `Parameter\tValue\nReagents Mass (g)\t${data.total_reagents_mass_g}\nSolvent Mass (g)\t${data.total_solvent_mass_g}\nProduct Mass (g)\t${data.product_mass_g}\nProcess Mass Intensity (PMI)\t${data.pmi?.toFixed(2)}\nE-Factor\t${data.e_factor?.toFixed(2)}\nAtom Economy (%)\t${data.atom_economy?.toFixed(1)}\n`;
+                } else if (data.type === 'recrystallization') {
+                    txt = `Parameter\tValue\nCrude Mass (mg)\t${data.crude_mass_mg}\nRecovered Mass (mg)\t${data.recovered_mass_mg}\nRecovery (%)\t${data.recovery_percent?.toFixed(1)}\n`;
                 } else {
                     txt = JSON.stringify(data, null, 2);
                 }
                 navigator.clipboard.writeText(txt);
-                new Notice("Table copied to clipboard (Excel ready)!");
+                new Notice("Data copied to clipboard (Excel ready)!");
             });
 
             return wrapper;

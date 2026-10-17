@@ -14778,7 +14778,7 @@ var require_lodash = __commonJS({
           result2.placeholder = curryRight.placeholder;
           return result2;
         }
-        function debounce7(func, wait, options3) {
+        function debounce14(func, wait, options3) {
           var lastArgs, lastThis, maxWait, result2, timerId, lastCallTime, lastInvokeTime = 0, leading = false, maxing = false, trailing = true;
           if (typeof func != "function") {
             throw new TypeError2(FUNC_ERROR_TEXT);
@@ -14958,7 +14958,7 @@ var require_lodash = __commonJS({
             leading = "leading" in options3 ? !!options3.leading : leading;
             trailing = "trailing" in options3 ? !!options3.trailing : trailing;
           }
-          return debounce7(func, wait, {
+          return debounce14(func, wait, {
             "leading": leading,
             "maxWait": wait,
             "trailing": trailing
@@ -15977,7 +15977,7 @@ var require_lodash = __commonJS({
         lodash.create = create3;
         lodash.curry = curry;
         lodash.curryRight = curryRight;
-        lodash.debounce = debounce7;
+        lodash.debounce = debounce14;
         lodash.defaults = defaults2;
         lodash.defaultsDeep = defaultsDeep;
         lodash.defer = defer;
@@ -562249,7 +562249,7 @@ __export(main_exports, {
   extractDataFromSvg: () => extractDataFromSvg
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian15 = require("obsidian");
+var import_obsidian22 = require("obsidian");
 var import_react25 = __toESM(require_react());
 var import_react_dom6 = __toESM(require_react_dom());
 
@@ -569696,8 +569696,1508 @@ var ElnDashboardView = class extends import_obsidian7.ItemView {
   }
 };
 
-// SharedPathway.ts
+// InventoryDashboard.ts
 var import_obsidian8 = require("obsidian");
+init_SharedBase();
+var INVENTORY_DASHBOARD_VIEW_TYPE = "chem-inventory-dashboard";
+var InventoryDashboardView = class extends import_obsidian8.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    __publicField(this, "plugin");
+    __publicField(this, "toolbarEl");
+    __publicField(this, "tableBodyEl");
+    __publicField(this, "allEntries", []);
+    __publicField(this, "currentFilter", "All");
+    __publicField(this, "searchQuery", "");
+    __publicField(this, "observer");
+    this.plugin = plugin;
+    this.observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const el2 = entry.target;
+          const smiles = el2.dataset.smiles;
+          if (smiles && !el2.dataset.rendered) {
+            el2.dataset.rendered = "true";
+            this.plugin.api.renderStructure(smiles, 120, 100).then((renderEl) => {
+              el2.empty();
+              if (renderEl) {
+                renderEl.style.maxWidth = "100%";
+                renderEl.style.maxHeight = "100%";
+                el2.appendChild(renderEl);
+              } else {
+                el2.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">Invalid</span>`;
+              }
+            });
+          }
+        }
+      });
+    }, { root: null, rootMargin: "150px", threshold: 0.1 });
+  }
+  getViewType() {
+    return INVENTORY_DASHBOARD_VIEW_TYPE;
+  }
+  getDisplayText() {
+    return "Chemical Inventory";
+  }
+  getIcon() {
+    return "package";
+  }
+  async onOpen() {
+    const container = this.containerEl.children[1];
+    container.empty();
+    container.addClass("chem-inventory-dashboard-view");
+    Object.assign(container.style, {
+      display: "flex",
+      flexDirection: "column",
+      padding: "0",
+      background: "var(--background-primary)"
+    });
+    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    renderLimsNav(titleArea, "inventory", this.plugin);
+    titleArea.createEl("h2", { text: "Chemical Inventory", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
+    titleArea.createEl("span", { text: "Track reagents, locations, and stock levels", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
+    const newBtn = header.createEl("button", { text: "+ Add Item", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" } });
+    newBtn.onclick = () => {
+      const folder = window.localStorage.getItem("chem-inv-dir") || "Inventory";
+      new AddInventoryModal(this.app, this.plugin, folder, () => {
+        this.loadInventory();
+      }).open();
+    };
+    this.toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const leftTools = this.toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center;" } });
+    const filterTabs = leftTools.createDiv({ attr: { style: "display: flex; gap: 8px;" } });
+    const tabs = ["All", "Available", "Checked Out"];
+    tabs.forEach((t8) => {
+      const btn = filterTabs.createEl("button", { text: t8, attr: { style: `border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 600; border: 1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}; background: ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)"}; color: ${this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)"}; box-shadow: none;` } });
+      btn.onclick = () => {
+        this.currentFilter = t8;
+        this.renderToolbar();
+        this.applyFilters();
+      };
+    });
+    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px; margin-left: 10px;" } });
+    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
+    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-inv-dir") || "Inventory", attr: { style: "width: 120px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    dirInp.onchange = (e6) => {
+      window.localStorage.setItem("chem-inv-dir", e6.target.value.trim());
+      this.loadInventory();
+    };
+    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search name, CAS, location...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" } });
+    searchInp.oninput = (e6) => {
+      this.searchQuery = e6.target.value.toLowerCase();
+      this.applyFilters();
+    };
+    const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" } });
+    const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px;" } });
+    const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" } });
+    const tr2 = thead.createEl("tr");
+    const cols = [
+      { name: "Structure", width: "140px" },
+      { name: "Item Details", width: "250px" },
+      { name: "Location & Stock", width: "150px" },
+      { name: "Status", width: "120px" },
+      { name: "Actions", width: "120px" }
+    ];
+    cols.forEach((c10) => {
+      tr2.createEl("th", { text: c10.name, attr: { style: `padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; width: ${c10.width};` } });
+    });
+    this.tableBodyEl = table.createEl("tbody");
+    await this.loadInventory();
+    const requestRefresh = (0, import_obsidian8.debounce)(() => {
+      this.loadInventory();
+    }, 2e3, true);
+    this.registerEvent(this.app.vault.on("modify", requestRefresh));
+    this.registerEvent(this.app.vault.on("create", requestRefresh));
+    this.registerEvent(this.app.vault.on("delete", requestRefresh));
+  }
+  renderToolbar() {
+    const btns = this.toolbarEl.querySelectorAll("button");
+    btns.forEach((btn) => {
+      const isMatch = btn.innerText === this.currentFilter;
+      btn.style.background = isMatch ? "var(--interactive-accent)" : "var(--background-primary)";
+      btn.style.color = isMatch ? "var(--text-on-accent)" : "var(--text-muted)";
+      btn.style.borderColor = isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)";
+    });
+  }
+  async loadInventory() {
+    var _a;
+    const targetDir = window.localStorage.getItem("chem-inv-dir") || "Inventory";
+    const files = this.app.vault.getMarkdownFiles();
+    const entries = [];
+    for (const file of files) {
+      const inFolder = targetDir && file.path.startsWith(targetDir);
+      const cache2 = this.app.metadataCache.getFileCache(file);
+      const fm = cache2 == null ? void 0 : cache2.frontmatter;
+      const fmTags = (fm == null ? void 0 : fm.tags) || [];
+      const isTagged = Array.isArray(fmTags) ? fmTags.includes("inventory") : fmTags === "inventory";
+      if (!inFolder && !isTagged) continue;
+      let smiles = (fm == null ? void 0 : fm.smiles) || "";
+      if (!smiles) {
+        const hasCodeBlock = (_a = cache2 == null ? void 0 : cache2.sections) == null ? void 0 : _a.some((s8) => s8.type === "code");
+        if (hasCodeBlock) {
+          const content4 = await this.app.vault.cachedRead(file);
+          const blockMatch = content4.match(/```smiles\s*\n([\s\S]*?)\n```/);
+          if (blockMatch) smiles = blockMatch[1].trim();
+        }
+      }
+      const name = (fm == null ? void 0 : fm.name) || file.basename;
+      const cas = (fm == null ? void 0 : fm.cas) || "";
+      const supplier = (fm == null ? void 0 : fm.supplier) || "-";
+      const location2 = (fm == null ? void 0 : fm.location) || "Unassigned";
+      entries.push({
+        file,
+        name,
+        smiles,
+        cas,
+        supplier,
+        location: location2,
+        amount: (fm == null ? void 0 : fm.amount) || "-",
+        status: (fm == null ? void 0 : fm.status) || "Available",
+        checkedOutBy: (fm == null ? void 0 : fm.checked_out_by) || "",
+        lastUpdated: (fm == null ? void 0 : fm.last_updated) || "-",
+        timestamp: file.stat.mtime,
+        searchText: `${name} ${cas} ${supplier} ${location2}`.toLowerCase()
+      });
+    }
+    this.allEntries = entries.sort((a9, b9) => a9.name.localeCompare(b9.name));
+    this.buildTableDOM();
+    this.applyFilters();
+  }
+  buildTableDOM() {
+    this.tableBodyEl.empty();
+    this.observer.disconnect();
+    if (this.allEntries.length === 0) {
+      this.tableBodyEl.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No inventory items found. Add items to an Inventory folder or use tags: [inventory].</td></tr>`;
+      return;
+    }
+    this.allEntries.forEach((e6) => {
+      const tr2 = this.tableBodyEl.createEl("tr", { attr: { style: "transition: background 0.2s;" } });
+      e6.rowEl = tr2;
+      tr2.onmouseover = () => tr2.style.backgroundColor = "var(--background-secondary-alt)";
+      tr2.onmouseout = () => tr2.style.backgroundColor = "transparent";
+      const tdStruct = tr2.createEl("td", { attr: { style: "padding: 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      const structWrap = tdStruct.createDiv({ attr: { "data-smiles": e6.smiles, style: "width: 120px; height: 100px; display: flex; align-items: center; justify-content: center; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 6px; cursor: pointer;" } });
+      structWrap.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
+      if (e6.smiles) {
+        structWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">\u23F3 Loading...</span>`;
+        this.observer.observe(structWrap);
+      } else {
+        structWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">No Structure</span>`;
+      }
+      const tdDetails = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      const nameEl = tdDetails.createDiv({ text: e6.name, attr: { style: "font-weight: 700; color: var(--text-accent); font-size: 14px; margin-bottom: 6px; cursor: pointer;" } });
+      nameEl.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
+      if (e6.cas) tdDetails.createDiv({ text: `CAS: ${e6.cas}`, attr: { style: "font-size: 11px; color: var(--text-muted); margin-bottom: 2px;" } });
+      tdDetails.createDiv({ text: `Supplier: ${e6.supplier}`, attr: { style: "font-size: 11px; color: var(--text-muted);" } });
+      const tdLoc = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      tdLoc.createDiv({ text: `\u{1F4CD} ${e6.location}`, attr: { style: "font-size: 13px; color: var(--text-normal); font-weight: 500; margin-bottom: 4px;" } });
+      tdLoc.createDiv({ text: `\u2696\uFE0F ${e6.amount}`, attr: { style: "font-size: 12px; color: var(--text-muted);" } });
+      const tdStatus = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      const isAvail = e6.status === "Available";
+      const color5 = isAvail ? "var(--text-success)" : "var(--text-warning)";
+      const border3 = isAvail ? "var(--text-success)" : "var(--text-warning)";
+      tdStatus.createDiv({ text: e6.status.toUpperCase(), attr: { style: `display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; color: ${color5}; border: 1px solid ${border3}; background: var(--background-primary); margin-bottom: 4px;` } });
+      if (!isAvail && e6.checkedOutBy) {
+        tdStatus.createDiv({ text: `\u{1F464} ${e6.checkedOutBy}`, attr: { style: "font-size: 11px; color: var(--text-muted); margin-top: 4px;" } });
+      }
+      const tdActions = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      const actContainer = tdActions.createDiv({ attr: { style: "display: flex; flex-direction: column; gap: 6px;" } });
+      const toggleBtn = actContainer.createEl("button", { text: isAvail ? "\u{1F4E4} Check Out" : "\u{1F4E5} Return", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
+      toggleBtn.onclick = async () => {
+        const newStatus = isAvail ? "Checked Out" : "Available";
+        const user = newStatus === "Checked Out" ? "Current User" : "";
+        await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
+          fm.status = newStatus;
+          fm.checked_out_by = user;
+          fm.last_updated = window.moment().format("YYYY-MM-DD");
+        });
+        new import_obsidian8.Notice(`${e6.name} is now ${newStatus}`);
+      };
+      const qrBtn = actContainer.createEl("button", { text: "\u{1F5A8}\uFE0F Label", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
+      qrBtn.onclick = () => {
+        new QrCodeModal(this.app, e6.file).open();
+      };
+    });
+  }
+  // CPU-Free Filtering: Toggles display:none directly on the DOM rows
+  applyFilters() {
+    this.allEntries.forEach((e6) => {
+      if (!e6.rowEl) return;
+      const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
+      const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
+      if (matchFilter && matchSearch) {
+        e6.rowEl.style.display = "";
+      } else {
+        e6.rowEl.style.display = "none";
+      }
+    });
+  }
+  async onClose() {
+    this.observer.disconnect();
+  }
+};
+
+// EquipmentDashboard.ts
+var import_obsidian9 = require("obsidian");
+init_SharedBase();
+var EQUIPMENT_DASHBOARD_VIEW_TYPE = "chem-equipment-dashboard";
+var EquipmentDashboardView = class extends import_obsidian9.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    __publicField(this, "plugin");
+    __publicField(this, "toolbarEl");
+    __publicField(this, "tableBodyEl");
+    __publicField(this, "allEntries", []);
+    __publicField(this, "currentFilter", "All");
+    __publicField(this, "searchQuery", "");
+    this.plugin = plugin;
+  }
+  getViewType() {
+    return EQUIPMENT_DASHBOARD_VIEW_TYPE;
+  }
+  getDisplayText() {
+    return "Lab Equipment";
+  }
+  getIcon() {
+    return "microscope";
+  }
+  async onOpen() {
+    const container = this.containerEl.children[1];
+    container.empty();
+    container.addClass("chem-equipment-dashboard-view");
+    Object.assign(container.style, {
+      display: "flex",
+      flexDirection: "column",
+      padding: "0",
+      background: "var(--background-primary)"
+    });
+    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    renderLimsNav(titleArea, "equipment", this.plugin);
+    titleArea.createEl("h2", { text: "Lab Equipment", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
+    titleArea.createEl("span", { text: "Track instrument bookings, manuals, and maintenance logs", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
+    const newBtn = header.createEl("button", { text: "+ Add Instrument", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" } });
+    newBtn.onclick = () => this.createNewEquipment();
+    this.toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const leftTools = this.toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center;" } });
+    const filterTabs = leftTools.createDiv({ attr: { style: "display: flex; gap: 8px;" } });
+    const tabs = ["All", "Available", "In Use", "Maintenance"];
+    tabs.forEach((t8) => {
+      const btn = filterTabs.createEl("button", { text: t8, attr: { style: `border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 600; border: 1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}; background: ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)"}; color: ${this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)"}; box-shadow: none;` } });
+      btn.onclick = () => {
+        this.currentFilter = t8;
+        this.renderToolbar();
+        this.applyFilters();
+      };
+    });
+    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px; margin-left: 10px;" } });
+    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
+    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-equip-dir") || "Equipment", attr: { style: "width: 120px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    dirInp.onchange = (e6) => {
+      window.localStorage.setItem("chem-equip-dir", e6.target.value.trim());
+      this.loadEquipment();
+    };
+    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search instrument or location...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" } });
+    searchInp.oninput = (e6) => {
+      this.searchQuery = e6.target.value.toLowerCase();
+      this.applyFilters();
+    };
+    const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" } });
+    const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px;" } });
+    const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" } });
+    const tr2 = thead.createEl("tr");
+    ["Instrument", "Location", "Status", "Maintenance", "Actions"].forEach((c10) => {
+      tr2.createEl("th", { text: c10, attr: { style: "padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;" } });
+    });
+    this.tableBodyEl = table.createEl("tbody");
+    await this.loadEquipment();
+    const requestRefresh = (0, import_obsidian9.debounce)(() => this.loadEquipment(), 2e3, true);
+    this.registerEvent(this.app.vault.on("modify", requestRefresh));
+    this.registerEvent(this.app.vault.on("create", requestRefresh));
+    this.registerEvent(this.app.vault.on("delete", requestRefresh));
+  }
+  renderToolbar() {
+    const btns = this.toolbarEl.querySelectorAll("button");
+    btns.forEach((btn) => {
+      const isMatch = btn.innerText === this.currentFilter;
+      btn.style.background = isMatch ? "var(--interactive-accent)" : "var(--background-primary)";
+      btn.style.color = isMatch ? "var(--text-on-accent)" : "var(--text-muted)";
+      btn.style.borderColor = isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)";
+    });
+  }
+  async createNewEquipment() {
+    const targetDir = window.localStorage.getItem("chem-equip-dir") || "Equipment";
+    if (!await this.app.vault.adapter.exists(targetDir)) {
+      await this.app.vault.createFolder(targetDir);
+    }
+    const name = "New Instrument " + window.moment().format("HHmmss");
+    const content4 = `---
+tags: [equipment]
+name: "${name}"
+location: "Unassigned"
+status: "Available"
+booked_by: ""
+next_maintenance: "${window.moment().add(1, "year").format("YYYY-MM-DD")}"
+contact: ""
+---
+# ${name}
+
+## \u{1F4D6} Standard Operating Procedure
+1. Turn on the machine...
+
+## \u{1F517} Important Links
+- [Link to PDF Manual]()
+
+## \u{1F6E0}\uFE0F Service Logs
+- **${window.moment().format("YYYY-MM-DD")}:** Added to system.
+`;
+    const file = await this.app.vault.create(`${targetDir}/${name}.md`, content4);
+    this.app.workspace.getLeaf(false).openFile(file);
+    new import_obsidian9.Notice(`Created ${name}`);
+  }
+  async loadEquipment() {
+    var _a;
+    const targetDir = window.localStorage.getItem("chem-equip-dir") || "Equipment";
+    const files = this.app.vault.getMarkdownFiles();
+    const entries = [];
+    for (const file of files) {
+      const inFolder = targetDir && file.path.startsWith(targetDir);
+      const cache2 = this.app.metadataCache.getFileCache(file);
+      const fmTags = ((_a = cache2 == null ? void 0 : cache2.frontmatter) == null ? void 0 : _a.tags) || [];
+      const isTagged = Array.isArray(fmTags) ? fmTags.includes("equipment") : fmTags === "equipment";
+      if (!inFolder && !isTagged) continue;
+      const fm = (cache2 == null ? void 0 : cache2.frontmatter) || {};
+      const name = fm.name || file.basename;
+      const location2 = fm.location || "Unknown";
+      const contact = fm.contact || "";
+      entries.push({
+        file,
+        name,
+        location: location2,
+        status: fm.status || "Available",
+        bookedBy: fm.booked_by || "",
+        nextMaintenance: fm.next_maintenance || "-",
+        contact,
+        searchText: `${name} ${location2} ${contact}`.toLowerCase()
+      });
+    }
+    this.allEntries = entries.sort((a9, b9) => a9.name.localeCompare(b9.name));
+    this.buildTableDOM();
+    this.applyFilters();
+  }
+  buildTableDOM() {
+    this.tableBodyEl.empty();
+    if (this.allEntries.length === 0) {
+      this.tableBodyEl.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No equipment found. Create notes in an 'Equipment' folder or use tags: [equipment].</td></tr>`;
+      return;
+    }
+    this.allEntries.forEach((e6) => {
+      const tr2 = this.tableBodyEl.createEl("tr", { attr: { style: "cursor: default; transition: background 0.2s;" } });
+      e6.rowEl = tr2;
+      tr2.onmouseover = () => tr2.style.backgroundColor = "var(--background-secondary-alt)";
+      tr2.onmouseout = () => tr2.style.backgroundColor = "transparent";
+      const tdName = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      const nameLink = tdName.createDiv({ text: `\u{1F52C} ${e6.name}`, attr: { style: "font-weight: 700; color: var(--text-accent); font-size: 14px; cursor: pointer; margin-bottom: 4px;" } });
+      nameLink.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
+      if (e6.contact) tdName.createDiv({ text: `Contact: ${e6.contact}`, attr: { style: "font-size: 11px; color: var(--text-muted);" } });
+      tr2.createEl("td", { text: `\u{1F4CD} ${e6.location}`, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); font-weight: 500;" } });
+      const tdStatus = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      const isAvail = e6.status === "Available";
+      const color5 = isAvail ? "var(--text-success)" : e6.status === "Maintenance" ? "var(--text-error)" : "var(--text-warning)";
+      tdStatus.createDiv({ text: e6.status.toUpperCase(), attr: { style: `display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; color: ${color5}; border: 1px solid ${color5}; background: var(--background-primary); margin-bottom: 4px;` } });
+      if (e6.bookedBy) tdStatus.createDiv({ text: `\u{1F464} ${e6.bookedBy}`, attr: { style: "font-size: 11px; color: var(--text-muted); margin-top: 4px;" } });
+      tr2.createEl("td", { text: e6.nextMaintenance, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); color: var(--text-muted);" } });
+      const tdAct = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      const actContainer = tdAct.createDiv({ attr: { style: "display: flex; flex-direction: column; gap: 6px;" } });
+      const btn = actContainer.createEl("button", { text: isAvail ? "\u{1F4C5} Book" : "\u2705 Release", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
+      btn.onclick = async () => {
+        const newStatus = isAvail ? "In Use" : "Available";
+        const user = isAvail ? "Current User" : "";
+        await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
+          fm.status = newStatus;
+          fm.booked_by = user;
+        });
+        new import_obsidian9.Notice(`${e6.name} is now ${newStatus}.`);
+      };
+      if (e6.status !== "Maintenance") {
+        const maintBtn = actContainer.createEl("button", { text: "\u{1F527} Maint.", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
+        maintBtn.onclick = async () => {
+          await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
+            fm.status = "Maintenance";
+            fm.booked_by = "Service Team";
+          });
+          new import_obsidian9.Notice(`${e6.name} set to Maintenance.`);
+        };
+      }
+    });
+  }
+  applyFilters() {
+    this.allEntries.forEach((e6) => {
+      if (!e6.rowEl) return;
+      const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
+      const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
+      e6.rowEl.style.display = matchFilter && matchSearch ? "" : "none";
+    });
+  }
+  async onClose() {
+  }
+};
+
+// OrdersDashboard.ts
+var import_obsidian10 = require("obsidian");
+init_SharedBase();
+var ORDERS_DASHBOARD_VIEW_TYPE = "chem-orders-dashboard";
+var OrdersDashboardView = class extends import_obsidian10.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    __publicField(this, "plugin");
+    __publicField(this, "toolbarEl");
+    __publicField(this, "tableBodyEl");
+    __publicField(this, "allEntries", []);
+    __publicField(this, "currentFilter", "All");
+    __publicField(this, "searchQuery", "");
+    this.plugin = plugin;
+  }
+  getViewType() {
+    return ORDERS_DASHBOARD_VIEW_TYPE;
+  }
+  getDisplayText() {
+    return "Orders & Requests";
+  }
+  getIcon() {
+    return "shopping-cart";
+  }
+  async onOpen() {
+    const container = this.containerEl.children[1];
+    container.empty();
+    container.addClass("chem-orders-dashboard-view");
+    Object.assign(container.style, {
+      display: "flex",
+      flexDirection: "column",
+      padding: "0",
+      background: "var(--background-primary)"
+    });
+    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    renderLimsNav(titleArea, "orders", this.plugin);
+    titleArea.createEl("h2", { text: "Orders & Requests", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
+    titleArea.createEl("span", { text: "Track chemicals, consumables, and equipment purchases", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
+    const newBtn = header.createEl("button", { text: "+ New Request", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" } });
+    newBtn.onclick = () => {
+      const folder = window.localStorage.getItem("chem-orders-dir") || "Orders";
+      new CreateOrderModal(this.app, folder).open();
+    };
+    this.toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const leftTools = this.toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center;" } });
+    const filterTabs = leftTools.createDiv({ attr: { style: "display: flex; gap: 8px;" } });
+    const tabs = ["All", "Planned", "Ordered", "Received"];
+    tabs.forEach((t8) => {
+      const btn = filterTabs.createEl("button", { text: t8, attr: { style: `border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 600; border: 1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}; background: ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)"}; color: ${this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)"}; box-shadow: none;` } });
+      btn.onclick = () => {
+        this.currentFilter = t8;
+        this.renderToolbar();
+        this.applyFilters();
+      };
+    });
+    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px; margin-left: 10px;" } });
+    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
+    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-orders-dir") || "Orders", attr: { style: "width: 120px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    dirInp.onchange = (e6) => {
+      window.localStorage.setItem("chem-orders-dir", e6.target.value.trim());
+      this.loadOrders();
+    };
+    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search item, supplier, catalog...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" } });
+    searchInp.oninput = (e6) => {
+      this.searchQuery = e6.target.value.toLowerCase();
+      this.applyFilters();
+    };
+    const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" } });
+    const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px;" } });
+    const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" } });
+    const tr2 = thead.createEl("tr");
+    const cols = [
+      { name: "Item", width: "200px" },
+      { name: "Supplier Info", width: "200px" },
+      { name: "Amount & Price", width: "150px" },
+      { name: "Requester", width: "150px" },
+      { name: "Status", width: "120px" },
+      { name: "Actions", width: "120px" }
+    ];
+    cols.forEach((c10) => {
+      tr2.createEl("th", { text: c10.name, attr: { style: `padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; width: ${c10.width};` } });
+    });
+    this.tableBodyEl = table.createEl("tbody");
+    await this.loadOrders();
+    const requestRefresh = (0, import_obsidian10.debounce)(() => this.loadOrders(), 2e3, true);
+    this.registerEvent(this.app.vault.on("modify", requestRefresh));
+    this.registerEvent(this.app.vault.on("create", requestRefresh));
+    this.registerEvent(this.app.vault.on("delete", requestRefresh));
+  }
+  renderToolbar() {
+    const btns = this.toolbarEl.querySelectorAll("button");
+    btns.forEach((btn) => {
+      const isMatch = btn.innerText === this.currentFilter;
+      btn.style.background = isMatch ? "var(--interactive-accent)" : "var(--background-primary)";
+      btn.style.color = isMatch ? "var(--text-on-accent)" : "var(--text-muted)";
+      btn.style.borderColor = isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)";
+    });
+  }
+  async loadOrders() {
+    var _a;
+    const targetDir = window.localStorage.getItem("chem-orders-dir") || "Orders";
+    const files = this.app.vault.getMarkdownFiles();
+    const entries = [];
+    for (const file of files) {
+      const inFolder = targetDir && file.path.startsWith(targetDir);
+      const cache2 = this.app.metadataCache.getFileCache(file);
+      const fmTags = ((_a = cache2 == null ? void 0 : cache2.frontmatter) == null ? void 0 : _a.tags) || [];
+      const isTagged = Array.isArray(fmTags) ? fmTags.includes("order") : fmTags === "order";
+      if (!inFolder && !isTagged) continue;
+      const fm = (cache2 == null ? void 0 : cache2.frontmatter) || {};
+      const name = fm.name || file.basename;
+      const type3 = fm.type || "Chemical";
+      const supplier = fm.supplier || "-";
+      const catalog = fm.catalog || "-";
+      const status2 = fm.status || "Planned";
+      entries.push({
+        file,
+        name,
+        type: type3,
+        supplier,
+        catalog,
+        amount: fm.amount || "-",
+        price: fm.price || "-",
+        status: status2,
+        requester: fm.requester || "-",
+        orderDate: fm.order_date || "-",
+        receiveDate: fm.receive_date || "-",
+        timestamp: file.stat.mtime,
+        searchText: `${name} ${type3} ${supplier} ${catalog} ${fm.requester || ""}`.toLowerCase()
+      });
+    }
+    const statusWeight = { "Planned": 1, "Ordered": 2, "Received": 3 };
+    this.allEntries = entries.sort((a9, b9) => {
+      const wA = statusWeight[a9.status] || 99;
+      const wB = statusWeight[b9.status] || 99;
+      if (wA !== wB) return wA - wB;
+      return b9.timestamp - a9.timestamp;
+    });
+    this.buildTableDOM();
+    this.applyFilters();
+  }
+  buildTableDOM() {
+    this.tableBodyEl.empty();
+    if (this.allEntries.length === 0) {
+      this.tableBodyEl.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No orders found. Add requests to an Orders folder or use tags: [order].</td></tr>`;
+      return;
+    }
+    this.allEntries.forEach((e6) => {
+      const tr2 = this.tableBodyEl.createEl("tr", { attr: { style: "cursor: default; transition: background 0.2s;" } });
+      e6.rowEl = tr2;
+      tr2.onmouseover = () => tr2.style.backgroundColor = "var(--background-secondary-alt)";
+      tr2.onmouseout = () => tr2.style.backgroundColor = "transparent";
+      const tdItem = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      const nameEl = tdItem.createDiv({ text: e6.name, attr: { style: "font-weight: 700; color: var(--text-accent); font-size: 14px; margin-bottom: 4px; cursor: pointer;" } });
+      nameEl.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
+      const typeIcon = e6.type === "Chemical" ? "\u{1F9EA}" : e6.type === "Consumable" ? "\u{1F9E4}" : "\u{1F52C}";
+      tdItem.createDiv({ text: `${typeIcon} ${e6.type}`, attr: { style: "font-size: 11px; color: var(--text-muted); font-weight: 600;" } });
+      const tdSup = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      tdSup.createDiv({ text: e6.supplier, attr: { style: "font-size: 13px; color: var(--text-normal); font-weight: 600; margin-bottom: 4px;" } });
+      tdSup.createDiv({ text: `Cat: ${e6.catalog}`, attr: { style: "font-size: 11px; color: var(--text-muted); font-family: monospace;" } });
+      const tdAmt = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      tdAmt.createDiv({ text: e6.amount, attr: { style: "font-size: 13px; color: var(--text-normal); font-weight: 600; margin-bottom: 4px;" } });
+      tdAmt.createDiv({ text: e6.price, attr: { style: "font-size: 12px; color: var(--text-success); font-weight: 600;" } });
+      const tdReq = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      tdReq.createDiv({ text: `\u{1F464} ${e6.requester}`, attr: { style: "font-size: 12px; color: var(--text-normal); margin-bottom: 4px;" } });
+      if (e6.orderDate && e6.orderDate !== "-") tdReq.createDiv({ text: `Ordered: ${e6.orderDate}`, attr: { style: "font-size: 10px; color: var(--text-muted);" } });
+      if (e6.receiveDate && e6.receiveDate !== "-") tdReq.createDiv({ text: `Rcvd: ${e6.receiveDate}`, attr: { style: "font-size: 10px; color: var(--text-muted);" } });
+      const tdStatus = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      let color5 = "var(--text-muted)", bg = "var(--background-primary)";
+      if (e6.status === "Planned") color5 = "var(--text-accent)";
+      else if (e6.status === "Ordered") color5 = "var(--text-warning)";
+      else if (e6.status === "Received") color5 = "var(--text-success)";
+      tdStatus.createDiv({ text: e6.status.toUpperCase(), attr: { style: `display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; color: ${color5}; border: 1px solid ${color5}; background: ${bg};` } });
+      const tdActions = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      if (e6.status === "Planned") {
+        const btn = tdActions.createEl("button", { text: "\u{1F6D2} Mark Ordered", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
+        btn.onclick = async () => {
+          await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
+            fm.status = "Ordered";
+            fm.order_date = window.moment().format("YYYY-MM-DD");
+          });
+        };
+      } else if (e6.status === "Ordered") {
+        const btn = tdActions.createEl("button", { text: "\u{1F4E6} Mark Received", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
+        btn.onclick = async () => {
+          await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
+            fm.status = "Received";
+            fm.receive_date = window.moment().format("YYYY-MM-DD");
+          });
+        };
+      }
+    });
+  }
+  applyFilters() {
+    this.allEntries.forEach((e6) => {
+      if (!e6.rowEl) return;
+      const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
+      const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
+      e6.rowEl.style.display = matchFilter && matchSearch ? "" : "none";
+    });
+  }
+};
+var CreateOrderModal = class extends import_obsidian10.Modal {
+  constructor(app, folder) {
+    super(app);
+    __publicField(this, "folder");
+    __publicField(this, "data", { name: "", type: "Chemical", supplier: "", catalog: "", amount: "", price: "" });
+    this.folder = folder;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.createEl("h3", { text: "New Order Request" });
+    new import_obsidian10.Setting(contentEl).setName("Item Name").addText((t8) => t8.onChange((v8) => this.data.name = v8));
+    new import_obsidian10.Setting(contentEl).setName("Type").addDropdown((d10) => d10.addOption("Chemical", "\u{1F9EA} Chemical").addOption("Consumable", "\u{1F9E4} Consumable / Labware").addOption("Equipment", "\u{1F52C} Equipment").setValue("Chemical").onChange((v8) => this.data.type = v8));
+    new import_obsidian10.Setting(contentEl).setName("Supplier").addText((t8) => t8.onChange((v8) => this.data.supplier = v8));
+    new import_obsidian10.Setting(contentEl).setName("Catalog #").addText((t8) => t8.onChange((v8) => this.data.catalog = v8));
+    new import_obsidian10.Setting(contentEl).setName("Amount (e.g. 500g, 10pk)").addText((t8) => t8.onChange((v8) => this.data.amount = v8));
+    new import_obsidian10.Setting(contentEl).setName("Estimated Price").addText((t8) => t8.onChange((v8) => this.data.price = v8));
+    new import_obsidian10.Setting(contentEl).addButton((btn) => btn.setButtonText("Create Request").setCta().onClick(async () => {
+      if (!this.data.name.trim()) {
+        new import_obsidian10.Notice("Name is required");
+        return;
+      }
+      if (!await this.app.vault.adapter.exists(this.folder)) {
+        await this.app.vault.createFolder(this.folder);
+      }
+      const safeName = this.data.name.replace(/[\\/:"*?<>|]/g, "_") + "_" + window.moment().format("HHmmss");
+      const content4 = `---
+tags: [order]
+name: "${this.data.name}"
+type: "${this.data.type}"
+supplier: "${this.data.supplier}"
+catalog: "${this.data.catalog}"
+amount: "${this.data.amount}"
+price: "${this.data.price}"
+status: "Planned"
+requester: "Current User"
+order_date: ""
+receive_date: ""
+---
+# ${this.data.name} Request
+
+## \u{1F517} Links / Quotes
+- [Product Link]()
+
+## \u{1F4DD} Notes
+- Why do we need this? 
+`;
+      const file = await this.app.vault.create(`${this.folder}/${safeName}.md`, content4);
+      this.app.workspace.getLeaf(false).openFile(file);
+      new import_obsidian10.Notice("Order request created!");
+      this.close();
+    }));
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+
+// LibraryDashboard.ts
+var import_obsidian11 = require("obsidian");
+init_SharedBase();
+init_SharedEln();
+var LIBRARY_DASHBOARD_VIEW_TYPE = "chem-library-dashboard";
+var LibraryDashboardView = class extends import_obsidian11.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    __publicField(this, "plugin");
+    __publicField(this, "tableBodyEl");
+    __publicField(this, "allEntries", []);
+    __publicField(this, "searchQuery", "");
+    __publicField(this, "observer");
+    this.plugin = plugin;
+    this.observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const el2 = entry.target;
+          const smiles = el2.dataset.smiles;
+          if (smiles && !el2.dataset.rendered) {
+            el2.dataset.rendered = "true";
+            this.plugin.api.renderStructure(smiles, 120, 100).then((renderEl) => {
+              el2.empty();
+              if (renderEl) {
+                renderEl.style.maxWidth = "100%";
+                renderEl.style.maxHeight = "100%";
+                el2.appendChild(renderEl);
+              } else el2.innerHTML = `<span style="color:var(--text-muted);">Invalid</span>`;
+            });
+          }
+        }
+      });
+    }, { root: null, rootMargin: "100px", threshold: 0.1 });
+  }
+  getViewType() {
+    return LIBRARY_DASHBOARD_VIEW_TYPE;
+  }
+  getDisplayText() {
+    return "Compounds Library";
+  }
+  getIcon() {
+    return "library";
+  }
+  async onOpen() {
+    const container = this.containerEl.children[1];
+    container.empty();
+    container.addClass("chem-library-dashboard-view");
+    Object.assign(container.style, { display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
+    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    renderLimsNav(titleArea, "library", this.plugin);
+    titleArea.createEl("h2", { text: "Compounds Library", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
+    titleArea.createEl("span", { text: "Central database of reference structures and building blocks", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
+    const newBtn = header.createEl("button", { text: "+ Add Compound", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" } });
+    newBtn.onclick = () => {
+      this.plugin.api.ketcher.openEditor("", "smiles", async (smiles) => {
+        if (!smiles) return;
+        const name = "Compound_" + window.moment().format("HHmmss");
+        const content4 = `---
+tags: [library]
+name: "${name}"
+smiles: "${smiles}"
+---
+# ${name}
+
+\`\`\`smiles
+${smiles}
+\`\`\`
+`;
+        const file = await this.app.vault.create(`Library/${name}.md`, content4);
+        this.app.workspace.getLeaf(false).openFile(file);
+      });
+    };
+    const toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: flex-end; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const searchInp = toolbarEl.createEl("input", { type: "search", placeholder: "Search name, SMILES, or formula...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" } });
+    searchInp.oninput = (e6) => {
+      this.searchQuery = e6.target.value.toLowerCase();
+      this.renderTable();
+    };
+    const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" } });
+    const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px;" } });
+    const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" } });
+    const tr2 = thead.createEl("tr");
+    ["Structure", "Name", "Properties", "SMILES", "Actions"].forEach((c10) => {
+      tr2.createEl("th", { text: c10, attr: { style: "padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;" } });
+    });
+    this.tableBodyEl = table.createEl("tbody");
+    await this.loadLibrary();
+    this.registerEvent(this.app.metadataCache.on("resolved", () => this.loadLibrary()));
+  }
+  async loadLibrary() {
+    var _a, _b;
+    const files = this.app.vault.getMarkdownFiles();
+    this.allEntries = [];
+    for (const file of files) {
+      const fm = (_a = this.app.metadataCache.getFileCache(file)) == null ? void 0 : _a.frontmatter;
+      const isLib = ((_b = fm == null ? void 0 : fm.tags) == null ? void 0 : _b.includes("library")) || file.path.toLowerCase().includes("library/");
+      if (!isLib) continue;
+      let smiles = (fm == null ? void 0 : fm.smiles) || "";
+      if (!smiles) {
+        const content4 = await this.app.vault.cachedRead(file);
+        const blockMatch = content4.match(/```smiles\s*\n([\s\S]*?)\n```/);
+        if (blockMatch) smiles = blockMatch[1].trim();
+      }
+      let mw = (fm == null ? void 0 : fm.mw) || 0;
+      let formula = (fm == null ? void 0 : fm.formula) || "";
+      if (smiles && (!mw || !formula)) {
+        const p7 = await calculateMwOffline(smiles, this.plugin);
+        if (p7) {
+          mw = p7.mw;
+          formula = p7.formula;
+        }
+      }
+      this.allEntries.push({
+        file,
+        name: (fm == null ? void 0 : fm.name) || file.basename,
+        smiles,
+        formula,
+        mw,
+        tags: (fm == null ? void 0 : fm.tags) || []
+      });
+    }
+    this.allEntries.sort((a9, b9) => a9.name.localeCompare(b9.name));
+    this.renderTable();
+  }
+  renderTable() {
+    this.tableBodyEl.empty();
+    this.observer.disconnect();
+    const filtered = this.allEntries.filter((e6) => !this.searchQuery || `${e6.name} ${e6.smiles} ${e6.formula}`.toLowerCase().includes(this.searchQuery));
+    if (filtered.length === 0) {
+      this.tableBodyEl.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No compounds found. Create a note in a 'Library' folder or use tags: [library].</td></tr>`;
+      return;
+    }
+    filtered.forEach((e6) => {
+      const tr2 = this.tableBodyEl.createEl("tr", { attr: { style: "transition: background 0.2s;" } });
+      tr2.onmouseover = () => tr2.style.backgroundColor = "var(--background-secondary-alt)";
+      tr2.onmouseout = () => tr2.style.backgroundColor = "transparent";
+      const tdStruct = tr2.createEl("td", { attr: { style: "padding: 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      const structWrap = tdStruct.createDiv({ attr: { "data-smiles": e6.smiles, style: "width: 120px; height: 100px; display: flex; align-items: center; justify-content: center; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 6px; cursor: pointer;" } });
+      structWrap.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
+      structWrap.innerHTML = e6.smiles ? `<span style="color:var(--text-muted); font-size: 11px;">\u23F3 Loading...</span>` : `<span style="color:var(--text-muted); font-size: 11px;">No Structure</span>`;
+      if (e6.smiles) this.observer.observe(structWrap);
+      const tdName = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      tdName.createDiv({ text: e6.name, attr: { style: "font-weight: 700; color: var(--text-accent); font-size: 14px; margin-bottom: 4px; cursor: pointer;" } }).onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
+      const tdProps = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      tdProps.createDiv({ text: `Formula: ${e6.formula || "-"}`, attr: { style: "font-size: 12px; color: var(--text-normal); font-weight: 600;" } });
+      tdProps.createDiv({ text: `MW: ${e6.mw ? e6.mw.toFixed(2) : "-"}`, attr: { style: "font-size: 12px; color: var(--text-muted);" } });
+      tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); max-width: 200px;" } }).createEl("code", { text: e6.smiles.length > 30 ? e6.smiles.substring(0, 30) + "..." : e6.smiles, attr: { style: "font-size: 10px; word-break: break-all;" } });
+      const tdAct = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      tdAct.createEl("button", { text: "\u{1F4CB} Copy SMILES", attr: { style: "font-size: 11px; padding: 4px 12px; width: 100%; margin-bottom: 6px;" } }).onclick = () => {
+        navigator.clipboard.writeText(e6.smiles);
+        new import_obsidian11.Notice("Copied!");
+      };
+    });
+  }
+  async onClose() {
+    this.observer.disconnect();
+  }
+};
+
+// GalleryDashboard.ts
+var import_obsidian12 = require("obsidian");
+init_SharedBase();
+var GALLERY_DASHBOARD_VIEW_TYPE = "chem-gallery-dashboard";
+var GalleryDashboardView = class extends import_obsidian12.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    __publicField(this, "plugin");
+    __publicField(this, "gridContainer");
+    __publicField(this, "searchQuery", "");
+    __publicField(this, "observer");
+    __publicField(this, "allFiles", []);
+    this.plugin = plugin;
+    this.observer = new IntersectionObserver((entries) => {
+      entries.forEach(async (entry) => {
+        if (entry.isIntersecting) {
+          const el2 = entry.target;
+          if (!el2.dataset.rendered && el2.dataset.index) {
+            el2.dataset.rendered = "true";
+            const idx = parseInt(el2.dataset.index, 10);
+            const item = this.allFiles[idx];
+            if (!item) return;
+            let dataToRender = item.data;
+            if (!dataToRender && item.file.extension.toLowerCase() !== "md") {
+              dataToRender = await this.plugin.app.vault.read(item.file);
+              item.data = dataToRender;
+            }
+            if (dataToRender) {
+              this.plugin.api.renderStructure(dataToRender, 160, 120).then((renderEl) => {
+                el2.empty();
+                if (renderEl) {
+                  renderEl.style.maxWidth = "100%";
+                  renderEl.style.maxHeight = "100%";
+                  el2.appendChild(renderEl);
+                } else {
+                  el2.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">Error</span>`;
+                }
+              });
+            } else {
+              el2.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">Empty</span>`;
+            }
+          }
+        }
+      });
+    }, { root: null, rootMargin: "200px", threshold: 0.1 });
+  }
+  getViewType() {
+    return GALLERY_DASHBOARD_VIEW_TYPE;
+  }
+  getDisplayText() {
+    return "Drawings Gallery";
+  }
+  getIcon() {
+    return "image";
+  }
+  async onOpen() {
+    const container = this.containerEl.children[1];
+    container.empty();
+    container.addClass("chem-gallery-dashboard-view");
+    Object.assign(container.style, { display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
+    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    renderLimsNav(titleArea, "gallery", this.plugin);
+    titleArea.createEl("h2", { text: "Drawings Gallery", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
+    titleArea.createEl("span", { text: "Visual overview of all chemical structures across your vault", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
+    const toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const leftTools = toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center;" } });
+    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px;" } });
+    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
+    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-gallery-dir") || "", attr: { placeholder: "Leave empty for entire vault", style: "width: 180px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    dirInp.onchange = (e6) => {
+      window.localStorage.setItem("chem-gallery-dir", e6.target.value.trim());
+      this.loadDrawings();
+    };
+    const searchInp = toolbarEl.createEl("input", { type: "search", placeholder: "Search file names...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" } });
+    searchInp.oninput = (e6) => {
+      this.searchQuery = e6.target.value.toLowerCase();
+      this.applyFilters();
+    };
+    this.gridContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 20px 30px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; align-content: start;" } });
+    await this.loadDrawings();
+    const requestRefresh = (0, import_obsidian12.debounce)(() => this.loadDrawings(), 2e3, true);
+    this.registerEvent(this.app.vault.on("modify", requestRefresh));
+    this.registerEvent(this.app.vault.on("create", requestRefresh));
+    this.registerEvent(this.app.vault.on("delete", requestRefresh));
+  }
+  async loadDrawings() {
+    var _a;
+    const targetDir = window.localStorage.getItem("chem-gallery-dir") || "";
+    const files = this.app.vault.getFiles();
+    const validExts = ["mol", "cdxml", "sdf", "rxn", "ket"];
+    const entries = [];
+    for (const file of files) {
+      if (targetDir && !file.path.startsWith(targetDir)) continue;
+      const ext = file.extension.toLowerCase();
+      if (validExts.includes(ext)) {
+        entries.push({ file, ext, data: "", name: file.basename, searchText: file.basename.toLowerCase() });
+      } else if (ext === "md") {
+        const cache2 = this.app.metadataCache.getFileCache(file);
+        const hasCodeBlock = (_a = cache2 == null ? void 0 : cache2.sections) == null ? void 0 : _a.some((s8) => s8.type === "code");
+        if (hasCodeBlock) {
+          const content4 = await this.app.vault.cachedRead(file);
+          const blockMatch = content4.match(/```(smiles|mol)\s*\n([\s\S]*?)\n```/);
+          if (blockMatch && blockMatch[2].trim()) {
+            entries.push({
+              file,
+              ext: blockMatch[1],
+              data: blockMatch[2].trim(),
+              name: file.basename,
+              searchText: file.basename.toLowerCase()
+            });
+          }
+        }
+      }
+    }
+    this.allFiles = entries.sort((a9, b9) => a9.name.localeCompare(b9.name));
+    this.buildGridDOM();
+    this.applyFilters();
+  }
+  buildGridDOM() {
+    const fragment2 = document.createDocumentFragment();
+    this.observer.disconnect();
+    if (this.allFiles.length === 0) {
+      const emptyDiv = document.createElement("div");
+      emptyDiv.style.gridColumn = "1/-1";
+      emptyDiv.style.textAlign = "center";
+      emptyDiv.style.padding = "40px";
+      emptyDiv.style.color = "var(--text-muted)";
+      emptyDiv.style.fontStyle = "italic";
+      emptyDiv.innerText = "No drawings found in the specified directory.";
+      fragment2.appendChild(emptyDiv);
+    } else {
+      this.allFiles.forEach((item, index) => {
+        const card = document.createElement("div");
+        Object.assign(card.style, { background: "var(--background-secondary)", border: "1px solid var(--background-modifier-border)", borderRadius: "8px", padding: "10px", display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", transition: "transform 0.2s, box-shadow 0.2s" });
+        card.onmouseover = () => {
+          card.style.transform = "translateY(-4px)";
+          card.style.boxShadow = "0 6px 12px rgba(0,0,0,0.1)";
+          card.style.borderColor = "var(--interactive-accent)";
+        };
+        card.onmouseout = () => {
+          card.style.transform = "translateY(0)";
+          card.style.boxShadow = "none";
+          card.style.borderColor = "var(--background-modifier-border)";
+        };
+        card.onclick = () => this.app.workspace.getLeaf(false).openFile(item.file);
+        item.cardEl = card;
+        const preview2 = card.createDiv({ attr: { "data-index": index.toString(), style: "width: 100%; height: 120px; display: flex; align-items: center; justify-content: center; background: var(--background-primary); border-radius: 4px; margin-bottom: 10px;" } });
+        preview2.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">\u23F3</span>`;
+        this.observer.observe(preview2);
+        card.createDiv({ text: item.name, attr: { style: "font-size: 12px; font-weight: 600; color: var(--text-normal); text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" } });
+        card.createDiv({ text: item.ext.toUpperCase(), attr: { style: "font-size: 9px; color: var(--text-muted); margin-top: 4px; background: var(--background-primary); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--background-modifier-border);" } });
+        fragment2.appendChild(card);
+      });
+    }
+    this.gridContainer.empty();
+    this.gridContainer.appendChild(fragment2);
+  }
+  // CPU-Free Filtering: Toggles display:none directly on the DOM cards
+  applyFilters() {
+    this.allFiles.forEach((e6) => {
+      if (!e6.cardEl) return;
+      const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
+      e6.cardEl.style.display = matchSearch ? "flex" : "none";
+    });
+  }
+  async onClose() {
+    this.observer.disconnect();
+  }
+};
+
+// ProtocolsDashboard.ts
+var import_obsidian13 = require("obsidian");
+init_SharedBase();
+var PROTOCOLS_DASHBOARD_VIEW_TYPE = "chem-protocols-dashboard";
+var ProtocolsDashboardView = class extends import_obsidian13.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    __publicField(this, "plugin");
+    __publicField(this, "toolbarEl");
+    __publicField(this, "tableBodyEl");
+    __publicField(this, "allEntries", []);
+    __publicField(this, "currentFilter", "All");
+    __publicField(this, "searchQuery", "");
+    this.plugin = plugin;
+  }
+  getViewType() {
+    return PROTOCOLS_DASHBOARD_VIEW_TYPE;
+  }
+  getDisplayText() {
+    return "Lab Protocols";
+  }
+  getIcon() {
+    return "file-text";
+  }
+  async onOpen() {
+    const container = this.containerEl.children[1];
+    container.empty();
+    container.addClass("chem-protocols-dashboard-view");
+    Object.assign(container.style, { display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
+    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    renderLimsNav(titleArea, "protocols", this.plugin);
+    titleArea.createEl("h2", { text: "Standard Operating Procedures", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
+    titleArea.createEl("span", { text: "Manage lab methodologies, reaction protocols, and safety rules", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
+    const newBtn = header.createEl("button", { text: "+ New Protocol", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" } });
+    newBtn.onclick = () => this.createNewProtocol();
+    this.toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const leftTools = this.toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center;" } });
+    const filterTabs = leftTools.createDiv({ attr: { style: "display: flex; gap: 8px;" } });
+    const tabs = ["All", "Draft", "Approved", "Obsolete"];
+    tabs.forEach((t8) => {
+      const btn = filterTabs.createEl("button", { text: t8, attr: { style: `border-radius: 20px; padding: 4px 16px; font-size: 12px; font-weight: 600; border: 1px solid ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-modifier-border)"}; background: ${this.currentFilter === t8 ? "var(--interactive-accent)" : "var(--background-primary)"}; color: ${this.currentFilter === t8 ? "var(--text-on-accent)" : "var(--text-muted)"}; box-shadow: none;` } });
+      btn.onclick = () => {
+        this.currentFilter = t8;
+        this.renderToolbar();
+        this.applyFilters();
+      };
+    });
+    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px; margin-left: 10px;" } });
+    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
+    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-protocols-dir") || "Protocols", attr: { style: "width: 120px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    dirInp.onchange = (e6) => {
+      window.localStorage.setItem("chem-protocols-dir", e6.target.value.trim());
+      this.loadProtocols();
+    };
+    const searchInp = this.toolbarEl.createEl("input", { type: "search", placeholder: "Search protocol titles, authors...", attr: { style: "width: 280px; font-size: 13px; border-radius: 6px;" } });
+    searchInp.oninput = (e6) => {
+      this.searchQuery = e6.target.value.toLowerCase();
+      this.applyFilters();
+    };
+    const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" } });
+    const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px;" } });
+    const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" } });
+    const tr2 = thead.createEl("tr");
+    ["Protocol Title", "Author", "Status", "Last Reviewed", "Actions"].forEach((c10) => {
+      tr2.createEl("th", { text: c10, attr: { style: "padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;" } });
+    });
+    this.tableBodyEl = table.createEl("tbody");
+    await this.loadProtocols();
+    const requestRefresh = (0, import_obsidian13.debounce)(() => this.loadProtocols(), 2e3, true);
+    this.registerEvent(this.app.vault.on("modify", requestRefresh));
+    this.registerEvent(this.app.vault.on("create", requestRefresh));
+    this.registerEvent(this.app.vault.on("delete", requestRefresh));
+  }
+  renderToolbar() {
+    const btns = this.toolbarEl.querySelectorAll("button");
+    btns.forEach((btn) => {
+      const isMatch = btn.innerText === this.currentFilter;
+      btn.style.background = isMatch ? "var(--interactive-accent)" : "var(--background-primary)";
+      btn.style.color = isMatch ? "var(--text-on-accent)" : "var(--text-muted)";
+      btn.style.borderColor = isMatch ? "var(--interactive-accent)" : "var(--background-modifier-border)";
+    });
+  }
+  async createNewProtocol() {
+    const targetDir = window.localStorage.getItem("chem-protocols-dir") || "Protocols";
+    if (!await this.app.vault.adapter.exists(targetDir)) {
+      await this.app.vault.createFolder(targetDir);
+    }
+    const name = "SOP - " + window.moment().format("HHmmss");
+    const content4 = `---
+tags: [protocol]
+title: "${name}"
+author: "Current User"
+status: "Draft"
+last_reviewed: "${window.moment().format("YYYY-MM-DD")}"
+---
+# ${name}
+
+## \u26A0\uFE0F Safety Precautions
+- Wear PPE.
+
+## \u{1F9EA} Reagents & Materials
+- 
+
+## \u{1F4DD} Step-by-Step Procedure
+1. 
+`;
+    const file = await this.app.vault.create(`${targetDir}/${name}.md`, content4);
+    this.app.workspace.getLeaf(false).openFile(file);
+  }
+  async loadProtocols() {
+    var _a;
+    const targetDir = window.localStorage.getItem("chem-protocols-dir") || "Protocols";
+    const files = this.app.vault.getMarkdownFiles();
+    const entries = [];
+    for (const file of files) {
+      const inFolder = targetDir && file.path.startsWith(targetDir);
+      const cache2 = this.app.metadataCache.getFileCache(file);
+      const fmTags = ((_a = cache2 == null ? void 0 : cache2.frontmatter) == null ? void 0 : _a.tags) || [];
+      const isTagged = Array.isArray(fmTags) ? fmTags.includes("protocol") || fmTags.includes("sop") : fmTags === "protocol" || fmTags === "sop";
+      if (!inFolder && !isTagged) continue;
+      const fm = (cache2 == null ? void 0 : cache2.frontmatter) || {};
+      const title = fm.title || file.basename;
+      const author = fm.author || "Unknown";
+      entries.push({
+        file,
+        title,
+        author,
+        status: fm.status || "Draft",
+        lastReviewed: fm.last_reviewed || "-",
+        searchText: `${title} ${author} ${fm.status || ""}`.toLowerCase()
+      });
+    }
+    this.allEntries = entries.sort((a9, b9) => a9.title.localeCompare(b9.title));
+    this.buildTableDOM();
+    this.applyFilters();
+  }
+  buildTableDOM() {
+    this.tableBodyEl.empty();
+    if (this.allEntries.length === 0) {
+      this.tableBodyEl.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No protocols found. Create a note in a 'Protocols' folder or use tags: [protocol].</td></tr>`;
+      return;
+    }
+    this.allEntries.forEach((e6) => {
+      const tr2 = this.tableBodyEl.createEl("tr", { attr: { style: "cursor: default; transition: background 0.2s;" } });
+      e6.rowEl = tr2;
+      tr2.onmouseover = () => tr2.style.backgroundColor = "var(--background-secondary-alt)";
+      tr2.onmouseout = () => tr2.style.backgroundColor = "transparent";
+      const tdName = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      const nameLink = tdName.createDiv({ text: `\u{1F4C4} ${e6.title}`, attr: { style: "font-weight: 700; color: var(--text-accent); font-size: 14px; cursor: pointer;" } });
+      nameLink.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
+      tr2.createEl("td", { text: e6.author, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); font-weight: 500;" } });
+      const tdStatus = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      let color5 = "var(--text-warning)", bg = "var(--background-primary)";
+      if (e6.status === "Approved") color5 = "var(--text-success)";
+      else if (e6.status === "Obsolete") color5 = "var(--text-error)";
+      tdStatus.createDiv({ text: e6.status.toUpperCase(), attr: { style: `display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; color: ${color5}; border: 1px solid ${color5}; background: ${bg};` } });
+      tr2.createEl("td", { text: e6.lastReviewed, attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); color: var(--text-muted);" } });
+      const tdAct = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+      const btn = tdAct.createEl("button", { text: "\u270D\uFE0F Mark Reviewed", attr: { style: "font-size: 11px; padding: 4px 12px; width: 100%;" } });
+      btn.onclick = async () => {
+        await this.app.fileManager.processFrontMatter(e6.file, (fm) => {
+          fm.last_reviewed = window.moment().format("YYYY-MM-DD");
+          fm.status = "Approved";
+        });
+        new import_obsidian13.Notice(`${e6.title} marked as Reviewed & Approved.`);
+      };
+    });
+  }
+  // CPU-Free Filtering: Toggles display:none directly on the DOM rows
+  applyFilters() {
+    this.allEntries.forEach((e6) => {
+      if (!e6.rowEl) return;
+      const matchFilter = this.currentFilter === "All" || e6.status === this.currentFilter;
+      const matchSearch = !this.searchQuery || e6.searchText.includes(this.searchQuery);
+      if (matchFilter && matchSearch) {
+        e6.rowEl.style.display = "";
+      } else {
+        e6.rowEl.style.display = "none";
+      }
+    });
+  }
+  async onClose() {
+  }
+};
+
+// CharacterizationDashboard.ts
+var import_obsidian14 = require("obsidian");
+init_SharedBase();
+var CHARACTERIZATION_DASHBOARD_VIEW_TYPE = "chem-characterization-dashboard";
+var CharacterizationDashboardView = class extends import_obsidian14.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    __publicField(this, "plugin");
+    __publicField(this, "tableBodyEl");
+    __publicField(this, "tableHeadTr");
+    __publicField(this, "allEntries", []);
+    __publicField(this, "searchQuery", "");
+    __publicField(this, "metricsList", []);
+    // Stores the active user-defined metrics
+    __publicField(this, "observer");
+    this.plugin = plugin;
+    this.observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const el2 = entry.target;
+          const smiles = el2.dataset.smiles;
+          if (smiles && !el2.dataset.rendered) {
+            el2.dataset.rendered = "true";
+            this.plugin.api.renderStructure(smiles, 120, 100).then((renderEl) => {
+              el2.empty();
+              if (renderEl) {
+                renderEl.style.maxWidth = "100%";
+                renderEl.style.maxHeight = "100%";
+                el2.appendChild(renderEl);
+              } else {
+                el2.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">Invalid</span>`;
+              }
+            });
+          }
+        }
+      });
+    }, { root: null, rootMargin: "150px", threshold: 0.1 });
+  }
+  getViewType() {
+    return CHARACTERIZATION_DASHBOARD_VIEW_TYPE;
+  }
+  getDisplayText() {
+    return "Compound Data Organizer";
+  }
+  getIcon() {
+    return "bar-chart-2";
+  }
+  async onOpen() {
+    const container = this.containerEl.children[1];
+    container.empty();
+    container.addClass("chem-characterization-dashboard-view");
+    Object.assign(container.style, { display: "flex", flexDirection: "column", padding: "0", background: "var(--background-primary)" });
+    const header = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 30px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const titleArea = header.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+    renderLimsNav(titleArea, "data", this.plugin);
+    titleArea.createEl("h2", { text: "Compound Data Organizer", attr: { style: "margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal);" } });
+    titleArea.createEl("span", { text: "Track publication readiness and analytical spectra", attr: { style: "font-size: 13px; color: var(--text-muted); margin-top: 4px;" } });
+    const newBtn = header.createEl("button", { text: "+ Add Compound", cls: "mod-cta", attr: { style: "height: 36px; font-size: 14px; font-weight: 600; padding: 0 20px;" } });
+    newBtn.onclick = () => {
+      const folder = window.localStorage.getItem("chem-char-dir") || "Characterization";
+      this.createNewEntry(folder);
+    };
+    const toolbarEl = container.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);" } });
+    const leftTools = toolbarEl.createDiv({ attr: { style: "display: flex; gap: 15px; align-items: center; flex-wrap: wrap;" } });
+    const dirWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px;" } });
+    dirWrap.createEl("span", { text: "\u{1F4C1} Folder:", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);" } });
+    const dirInp = dirWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-char-dir") || "Characterization", attr: { style: "width: 120px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    dirInp.onchange = (e6) => {
+      window.localStorage.setItem("chem-char-dir", e6.target.value.trim());
+      this.loadData();
+    };
+    const metricWrap = leftTools.createDiv({ attr: { style: "display: flex; align-items: center; gap: 6px;" } });
+    metricWrap.createEl("span", { text: "\u2699\uFE0F Metrics (YAML keys):", attr: { style: "font-size: 11px; font-weight: 600; color: var(--text-muted);", title: "Comma separated list of data you want to track." } });
+    const metricInp = metricWrap.createEl("input", { type: "text", value: window.localStorage.getItem("chem-char-metrics") || "hnmr, cnmr, hrms, ir, mp", attr: { style: "width: 220px; font-size: 12px; padding: 4px 8px; border-radius: 4px; height: 26px; border: 1px solid var(--background-modifier-border);" } });
+    metricInp.onchange = (e6) => {
+      window.localStorage.setItem("chem-char-metrics", e6.target.value.trim());
+      this.loadData();
+    };
+    const searchInp = toolbarEl.createEl("input", { type: "search", placeholder: "Search compound name...", attr: { style: "width: 220px; font-size: 13px; border-radius: 6px;" } });
+    searchInp.oninput = (e6) => {
+      this.searchQuery = e6.target.value.toLowerCase();
+      this.applyFilters();
+    };
+    const tableContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 0 30px 30px 30px;" } });
+    const table = tableContainer.createEl("table", { attr: { style: "width: 100%; border-collapse: separate; border-spacing: 0; text-align: center; font-size: 13px;" } });
+    const thead = table.createEl("thead", { attr: { style: "position: sticky; top: 0; background: var(--background-primary); z-index: 10;" } });
+    this.tableHeadTr = thead.createEl("tr");
+    this.tableBodyEl = table.createEl("tbody");
+    await this.loadData();
+    const requestRefresh = (0, import_obsidian14.debounce)(() => this.loadData(), 2e3, true);
+    this.registerEvent(this.app.vault.on("modify", requestRefresh));
+    this.registerEvent(this.app.vault.on("create", requestRefresh));
+    this.registerEvent(this.app.vault.on("delete", requestRefresh));
+  }
+  async createNewEntry(folder) {
+    if (!await this.app.vault.adapter.exists(folder)) await this.app.vault.createFolder(folder);
+    const name = "Compound_" + window.moment().format("HHmmss");
+    let metricsYaml = "";
+    this.metricsList.forEach((m9) => {
+      metricsYaml += `${m9}: false
+`;
+    });
+    const content4 = `---
+tags: [characterization]
+name: "${name}"
+smiles: ""
+${metricsYaml}---
+# ${name}
+
+*Drop spectral data files (PDFs, MNova, images) into this folder and link them above!*
+`;
+    const file = await this.app.vault.create(`${folder}/${name}.md`, content4);
+    this.app.workspace.getLeaf(false).openFile(file);
+  }
+  async loadData() {
+    const targetDir = window.localStorage.getItem("chem-char-dir") || "Characterization";
+    const metricsStr = window.localStorage.getItem("chem-char-metrics") || "hnmr, cnmr, hrms, ir, mp";
+    this.metricsList = metricsStr.split(",").map((s8) => s8.trim().toLowerCase()).filter(Boolean);
+    const files = this.app.vault.getMarkdownFiles();
+    const entries = [];
+    for (const file of files) {
+      const inFolder = targetDir && file.path.startsWith(targetDir);
+      const cache2 = this.app.metadataCache.getFileCache(file);
+      const fm = (cache2 == null ? void 0 : cache2.frontmatter) || {};
+      const fmTags = fm.tags || [];
+      const isTagged = Array.isArray(fmTags) ? fmTags.includes("characterization") || fmTags.includes("compound") : fmTags === "characterization" || fmTags === "compound";
+      if (!inFolder && !isTagged) continue;
+      let smiles = fm.smiles || "";
+      let collectedCount = 0;
+      const metricsData = {};
+      this.metricsList.forEach((m9) => {
+        const val = fm[m9];
+        metricsData[m9] = val;
+        if (val && val !== "false" && val !== false) collectedCount++;
+      });
+      const score = this.metricsList.length > 0 ? Math.round(collectedCount / this.metricsList.length * 100) : 0;
+      const name = fm.name || file.basename;
+      entries.push({
+        file,
+        name,
+        smiles,
+        metricsData,
+        score,
+        timestamp: file.stat.mtime,
+        searchText: name.toLowerCase()
+      });
+    }
+    this.allEntries = entries.sort((a9, b9) => a9.name.localeCompare(b9.name));
+    this.buildTableDOM();
+    this.applyFilters();
+  }
+  buildTableDOM() {
+    this.observer.disconnect();
+    this.tableHeadTr.empty();
+    const formatHeader = (key) => {
+      if (key === "hnmr") return "1H NMR";
+      if (key === "cnmr") return "13C NMR";
+      if (key === "mp") return "M.P.";
+      return key.toUpperCase();
+    };
+    const staticCols = ["Structure", "Compound"];
+    const dynamicCols = this.metricsList.map(formatHeader);
+    const allCols = [...staticCols, ...dynamicCols, "Readiness"];
+    allCols.forEach((c10, i8) => {
+      this.tableHeadTr.createEl("th", { text: c10, attr: { style: `padding: 16px 10px; border-bottom: 2px solid var(--background-modifier-border); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; ${i8 < 2 ? "text-align: left;" : ""}` } });
+    });
+    const fragment2 = document.createDocumentFragment();
+    if (this.allEntries.length === 0) {
+      const emptyTr = document.createElement("tr");
+      emptyTr.innerHTML = `<td colspan="${allCols.length}" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">No compounds found. Click '+ Add Compound' to start.</td>`;
+      fragment2.appendChild(emptyTr);
+    } else {
+      this.allEntries.forEach((e6) => {
+        const tr2 = document.createElement("tr");
+        tr2.style.transition = "background 0.2s";
+        e6.rowEl = tr2;
+        tr2.onmouseover = () => tr2.style.backgroundColor = "var(--background-secondary-alt)";
+        tr2.onmouseout = () => tr2.style.backgroundColor = "transparent";
+        const tdStruct = tr2.createEl("td", { attr: { style: "padding: 10px; border-bottom: 1px solid var(--background-modifier-border-hover); text-align: left;" } });
+        const structWrap = tdStruct.createDiv({ attr: { "data-smiles": e6.smiles, style: "width: 120px; height: 100px; display: flex; align-items: center; justify-content: center; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 6px; cursor: pointer;" } });
+        structWrap.onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
+        if (e6.smiles) {
+          structWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">\u23F3</span>`;
+          this.observer.observe(structWrap);
+        } else {
+          structWrap.innerHTML = `<span style="color:var(--text-muted); font-size: 11px;">No Structure</span>`;
+        }
+        const tdName = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover); text-align: left;" } });
+        tdName.createDiv({ text: e6.name, attr: { style: "font-weight: 700; color: var(--text-accent); font-size: 14px; cursor: pointer;" } }).onclick = () => this.app.workspace.getLeaf(false).openFile(e6.file);
+        this.metricsList.forEach((m9) => {
+          this.createDataCell(tr2, e6.file, m9, e6.metricsData[m9]);
+        });
+        const tdProg = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
+        const pColor = e6.score === 100 ? "var(--text-success)" : e6.score >= 60 ? "var(--text-warning)" : "var(--text-error)";
+        tdProg.innerHTML = `<div style="font-size:11px; font-weight:bold; margin-bottom:4px; color:${pColor};">${e6.score}%</div>
+                                    <div style="width: 100%; height: 6px; background: var(--background-modifier-border); border-radius: 3px; overflow: hidden;">
+                                        <div style="width: ${e6.score}%; height: 100%; background: ${pColor}; transition: width 0.3s;"></div>
+                                    </div>`;
+        fragment2.appendChild(tr2);
+      });
+    }
+    this.tableBodyEl.empty();
+    this.tableBodyEl.appendChild(fragment2);
+  }
+  createDataCell(tr2, file, key, val) {
+    const td = tr2.createEl("td", { attr: { style: "padding: 10px; border-bottom: 1px solid var(--background-modifier-border-hover); vertical-align: middle;" } });
+    const isDone = !!val && val !== "false" && val !== false;
+    const isLink = typeof val === "string" && val.includes("[[");
+    const displayStr = isLink ? "\u{1F4C4}" : isDone ? "\u2705" : "\u274C";
+    const color5 = isDone ? isLink ? "var(--text-accent)" : "var(--text-success)" : "var(--text-faint)";
+    const btn = td.createEl("button", { text: displayStr, attr: { title: val ? String(val) : "Missing", style: `background: ${isDone ? "var(--background-primary)" : "transparent"}; border: 1px solid ${isDone ? color5 : "transparent"}; border-radius: 6px; font-size: 14px; padding: 4px 8px; color: ${color5}; box-shadow: none; cursor: pointer;` } });
+    btn.onclick = (e6) => {
+      const menu = new import_obsidian14.Menu();
+      if (isLink) {
+        menu.addItem((i8) => i8.setTitle(`Extract Link: ${val.replace(/[[\]]/g, "")}`).setIcon("link").onClick(() => {
+          const cleanName = val.replace("[[", "").replace("]]", "");
+          const targetFile = this.app.metadataCache.getFirstLinkpathDest(cleanName, file.path);
+          if (targetFile) this.app.workspace.getLeaf(false).openFile(targetFile);
+          else new import_obsidian14.Notice("Linked file not found.");
+        }));
+        menu.addSeparator();
+      }
+      menu.addItem((i8) => i8.setTitle("Mark as Collected (\u2705)").setIcon("check").onClick(() => this.app.fileManager.processFrontMatter(file, (fm) => fm[key] = true)));
+      menu.addItem((i8) => i8.setTitle("Link File / Text (\u{1F4C4})").setIcon("paperclip").onClick(() => {
+        new DataPromptModal(this.app, key.toUpperCase(), (val == null ? void 0 : val.toString()) || "", (newVal) => {
+          this.app.fileManager.processFrontMatter(file, (fm) => fm[key] = newVal);
+        }).open();
+      }));
+      menu.addItem((i8) => i8.setTitle("Mark as Missing (\u274C)").setIcon("cross").onClick(() => this.app.fileManager.processFrontMatter(file, (fm) => {
+        fm[key] = false;
+      })));
+      menu.showAtMouseEvent(e6);
+    };
+  }
+  applyFilters() {
+    this.allEntries.forEach((e6) => {
+      if (e6.rowEl) e6.rowEl.style.display = !this.searchQuery || e6.searchText.includes(this.searchQuery) ? "" : "none";
+    });
+  }
+  async onClose() {
+    this.observer.disconnect();
+  }
+};
+var DataPromptModal = class extends import_obsidian14.Modal {
+  constructor(app, keyName, initialVal, onSubmit) {
+    super(app);
+    __publicField(this, "onSubmit");
+    __publicField(this, "keyName");
+    __publicField(this, "initialVal");
+    this.keyName = keyName;
+    this.initialVal = initialVal;
+    this.onSubmit = onSubmit;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.createEl("h3", { text: `Set data for ${this.keyName}` });
+    contentEl.createEl("p", { text: "Tip: You can paste an Obsidian link here like [[spectra.pdf]]", cls: "color-text-muted", attr: { style: "font-size: 12px; margin-top: 0;" } });
+    const input = contentEl.createEl("input", { type: "text", value: this.initialVal === "true" || this.initialVal === "false" ? "" : this.initialVal });
+    input.style.width = "100%";
+    input.style.marginBottom = "15px";
+    const saveBtn = contentEl.createEl("button", { text: "Save", cls: "mod-cta" });
+    saveBtn.onclick = () => {
+      this.onSubmit(input.value.trim());
+      this.close();
+    };
+    input.onkeydown = (e6) => {
+      if (e6.key === "Enter") saveBtn.click();
+    };
+    setTimeout(() => input.focus(), 50);
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+
+// SharedPathway.ts
+var import_obsidian15 = require("obsidian");
 init_SharedEln();
 var PATH_COLORS = [
   "#4e79a7",
@@ -569734,7 +571234,7 @@ var SynthesisMapRenderer = class {
       el2.createEl("div", { text: `\u26A0\uFE0F Folder not found: ${folderPath || "Root Vault"}`, cls: "color-text-error" });
       return;
     }
-    const files = folder.children.filter((f9) => f9 instanceof import_obsidian8.TFile && f9.extension.toLowerCase() === "md");
+    const files = folder.children.filter((f9) => f9 instanceof import_obsidian15.TFile && f9.extension.toLowerCase() === "md");
     const mapTitle = targetProject ? `\u{1F5FA}\uFE0F Synthesis Map: ${targetProject}` : "\u{1F5FA}\uFE0F Synthesis Map";
     const wrapper2 = this.createBaseWrapper(el2, folderPath, mapTitle, false, ctx);
     const container = wrapper2.querySelector(".chem-pathway-grid");
@@ -570054,7 +571554,7 @@ ${node2.rawToken} -> ${txt}`);
         if (targetRawToken && node2.rawToken) {
           this.updateMarkdownBlock(ctx, el2, null, `
 ${node2.rawToken} -> ${targetRawToken}`);
-          new import_obsidian8.Notice("Connected!");
+          new import_obsidian15.Notice("Connected!");
         }
       }
     };
@@ -570074,7 +571574,7 @@ ${node2.rawToken} -> ${targetRawToken}`);
     });
   }
   updateMarkdownBlock(ctx, el2, oldText, newText) {
-    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
+    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
     if (!view) return;
     let info = ctx.getSectionInfo(el2);
     if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
@@ -570094,7 +571594,7 @@ ${node2.rawToken} -> ${targetRawToken}`);
     editor4.setValue(lines.join("\n"));
   }
   updateMarkdownNodeText(ctx, el2, oldToken, newToken) {
-    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian8.MarkdownView);
+    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
     if (!view) return;
     let info = ctx.getSectionInfo(el2);
     if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
@@ -570241,12 +571741,12 @@ ${txt}`);
     const openBtn = overlay.createEl("button", { text: "\u{1F441}\uFE0F", attr: { title: "Open Note", style: "padding: 5px; background: transparent; border: none; cursor: pointer; font-size: 16px;" } });
     openBtn.onclick = () => {
       const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
-      if (file instanceof import_obsidian8.TFile) this.plugin.app.workspace.getLeaf(false).openFile(file);
+      if (file instanceof import_obsidian15.TFile) this.plugin.app.workspace.getLeaf(false).openFile(file);
     };
     const cloneBtn = overlay.createEl("button", { text: "\u{1F5D0}", attr: { title: "Clone Exp", style: "padding: 5px; background: transparent; border: none; cursor: pointer; font-size: 16px;" } });
     cloneBtn.onclick = () => {
       const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
-      if (file instanceof import_obsidian8.TFile) new CloneExperimentModal(this.plugin.app, this.plugin, code, file, data).open();
+      if (file instanceof import_obsidian15.TFile) new CloneExperimentModal(this.plugin.app, this.plugin, code, file, data).open();
     };
   }
   attachSearchLogic(wrapper2) {
@@ -570294,7 +571794,7 @@ ${txt}`);
     return null;
   }
 };
-var TextPromptModal = class extends import_obsidian8.Modal {
+var TextPromptModal = class extends import_obsidian15.Modal {
   constructor(app, title, desc2, initialVal, onSubmit) {
     super(app);
     __publicField(this, "title");
@@ -570335,8 +571835,558 @@ var TextPromptModal = class extends import_obsidian8.Modal {
 // main.ts
 init_SharedEln();
 
+// PolymerEln.ts
+var import_obsidian16 = require("obsidian");
+init_SharedEln();
+var PolymerCalculator = class {
+  static calculate(data) {
+    var _a, _b, _c;
+    if (!data.monomers) data.monomers = [];
+    if (!data.initiators) data.initiators = [];
+    if (!data.agents) data.agents = [];
+    if (!data.components) data.components = [];
+    if (!data.characterization) data.characterization = {};
+    if (data.type === "formulation") {
+      let totalPhr = 0;
+      data.components.forEach((c10) => {
+        c10.phr = c10.phr || 0;
+        totalPhr += c10.phr;
+      });
+      const targetMassMg2 = data.target_mass_mg || (data.target_mass_g ? data.target_mass_g * 1e3 : 1e5);
+      data.components.forEach((c10) => {
+        c10.wt_frac = totalPhr > 0 ? c10.phr / totalPhr : 0;
+        c10.mass_mg = targetMassMg2 * c10.wt_frac;
+        c10.mass_g = c10.mass_mg / 1e3;
+        if (c10.density) c10.volume_ml = c10.mass_g / c10.density;
+      });
+      data.total_mass_g = targetMassMg2 / 1e3;
+      return data;
+    }
+    let totalMonomerEq = 0;
+    let baseMonomerMw = 0;
+    data.monomers.forEach((m9) => {
+      m9.eq = m9.eq || m9.mol_ratio || 1;
+      totalMonomerEq += m9.eq;
+      if (m9.eq === 1 && m9.mw) baseMonomerMw = m9.mw;
+    });
+    if (baseMonomerMw === 0 && ((_a = data.monomers[0]) == null ? void 0 : _a.mw)) baseMonomerMw = data.monomers[0].mw;
+    const targetDp = data.target_dp || 100;
+    const targetMassMg = data.target_mass_mg || (data.target_mass_g ? data.target_mass_g * 1e3 : null);
+    let totalMonomerMassWeight = 0;
+    if (totalMonomerEq > 0) {
+      data.monomers.forEach((m9) => {
+        totalMonomerMassWeight += m9.eq / totalMonomerEq * (m9.mw || 0);
+      });
+    }
+    data.initiators.forEach((i8) => {
+      if (i8.ratio_to_monomer) i8.eq = totalMonomerEq * i8.ratio_to_monomer;
+      else if (!i8.eq) i8.eq = totalMonomerEq / targetDp;
+    });
+    data.agents.forEach((a9) => {
+      if (a9.ratio_to_monomer) a9.eq = totalMonomerEq * a9.ratio_to_monomer;
+      else if (!a9.eq) a9.eq = totalMonomerEq / targetDp;
+    });
+    const activeChainEq = data.agents.length > 0 ? data.agents[0].eq : data.initiators.length > 0 ? data.initiators[0].eq : 1;
+    const theoryDp = activeChainEq > 0 ? totalMonomerEq / activeChainEq : 0;
+    data.theoretical_mn = theoryDp * totalMonomerMassWeight + (((_b = data.agents[0]) == null ? void 0 : _b.mw) || ((_c = data.initiators[0]) == null ? void 0 : _c.mw) || 0);
+    if (targetMassMg) {
+      let totalRelativeMass = 0;
+      data.monomers.forEach((m9) => totalRelativeMass += m9.eq * (m9.mw || 0));
+      data.initiators.forEach((i8) => totalRelativeMass += i8.eq * (i8.mw || 0));
+      data.agents.forEach((a9) => totalRelativeMass += a9.eq * (a9.mw || 0));
+      const scaleFactor = totalRelativeMass > 0 ? targetMassMg / totalRelativeMass : 0;
+      const applyScale = (arr) => {
+        arr.forEach((item) => {
+          item.mmol = item.eq * scaleFactor;
+          item.mass_mg = item.mmol * (item.mw || 0);
+          item.mass_g = item.mass_mg / 1e3;
+          if (item.density) item.volume_ml = item.mass_g / item.density;
+        });
+      };
+      applyScale(data.monomers);
+      applyScale(data.initiators);
+      applyScale(data.agents);
+    }
+    return data;
+  }
+};
+var PolymerElnRenderer = class {
+  constructor(plugin) {
+    __publicField(this, "plugin");
+    this.plugin = plugin;
+  }
+  async renderPolymerBlock(source, el2, ctx) {
+    const { parseYaml, stringifyYaml } = require("obsidian");
+    const wrapper2 = el2.createDiv();
+    wrapper2.style.position = "relative";
+    wrapper2.style.border = "1px solid var(--interactive-accent)";
+    wrapper2.style.padding = "45px 15px 15px 15px";
+    wrapper2.style.borderRadius = "12px";
+    wrapper2.style.backgroundColor = "var(--background-primary-alt)";
+    wrapper2.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.05)";
+    wrapper2.style.fontFamily = "var(--font-interface)";
+    wrapper2.style.width = "100%";
+    wrapper2.innerHTML = `<h3 class="color-text-muted" style="text-align:center;">\u23F3 Calculating Macromolecules...</h3>`;
+    try {
+      const safeSource = source.replace(/smiles:\s*(.*)$/gm, (match2, p1) => {
+        let s8 = p1.trim();
+        if (!s8) return match2;
+        let comment2 = "";
+        const commentMatch = s8.match(/(\s+#.*)$/);
+        if (commentMatch) {
+          comment2 = commentMatch[1];
+          s8 = s8.substring(0, s8.length - comment2.length).trim();
+        }
+        if (s8.startsWith('"') && s8.endsWith('"') || s8.startsWith("'") && s8.endsWith("'")) s8 = s8.substring(1, s8.length - 1);
+        s8 = s8.replace(/\\"/g, '"');
+        s8 = s8.replace(/'/g, "''");
+        return `smiles: '${s8}'${comment2}`;
+      });
+      let data = parseYaml(safeSource);
+      if (!data) throw new Error("Empty YAML Data.");
+      const fetchMws = async (arr) => {
+        if (!arr) return;
+        for (const item of arr) {
+          if (item.smiles && (!item.mw || item.mw <= 0)) {
+            const p7 = await calculateMwOffline(item.smiles, this.plugin);
+            if (p7 && p7.mw > 0) item.mw = p7.mw;
+          }
+        }
+      };
+      await fetchMws(data.monomers);
+      await fetchMws(data.initiators);
+      await fetchMws(data.agents);
+      await fetchMws(data.components);
+      data = PolymerCalculator.calculate(data);
+      const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian16.MarkdownView);
+      const currentFile = view ? view.file : null;
+      const expCode = data.code || (currentFile ? currentFile.basename : "POLY");
+      wrapper2.innerHTML = "";
+      wrapper2.addEventListener("dblclick", (e6) => {
+        let target = e6.target;
+        while (target && target !== wrapper2 && !target.classList.contains("eln-editable")) {
+          target = target.parentElement;
+        }
+        if (target && target.classList.contains("eln-editable") && !target.querySelector("input")) {
+          e6.stopPropagation();
+          const type3 = target.getAttribute("data-type");
+          const idx = parseInt(target.getAttribute("data-idx") || "0", 10);
+          const key = target.getAttribute("data-key");
+          const inputType = target.getAttribute("data-input-type") || "number";
+          if (!key) return;
+          const originalHTML = target.innerHTML;
+          const currentValText = target.getAttribute("data-raw-value") || "";
+          target.innerHTML = "";
+          target.style.padding = "4px";
+          const input = document.createElement("input");
+          input.type = inputType === "text" ? "text" : "number";
+          if (inputType === "number") input.step = "any";
+          input.value = currentValText;
+          Object.assign(input.style, { width: "100%", boxSizing: "border-box", padding: "4px 6px", border: "1px solid var(--interactive-accent)", borderRadius: "4px", background: "var(--background-primary)" });
+          target.appendChild(input);
+          input.focus();
+          const finishEdit = () => {
+            const newValStr = input.value.trim().replace(/,/g, ".");
+            let info = ctx.getSectionInfo(el2);
+            if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+            if (view && info) {
+              const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              try {
+                let yamlObj = parseYaml(blockText);
+                let valToSave = newValStr;
+                if (inputType === "number") {
+                  const num = parseFloat(newValStr);
+                  valToSave = isNaN(num) ? void 0 : num;
+                } else {
+                  valToSave = newValStr === "" ? void 0 : newValStr;
+                }
+                if (type3 === "root") {
+                  if (valToSave === void 0) delete yamlObj[key];
+                  else yamlObj[key] = valToSave;
+                } else if (type3 === "characterization") {
+                  if (!yamlObj.characterization) yamlObj.characterization = {};
+                  if (valToSave === void 0) delete yamlObj.characterization[key];
+                  else yamlObj.characterization[key] = valToSave;
+                } else {
+                  if (!yamlObj[type3]) yamlObj[type3] = [];
+                  if (!yamlObj[type3][idx]) yamlObj[type3] = {};
+                  if (valToSave === void 0) {
+                    delete yamlObj[type3][idx][key];
+                  } else {
+                    yamlObj[type3][idx][key] = valToSave;
+                  }
+                }
+                yamlObj = PolymerCalculator.calculate(yamlObj);
+                const newYaml = stringifyYaml(yamlObj);
+                view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              } catch (err) {
+                target.innerHTML = originalHTML;
+                target.style.padding = "10px";
+              }
+            } else {
+              target.innerHTML = originalHTML;
+              target.style.padding = "10px";
+            }
+          };
+          input.onblur = finishEdit;
+          input.onkeydown = (ev) => {
+            if (ev.key === "Enter") input.blur();
+            else if (ev.key === "Escape") {
+              target.innerHTML = originalHTML;
+              target.style.padding = "10px";
+            }
+          };
+        }
+      });
+      const actionBar = wrapper2.createDiv();
+      Object.assign(actionBar.style, { position: "absolute", top: "8px", right: "10px", display: "flex", gap: "5px", zIndex: "10", flexWrap: "wrap", justifyContent: "flex-end" });
+      const createBtn = (text2, title, onClick) => {
+        const btn = actionBar.createDiv();
+        btn.innerHTML = text2;
+        btn.title = title;
+        btn.style.cursor = "pointer";
+        btn.style.fontSize = "11px";
+        btn.style.padding = "4px 8px";
+        btn.style.backgroundColor = "var(--background-secondary)";
+        btn.style.border = "1px solid var(--background-modifier-border)";
+        btn.style.color = "var(--text-normal)";
+        btn.style.borderRadius = "4px";
+        btn.onmouseover = () => btn.style.backgroundColor = "var(--background-modifier-hover)";
+        btn.onmouseout = () => btn.style.backgroundColor = "var(--background-secondary)";
+        btn.onclick = onClick;
+        return btn;
+      };
+      const updateYamlState = (mutate) => {
+        if (!view) return;
+        let info = ctx.getSectionInfo(el2);
+        if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+        if (!info) return;
+        const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+        try {
+          const yamlObj = parseYaml(blockText);
+          mutate(yamlObj);
+          const newYaml = stringifyYaml(yamlObj);
+          view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+        } catch (err) {
+        }
+      };
+      createBtn("\u2699\uFE0F Status", "Change Experiment Status", (e6) => {
+        if (!e6) return;
+        const menu = new import_obsidian16.Menu();
+        menu.addItem((item) => item.setTitle("Mark as Planned").setIcon("calendar").onClick(() => updateYamlState((y9) => y9.status = "Planned")));
+        menu.addItem((item) => item.setTitle("Mark as Running").setIcon("play").onClick(() => updateYamlState((y9) => y9.status = "Running")));
+        menu.addItem((item) => item.setTitle("Mark as Completed").setIcon("check").onClick(() => updateYamlState((y9) => y9.status = "Completed")));
+        menu.addItem((item) => item.setTitle("Mark as Failed").setIcon("cross").onClick(() => updateYamlState((y9) => y9.status = "Failed")));
+        menu.showAtMouseEvent(e6);
+      });
+      createBtn("\u{1F4DD} Edit", "Open Visual Polymer Editor", () => {
+        if (!view) return;
+        let info = ctx.getSectionInfo(el2);
+        if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+        if (info) {
+          new PolymerMetaEditorModal(this.plugin.app, this.plugin, data, async (updatedYamlObj) => {
+            const newYaml = stringifyYaml(updatedYamlObj);
+            view.editor.replaceRange(`\`\`\`polymer-eln
+${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: view.editor.getLine(info.lineEnd).length });
+          }).open();
+        }
+      });
+      const thColor = "var(--background-secondary)";
+      const bdColor = "var(--background-modifier-border-hover)";
+      const textColor = "var(--text-normal)";
+      let statusColor = "var(--text-muted)";
+      if (data.status === "Completed") statusColor = "var(--text-success)";
+      else if (data.status === "Running") statusColor = "var(--text-warning)";
+      else if (data.status === "Failed") statusColor = "var(--text-error)";
+      else if (data.status === "Planned") statusColor = "var(--text-accent)";
+      const statusBadge = data.status ? `<span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: var(--background-primary); border: 1px solid ${statusColor}; color: ${statusColor}; vertical-align: middle; margin-left: 10px; font-weight: 500;">${data.status}</span>` : "";
+      let html = `<div style="font-size: 14px; color: ${textColor}; margin-top:5px;">`;
+      html += `
+            <div style="border-bottom: 2px solid var(--interactive-accent); padding-bottom: 10px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
+                <div>
+                    <h2 style="margin: 0; font-size: 22px; font-weight: 700; color: var(--interactive-accent);">${expCode} ${statusBadge}</h2>
+                    <div style="font-size: 13px; color: var(--text-muted); margin-top:4px;">${data.title || data.type || "Polymerization"}</div>
+                </div>
+            </div>`;
+      const makeEditableTd = (type3, i8, key, val, inputType = "number", customHtml, extraStyles = "") => {
+        let innerHTML = customHtml !== void 0 ? customHtml : "-";
+        let rawValAttr = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
+        if (customHtml === void 0) {
+          if (inputType === "text") innerHTML = val ? val : "-";
+          else {
+            const numVal = Number(val);
+            innerHTML = !isNaN(numVal) && numVal > 0 ? numVal.toFixed(2) : "-";
+          }
+        }
+        return `<td class="eln-editable" data-type="${type3}" data-idx="${i8}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawValAttr}" title="Double-click to edit" style="padding: 10px; cursor: text; transition: background 0.2s; ${extraStyles}">${innerHTML}</td>`;
+      };
+      const makeEditableRoot = (key, val, type3 = "root", inputType = "number") => {
+        const displayVal = val || "-";
+        const rawVal = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
+        return `<span class="eln-editable" data-type="${type3}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawVal}" title="Double-click to edit" style="cursor: text; border-bottom: 1px dashed var(--interactive-accent); display: inline-block;">${displayVal}</span>`;
+      };
+      if (data.type === "formulation") {
+        html += `
+                <div style="margin-bottom: 15px; font-size: 13px; background: var(--background-secondary); padding: 10px; border-radius: 6px;">
+                    <span style="color:var(--text-muted)">Target Mass [g]:</span> ${makeEditableRoot("target_mass_g", data.target_mass_g)}
+                </div>
+                <h4 style="margin-bottom: 10px; color: var(--text-normal);">Formulation Components (PHR Base)</h4>
+                <div style="overflow-x: auto; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                    <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
+                        <th style="padding: 10px;">Component</th><th style="padding: 10px;">Structure</th><th style="padding: 10px;">PHR</th><th style="padding: 10px;">Wt %</th><th style="padding: 10px;">Mass [g]</th><th style="padding: 10px;">Vol [mL]</th>
+                    </tr>`;
+        data.components.forEach((c10, i8) => {
+          html += `<tr style="border-bottom: 1px solid ${bdColor};">
+                        ${makeEditableTd("components", i8, "name", c10.name, "text", c10.name, "font-weight:600;")}
+                        <td style="padding: 10px;"><div class="poly-struct" data-type="components" data-idx="${i8}" data-smiles="${c10.smiles || ""}"></div></td>
+                        ${makeEditableTd("components", i8, "phr", c10.phr, "number", void 0, "color:var(--text-accent); font-weight:bold;")}
+                        <td style="padding: 10px;">${(c10.wt_frac * 100).toFixed(1)}%</td>
+                        <td style="padding: 10px;">${c10.mass_g ? c10.mass_g.toFixed(3) : "-"}</td>
+                        <td style="padding: 10px;">${c10.volume_ml ? c10.volume_ml.toFixed(2) : "-"}</td>
+                    </tr>`;
+        });
+        html += `</table></div>`;
+      } else {
+        html += `
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; font-size: 13px; background: var(--background-secondary); padding: 10px; border-radius: 6px;">
+                    <div><span style="color:var(--text-muted)">Target DP:</span> ${makeEditableRoot("target_dp", data.target_dp)}</div>
+                    <div><span style="color:var(--text-muted)">Target Mass [g]:</span> ${makeEditableRoot("target_mass_g", data.target_mass_g)}</div>
+                </div>`;
+        const char2 = data.characterization || {};
+        html += `
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 25px;">
+                    <div style="flex: 1; min-width: 120px; background: var(--background-secondary); padding: 10px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Theoretical Mn</div>
+                        <div style="font-size:18px; font-weight:bold; color:var(--interactive-accent);">${data.theoretical_mn ? Math.round(data.theoretical_mn).toLocaleString() : "-"}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 120px; background: var(--background-secondary); padding: 10px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">GPC Actual Mn</div>
+                        <div style="font-size:18px; font-weight:bold; color:var(--text-normal);">${makeEditableRoot("Mn_gpc", char2.Mn_gpc, "characterization")}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 120px; background: var(--background-secondary); padding: 10px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Dispersity (\u0110)</div>
+                        <div style="font-size:18px; font-weight:bold; color:${char2.dispersity < 1.2 ? "var(--text-success)" : "var(--text-warning)"};">${makeEditableRoot("dispersity", char2.dispersity, "characterization")}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 120px; background: var(--background-secondary); padding: 10px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Thermal Tg [\xB0C]</div>
+                        <div style="font-size:18px; font-weight:bold; color:var(--text-normal);">${makeEditableRoot("Tg", char2.Tg, "characterization")}</div>
+                    </div>
+                </div>`;
+        html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Monomers</h4>
+                <div style="overflow-x: auto; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                    <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
+                        <th style="padding: 10px;">Name</th><th style="padding: 10px;">Structure</th><th style="padding: 10px;">Eq (Ratio)</th><th style="padding: 10px;">MW</th><th style="padding: 10px;">n [mmol]</th><th style="padding: 10px;">m [g]</th><th style="padding: 10px;">V [mL]</th>
+                    </tr>`;
+        data.monomers.forEach((m9, i8) => {
+          html += `<tr style="border-bottom: 1px solid ${bdColor};">
+                        ${makeEditableTd("monomers", i8, "name", m9.name, "text", m9.name, "font-weight:600;")}
+                        <td style="padding: 10px;"><div class="poly-struct" data-type="monomers" data-idx="${i8}" data-smiles="${m9.smiles || ""}"></div></td>
+                        ${makeEditableTd("monomers", i8, "eq", m9.eq, "number", void 0, "font-weight:bold;")}
+                        <td style="padding: 10px; color:var(--text-muted);">${m9.mw ? m9.mw.toFixed(1) : "-"}</td>
+                        <td style="padding: 10px;">${m9.mmol ? m9.mmol.toFixed(2) : "-"}</td>
+                        <td style="padding: 10px; color:var(--interactive-accent); font-weight:bold;">${m9.mass_g ? m9.mass_g.toFixed(3) : "-"}</td>
+                        <td style="padding: 10px;">${m9.volume_ml ? m9.volume_ml.toFixed(2) : "-"}</td>
+                    </tr>`;
+        });
+        html += `</table></div>`;
+        if (data.initiators.length > 0 || data.agents.length > 0) {
+          html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Initiators, Catalysts & Agents</h4>
+                    <div style="overflow-x: auto; margin-bottom: 20px;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                        <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
+                            <th style="padding: 10px;">Role</th><th style="padding: 10px;">Name</th><th style="padding: 10px;">Structure</th><th style="padding: 10px;">[M]/[I] Ratio</th><th style="padding: 10px;">n [mmol]</th><th style="padding: 10px;">m [mg]</th>
+                        </tr>`;
+          const renderAgent = (a9, role, type3, idx) => {
+            var _a;
+            const baseEq = ((_a = data.monomers[0]) == null ? void 0 : _a.eq) || 1;
+            const aEq = a9.eq || 1;
+            const mToIRatio = baseEq / aEq;
+            html += `<tr style="border-bottom: 1px solid ${bdColor};">
+                            <td style="padding: 10px; color:var(--text-muted); font-size:11px; text-transform:uppercase;">${role}</td>
+                            ${makeEditableTd(type3, idx, "name", a9.name, "text", a9.name, "font-weight:600;")}
+                            <td style="padding: 10px;"><div class="poly-struct" data-type="${type3}" data-idx="${idx}" data-smiles="${a9.smiles || ""}"></div></td>
+                            <td style="padding: 10px; font-weight:bold; color:var(--text-warning);">${Math.round(mToIRatio)} : 1</td>
+                            <td style="padding: 10px;">${a9.mmol ? a9.mmol.toFixed(3) : "-"}</td>
+                            <td style="padding: 10px; color:var(--text-normal); font-weight:bold;">${a9.mass_mg ? a9.mass_mg.toFixed(1) : "-"}</td>
+                        </tr>`;
+          };
+          data.initiators.forEach((i8, idx) => renderAgent(i8, "Initiator", "initiators", idx));
+          data.agents.forEach((a9, idx) => renderAgent(a9, "CTA/Agent", "agents", idx));
+          html += `</table></div>`;
+        }
+      }
+      html += `</div>`;
+      const styleBlock = document.createElement("style");
+      styleBlock.innerHTML = `.eln-editable:hover { background-color: var(--background-modifier-hover); }`;
+      wrapper2.appendChild(styleBlock);
+      const contentDiv = document.createElement("div");
+      contentDiv.innerHTML = html;
+      wrapper2.appendChild(contentDiv);
+      const nodes = contentDiv.querySelectorAll(".poly-struct");
+      nodes.forEach((node2) => {
+        const elNode = node2;
+        const smiles = elNode.dataset.smiles;
+        const type3 = elNode.dataset.type;
+        const idx = parseInt(elNode.dataset.idx || "0", 10);
+        elNode.style.width = `120px`;
+        elNode.style.height = `80px`;
+        elNode.style.cursor = "pointer";
+        elNode.title = "Double-click to edit structure";
+        elNode.innerHTML = "\u23F3";
+        if (smiles) {
+          requestAnimationFrame(async () => {
+            const renderEl = await this.plugin.api.renderStructure(smiles, 120, 80);
+            elNode.empty();
+            if (renderEl) {
+              renderEl.style.maxWidth = "100%";
+              renderEl.style.maxHeight = "100%";
+              elNode.appendChild(renderEl);
+            } else elNode.innerHTML = "\u274C";
+          });
+        } else {
+          elNode.innerHTML = "Draw...";
+          elNode.style.color = "var(--text-muted)";
+        }
+        elNode.addEventListener("dblclick", (e6) => {
+          e6.stopPropagation();
+          let info = ctx.getSectionInfo(el2);
+          if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+          if (!view || !info) return;
+          this.plugin.api.ketcher.openEditor(smiles || "", "smiles", (newData) => {
+            const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+            try {
+              const yamlObj = parseYaml(blockText);
+              yamlObj[type3][idx].smiles = newData;
+              delete yamlObj[type3][idx].mw;
+              const newYaml = stringifyYaml(yamlObj);
+              view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+            } catch (err) {
+            }
+          });
+        });
+      });
+      return wrapper2;
+    } catch (err) {
+      wrapper2.innerHTML = `<div style="padding: 20px; color: var(--text-error); background: var(--background-secondary); border-radius: 8px;"><b>Polymer ELN Error:</b><br>${err.message}</div>`;
+      return wrapper2;
+    }
+  }
+};
+var PolymerMetaEditorModal = class extends import_obsidian16.Modal {
+  constructor(app, plugin, yamlObj, onSave) {
+    super(app);
+    __publicField(this, "plugin");
+    __publicField(this, "data");
+    __publicField(this, "onSave");
+    this.plugin = plugin;
+    this.data = JSON.parse(JSON.stringify(yamlObj));
+    if (!this.data.monomers) this.data.monomers = [];
+    if (!this.data.initiators) this.data.initiators = [];
+    if (!this.data.agents) this.data.agents = [];
+    if (!this.data.components) this.data.components = [];
+    this.onSave = onSave;
+  }
+  onOpen() {
+    this.render();
+  }
+  render() {
+    const { contentEl } = this;
+    contentEl.empty();
+    const header = contentEl.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--background-modifier-border); padding-bottom: 10px;" } });
+    header.createEl("h2", { text: "Edit Polymer Meta", attr: { style: "margin: 0; font-size: 1.2em;" } });
+    const saveBtn = header.createEl("button", { text: "Save", cls: "mod-cta" });
+    saveBtn.onclick = () => {
+      this.onSave(this.data);
+      this.close();
+    };
+    const metaGrid = contentEl.createDiv({ attr: { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;" } });
+    const addInput = (parent, label, key) => {
+      const wrap = parent.createDiv();
+      wrap.createEl("div", { text: label, cls: "color-text-muted", attr: { style: "font-size:12px; margin-bottom:3px;" } });
+      const inp = wrap.createEl("input", { type: "text", value: this.data[key] || "", attr: { style: "width:100%;" } });
+      inp.onchange = (e6) => this.data[key] = e6.target.value;
+    };
+    addInput(metaGrid, "Experiment Code", "code");
+    addInput(metaGrid, "Title", "title");
+    addInput(metaGrid, "Target Mass (g)", "target_mass_g");
+    if (this.data.type !== "formulation") addInput(metaGrid, "Target DP", "target_dp");
+    const renderChemRow = (item, type3, idx) => {
+      const row = contentEl.createDiv({ attr: { style: "background: var(--background-secondary-alt); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--background-modifier-border); display: flex; flex-direction: column; gap: 10px;" } });
+      const topWrap = row.createDiv({ attr: { style: "display: flex; gap: 10px; align-items: center;" } });
+      const nameInp = topWrap.createEl("input", { type: "text", value: item.name || "", attr: { placeholder: "Chemical Name", style: "width: 100%; font-weight: bold;" } });
+      nameInp.onchange = (e6) => item.name = e6.target.value;
+      const actionRow = row.createDiv({ attr: { style: "display: flex; gap: 6px; justify-content: flex-start; flex-wrap: wrap;" } });
+      const drawBtn = actionRow.createEl("button", { text: "\u270F\uFE0F Draw", attr: { style: "font-size:11px; padding: 4px 8px;" } });
+      drawBtn.onclick = () => {
+        this.plugin.api.ketcher.openEditor(item.smiles || "", "smiles", (newSmiles) => {
+          item.smiles = newSmiles;
+          this.render();
+        });
+      };
+      const libBtn = actionRow.createEl("button", { text: "\u{1F4DA} Lib", attr: { style: "font-size:11px; padding: 4px 8px;" } });
+      libBtn.onclick = async () => {
+        const lib = await getCompoundLibrary(this.plugin);
+        new CompoundSuggestModal(this.plugin.app, lib, (selected6) => {
+          item.name = selected6.name;
+          item.smiles = selected6.smiles;
+          this.render();
+        }).open();
+      };
+      const delBtn = actionRow.createEl("button", { text: "\u{1F5D1}\uFE0F Remove", attr: { style: "color: var(--text-error); font-size:11px; padding: 4px 8px; margin-left:auto;" } });
+      delBtn.onclick = () => {
+        this.data[type3].splice(idx, 1);
+        this.render();
+      };
+      const botRow = row.createDiv({ attr: { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(75px, 1fr)); gap: 8px; margin-top: 5px;" } });
+      const makeNumInp = (key, label) => {
+        const wrap = botRow.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+        wrap.createEl("span", { text: label, attr: { style: "font-size: 10px; color: var(--text-muted); margin-bottom: 2px; white-space: nowrap;" } });
+        const inp = wrap.createEl("input", { type: "number", value: item[key] !== void 0 ? item[key] : "", attr: { style: "width: 100%; padding: 4px; box-sizing: border-box;" } });
+        inp.onchange = (e6) => {
+          const val = parseFloat(e6.target.value.replace(/,/g, "."));
+          if (isNaN(val)) delete item[key];
+          else item[key] = val;
+          this.render();
+        };
+      };
+      if (type3 === "monomers") {
+        makeNumInp("eq", "Eq");
+      }
+      if (type3 === "initiators" || type3 === "agents") {
+        makeNumInp("ratio_to_monomer", "Ratio [I]/[M]");
+      }
+      if (type3 === "components") {
+        makeNumInp("phr", "PHR");
+      }
+    };
+    const makeSection = (title, typeKey) => {
+      const h5 = contentEl.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;" } });
+      h5.createEl("h3", { text: title, attr: { style: "margin: 0; font-size: 1.1em;" } });
+      const btn = h5.createEl("button", { text: "+ Add" });
+      btn.onclick = () => {
+        this.data[typeKey].push({ name: "", smiles: "" });
+        this.render();
+      };
+      this.data[typeKey].forEach((x25, idx) => renderChemRow(x25, typeKey, idx));
+    };
+    if (this.data.type === "formulation") {
+      makeSection("Components (Resins, Fillers)", "components");
+    } else {
+      makeSection("Monomers", "monomers");
+      makeSection("Initiators & Catalysts", "initiators");
+      makeSection("RAFT / CTA Agents", "agents");
+    }
+    contentEl.createDiv({ attr: { style: "height: 50px;" } });
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+
 // BioEln.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian17 = require("obsidian");
 var BioCalculator = class {
   static calculate(data) {
     if (!data.type) data.type = "pcr";
@@ -570833,7 +572883,7 @@ var BioElnRenderer = class {
           input.focus();
           const finishEdit = () => {
             const newValStr = input.value.trim().replace(/,/g, ".");
-            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian17.MarkdownView);
             let info = ctx.getSectionInfo(el2);
             if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
             if (view && info) {
@@ -570883,7 +572933,7 @@ var BioElnRenderer = class {
             const elNode = stepNode;
             const idx = parseInt(elNode.dataset.idx || "0", 10);
             const currentState = elNode.dataset.state === "true";
-            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian17.MarkdownView);
             let info = ctx.getSectionInfo(el2);
             if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
             if (view && info) {
@@ -570930,7 +572980,7 @@ var BioElnRenderer = class {
         createActionBarBtn("\u{1F4C4} FASTA", () => {
           navigator.clipboard.writeText(`>${data.title || "Sequence"}
 ${data.sequence}`);
-          new import_obsidian9.Notice("Copied as FASTA format!");
+          new import_obsidian17.Notice("Copied as FASTA format!");
         });
       } else if (data.type === "pcr") {
         createActionBarBtn("\u{1F321}\uFE0F NEB Tm Calc", () => window.open(`https://tmcalculator.neb.com/`, "_blank"));
@@ -570972,7 +573022,7 @@ ${data.sequence}`);
 `);
         }
         navigator.clipboard.writeText(txt);
-        new import_obsidian9.Notice("Copied to clipboard!");
+        new import_obsidian17.Notice("Copied to clipboard!");
       });
       return wrapper2;
     } catch (err) {
@@ -570983,7 +573033,7 @@ ${data.sequence}`);
 };
 
 // AnalyticalEln.ts
-var import_obsidian10 = require("obsidian");
+var import_obsidian18 = require("obsidian");
 var AnalyticalCalculator = class {
   static calculate(data) {
     if (!data.type) data.type = "calibration";
@@ -571247,7 +573297,7 @@ var AnalyticalElnRenderer = class {
             input.focus();
             const finishEdit = () => {
               const newValStr = input.value.trim().replace(/,/g, ".");
-              const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+              const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian18.MarkdownView);
               let info = ctx.getSectionInfo(el2);
               if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
               if (view && info) {
@@ -571298,7 +573348,7 @@ var AnalyticalElnRenderer = class {
             const elNode = node2;
             const idx = parseInt(elNode.dataset.idx || "0", 10);
             const currentState = elNode.dataset.state === "true";
-            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian18.MarkdownView);
             let info = ctx.getSectionInfo(el2);
             if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
             if (view && info) {
@@ -571346,7 +573396,7 @@ var AnalyticalElnRenderer = class {
           });
         }
         navigator.clipboard.writeText(txt);
-        new import_obsidian10.Notice("Data copied to clipboard!");
+        new import_obsidian18.Notice("Data copied to clipboard!");
       };
       const styleBlock = document.createElement("style");
       styleBlock.innerHTML = `.ana-editable:hover { background-color: var(--background-modifier-hover); }`;
@@ -571381,7 +573431,7 @@ var AnalyticalElnRenderer = class {
 };
 
 // OrganicHelpers.ts
-var import_obsidian11 = require("obsidian");
+var import_obsidian19 = require("obsidian");
 var OrgHelperCalculator = class {
   static calculate(data) {
     if (!data.type) return data;
@@ -571413,30 +573463,8 @@ var OrgHelperCalculator = class {
       const z5 = data.electrons_z || 2;
       const prodMmol = data.product_mmol || 0;
       data.total_coulombs = mA * h5 * 3.6;
-      const molesOfElectrons = data.total_coulombs / 96485;
-      data.theory_max_mmol = molesOfElectrons / z5 * 1e3;
-      if (data.theory_max_mmol > 0) {
-        data.faradaic_efficiency = prodMmol / data.theory_max_mmol * 100;
-      } else {
-        data.faradaic_efficiency = 0;
-      }
-    }
-    if (data.type === "reaction_screening") {
-      if (!data.components) data.components = [];
-      const rxns = data.reactions || 1;
-      const overage = data.overage_percent !== void 0 ? data.overage_percent : 10;
-      const calcRxns = rxns * (1 + overage / 100);
-      const scaleMmol = data.scale_mmol || 0.1;
-      const volPerVial = data.vol_per_vial_ml || 1;
-      data.calculated_reactions = calcRxns;
-      data.total_stock_vol_ml = calcRxns * volPerVial;
-      data.components.forEach((c10) => {
-        c10.eq = c10.eq || 1;
-        c10.total_mmol = scaleMmol * c10.eq * calcRxns;
-        if (c10.mw) c10.total_mass_mg = c10.total_mmol * c10.mw;
-        else c10.total_mass_mg = 0;
-        if (c10.density) c10.total_vol_ul = c10.total_mass_mg / c10.density * 1e3;
-      });
+      data.theory_max_mmol = data.total_coulombs / 96485 / z5 * 1e3;
+      data.faradaic_efficiency = data.theory_max_mmol > 0 ? prodMmol / data.theory_max_mmol * 100 : 0;
     }
     if (data.type === "catalyst_metrics") {
       const pMmol = data.product_mmol || 0;
@@ -571444,6 +573472,51 @@ var OrgHelperCalculator = class {
       const t8 = data.time_hours || 1;
       data.ton = pMmol / cMmol;
       data.tof = data.ton / t8;
+    }
+    if (data.type === "titration") {
+      const stdMass = data.standard_mass_mg || 0;
+      const stdMw = data.standard_mw || 1;
+      const volUsed = data.titrant_vol_ml || 0;
+      const ratio = data.stoichiometry_ratio || 1;
+      data.molarity = stdMw > 0 && volUsed > 0 ? stdMass / stdMw * ratio / volUsed : 0;
+    }
+    if (data.type === "chromatography") {
+      const rf1 = data.rf_product || 0;
+      const rf2 = data.rf_impurity || 0;
+      const d10 = data.column_diameter_cm || 0;
+      const h5 = data.silica_height_cm || 0;
+      if (rf1 > 0 && rf2 > 0) {
+        data.delta_cv = Math.abs(1 / rf1 - 1 / rf2);
+        if (data.delta_cv > 0.4) data.difficulty = "Easy (Flash)";
+        else if (data.delta_cv > 0.2) data.difficulty = "Moderate";
+        else data.difficulty = "Difficult (Slow Gradient)";
+      } else {
+        data.delta_cv = 0;
+        data.difficulty = "-";
+      }
+      data.column_volume_ml = d10 > 0 && h5 > 0 ? Math.PI * Math.pow(d10 / 2, 2) * h5 * 0.65 : 0;
+    }
+    if (data.type === "green_metrics") {
+      const reagentsMass = data.total_reagents_mass_g || 0;
+      const solventMass = data.total_solvent_mass_g || 0;
+      const productMass = data.product_mass_g || 0;
+      const targetMw = data.target_product_mw || 0;
+      const reactantsMw = data.total_reactants_mw || 0;
+      if (productMass > 0) {
+        data.pmi = (reagentsMass + solventMass) / productMass;
+        data.e_factor = data.pmi - 1;
+      } else {
+        data.pmi = 0;
+        data.e_factor = 0;
+      }
+      data.atom_economy = reactantsMw > 0 ? targetMw / reactantsMw * 100 : 0;
+    }
+    if (data.type === "recrystallization") {
+      const crude = data.crude_mass_mg || 0;
+      const recovered = data.recovered_mass_mg || 0;
+      const vol = data.solvent_vol_ml || 0;
+      data.recovery_percent = crude > 0 ? recovered / crude * 100 : 0;
+      data.concentration = vol > 0 ? crude / vol : 0;
     }
     return data;
   }
@@ -571458,7 +573531,7 @@ var OrganicHelpersRenderer = class {
     const { parseYaml, stringifyYaml } = require("obsidian");
     const wrapper2 = el2.createDiv();
     const themeColor = "#f59e0b";
-    const bgSec = "var(--background-secondary)";
+    const bgSec2 = "var(--background-secondary)";
     const bdColor = "var(--background-modifier-border)";
     wrapper2.style.position = "relative";
     wrapper2.style.border = `1px solid ${bdColor}`;
@@ -571470,13 +573543,13 @@ var OrganicHelpersRenderer = class {
     wrapper2.style.width = "100%";
     wrapper2.style.marginBottom = "15px";
     const icons = {
-      flask: `<svg stroke="${themeColor}" fill="rgba(245,158,11,0.15)" width="48" height="48" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a2 2 0 0 0 1.8 2.45h10.96a2 2 0 0 0 1.8-2.45L14.21 10.42a2 2 0 0 1-.21-.896V2"/><path d="M8.5 2h7"/><path d="M14 16H5.5"/></svg>`,
-      pipette: `<svg stroke="var(--text-muted)" fill="none" width="32" height="32" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/></svg>`,
-      vial: `<svg stroke="var(--text-muted)" fill="none" width="24" height="24" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v17.5A2.5 2.5 0 0 1 6.5 22v0A2.5 2.5 0 0 1 4 19.5V2"/><path d="M3 2h5"/><path d="M4 14h5"/></svg>`,
       zap: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${themeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`,
       clock: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
       current: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`,
-      nmrTube: `<svg stroke="${themeColor}" fill="none" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v18a2 2 0 0 0 4 0V2"/><path d="M8 2h8"/><path d="M10 16h4"/></svg>`
+      nmrTube: `<svg stroke="${themeColor}" fill="none" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v18a2 2 0 0 0 4 0V2"/><path d="M8 2h8"/><path d="M10 16h4"/></svg>`,
+      column: `<svg stroke="${themeColor}" fill="none" width="32" height="32" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6"/><path d="M10 2v14.5a1.5 1.5 0 0 0 1.5 1.5h1a1.5 1.5 0 0 0 1.5-1.5V2"/><path d="M12 18v4"/></svg>`,
+      leaf: `<svg stroke="#10b981" fill="rgba(16,185,129,0.15)" width="32" height="32" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>`,
+      crystal: `<svg stroke="${themeColor}" fill="rgba(245,158,11,0.15)" width="32" height="32" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13"/><path d="M13 3l3 6-4 13"/></svg>`
     };
     try {
       let data = parseYaml(source);
@@ -571497,11 +573570,6 @@ var OrganicHelpersRenderer = class {
         if (isNaN(n8) || n8 === 0) return "-";
         return n8 % 1 === 0 ? n8.toString() : n8.toFixed(decimals);
       };
-      const makeEditableTd = (type3, i8, key, val, inputType = "number", customHtml) => {
-        let innerHTML = customHtml !== void 0 ? customHtml : inputType === "number" ? formatNum(val) : val || "-";
-        let rawValAttr = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
-        return `<td class="org-editable" data-type="${type3}" data-idx="${i8}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawValAttr}" title="Double-click to edit" style="padding: 12px 10px; cursor: text; border-bottom: 1px solid ${bdColor};">${innerHTML}</td>`;
-      };
       const makeEditableRoot = (key, val, inputType = "number", unit2 = "") => {
         const displayVal = val !== void 0 ? inputType === "number" ? formatNum(val, 2) : val : "-";
         const rawVal = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
@@ -571510,7 +573578,7 @@ var OrganicHelpersRenderer = class {
       if (data.type === "nmr_yield") {
         html += `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
                         <h4 style="margin: 0 0 15px 0; color: var(--text-normal); font-size: 14px; display:flex; align-items:center; gap:6px;">${icons.nmrTube} Internal Standard</h4>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
                             <span style="color:var(--text-muted); font-weight:600;">Name:</span> ${makeEditableRoot("standard_name", data.standard_name, "text")}
@@ -571529,7 +573597,7 @@ var OrganicHelpersRenderer = class {
                         </div>
                     </div>
 
-                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
                         <h4 style="margin: 0 0 15px 0; color: var(--text-normal); font-size: 14px; display:flex; align-items:center; gap:6px;">${icons.nmrTube} Target Product</h4>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
                             <span style="color:var(--text-muted); font-weight:600;">Theory Scale (mmol):</span> ${makeEditableRoot("theory_mmol", data.theory_mmol)}
@@ -571562,21 +573630,21 @@ var OrganicHelpersRenderer = class {
       } else if (data.type === "faradaic_efficiency") {
         html += `
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
-                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Product Formed</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("product_mmol", data.product_mmol)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mmol</span></div>
                     </div>
-                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
                         <div style="position:absolute; top:10px; left:10px; opacity:0.5;">${icons.zap}</div>
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Electrons (z)</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("electrons_z", data.electrons_z)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">e\u207B</span></div>
                     </div>
-                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
                         <div style="position:absolute; top:10px; left:10px; opacity:0.5;">${icons.current}</div>
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Current</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("current_mA", data.current_mA)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mA</span></div>
                     </div>
-                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
                         <div style="position:absolute; top:10px; left:10px; opacity:0.5;">${icons.clock}</div>
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Time</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("time_hours", data.time_hours)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">h</span></div>
@@ -571600,72 +573668,90 @@ var OrganicHelpersRenderer = class {
                         </div>
                     </div>
                 </div>`;
-      } else if (data.type === "reaction_screening") {
+      } else if (data.type === "green_metrics") {
         html += `
-                <div style="display: flex; align-items: stretch; background: var(--background-secondary-alt); border-radius: 8px; border: 1px solid var(--background-modifier-border); padding: 20px 10px; gap: 15px; margin-bottom: 24px;">
-                    
-                    <!-- Box 1: Master Mix -->
-                    <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        ${icons.flask}
-                        <div style="font-weight: 700; font-size: 15px; color: var(--text-normal); margin-top: 10px;">Master Vial</div>
-                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Fill to Total Volume:</div>
-                        <div style="font-size: 24px; font-weight: 800; color: ${themeColor}; margin-top: 4px;">${formatNum(data.total_stock_vol_ml)} <span style="font-size:14px; font-weight:500;">mL</span></div>
-                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">(Includes ${makeEditableRoot("overage_percent", data.overage_percent, "number")}% overage)</div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Total Reagents Mass</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("total_reagents_mass_g", data.total_reagents_mass_g)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g</span></div>
                     </div>
-
-                    <!-- Box 2: Pipette -->
-                    <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
-                        <div style="position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: ${themeColor}; z-index: 0; border-style: dashed; opacity: 0.5;"></div>
-                        <div style="background: var(--background-primary); padding: 15px; z-index: 1; display: flex; flex-direction: column; align-items: center; border-radius: 8px; border: 1px solid var(--background-modifier-border); box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                            ${icons.pipette}
-                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 10px; text-transform: uppercase;">Dispense</div>
-                            <div style="font-size: 18px; font-weight: 800; color: var(--text-normal); margin-top: 4px;">${makeEditableRoot("vol_per_vial_ml", data.vol_per_vial_ml)} <span style="font-size:12px; font-weight:500;">mL / vial</span></div>
-                        </div>
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Total Solvent Mass</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("total_solvent_mass_g", data.total_solvent_mass_g)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g</span></div>
                     </div>
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Product Mass</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("product_mass_g", data.product_mass_g)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g</span></div>
+                    </div>
+                </div>
 
-                    <!-- Box 3: Target Vials -->
-                    <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        <div style="display: flex; gap: 4px; justify-content: center; align-items: center;">
-                            ${Array.from({ length: Math.min(data.reactions, 4) }).map(() => icons.vial).join("")}
-                            ${data.reactions > 4 ? `<div style="font-weight:bold; color:var(--text-muted); margin-left:4px;">...</div>` : ""}
-                        </div>
-                        <div style="font-weight: 700; font-size: 15px; color: var(--text-normal); margin-top: 10px;">Reaction Vials</div>
-                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Total Vials Prepared:</div>
-                        <div style="font-size: 24px; font-weight: 800; color: var(--text-normal); margin-top: 4px;">${makeEditableRoot("reactions", data.reactions)}</div>
-                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Scale: ${makeEditableRoot("scale_mmol", data.scale_mmol)} mmol / vial</div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Total Reactants MW</div>
+                        <div style="font-size:20px; font-weight:bold;">${makeEditableRoot("total_reactants_mw", data.total_reactants_mw)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g/mol</span></div>
+                    </div>
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Target Product MW</div>
+                        <div style="font-size:20px; font-weight:bold;">${makeEditableRoot("target_product_mw", data.target_product_mw)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g/mol</span></div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid #10b981; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1); position:relative;">
+                        <div style="position:absolute; top:10px; left:10px; opacity:0.7;">${icons.leaf}</div>
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Atom Economy</div>
+                        <div style="font-size:32px; font-weight:800; color:#10b981;">${data.atom_economy ? data.atom_economy.toFixed(1) + "%" : "-"}</div>
+                    </div>
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid #10b981; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Process Mass Intensity</div>
+                        <div style="font-size:32px; font-weight:800; color:var(--text-normal);">${data.pmi ? data.pmi.toFixed(2) : "-"}</div>
+                    </div>
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid #10b981; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">E-Factor</div>
+                        <div style="font-size:32px; font-weight:800; color:var(--text-normal);">${data.e_factor ? data.e_factor.toFixed(2) : "-"}</div>
                     </div>
                 </div>`;
-        html += `<div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
-                    <tr>
-                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Component</th>
-                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">MW (g/mol)</th>
-                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Equiv.</th>
-                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 600; color: var(--text-muted);">Total mmol</th>
-                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 700; color: ${themeColor};">Mass to Weigh (mg)</th>
-                    </tr>`;
-        data.components.forEach((c10, i8) => {
-          html += `<tr>
-                        ${makeEditableTd("components", i8, "name", c10.name, "text", c10.name, "font-weight:600; color:var(--text-normal);")}
-                        ${makeEditableTd("components", i8, "mw", c10.mw, "number")}
-                        ${makeEditableTd("components", i8, "eq", c10.eq, "number", void 0, "font-weight:bold;")}
-                        <td style="padding: 12px 10px; color:var(--text-muted); border-bottom: 1px solid ${bdColor};">${formatNum(c10.total_mmol, 3)}</td>
-                        <td style="padding: 12px 10px; font-weight:700; color:var(--text-normal); border-bottom: 1px solid ${bdColor}; font-size: 16px;">${c10.total_mass_mg !== void 0 && c10.total_mass_mg > 0 ? c10.total_mass_mg.toFixed(1) : '<span style="color:var(--text-muted); font-weight:normal;">-</span>'}</td>
-                    </tr>`;
-        });
-        html += `</table></div>`;
+      } else if (data.type === "recrystallization") {
+        html += `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Crude Mass</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("crude_mass_mg", data.crude_mass_mg)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mg</span></div>
+                    </div>
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Solvent Volume</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("solvent_vol_ml", data.solvent_vol_ml)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mL</span></div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">${makeEditableRoot("solvent_name", data.solvent_name, "text")}</div>
+                    </div>
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Recovered Mass</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("recovered_mass_mg", data.recovered_mass_mg)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mg</span></div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1); position:relative;">
+                        <div style="position:absolute; top:10px; left:10px; opacity:0.7;">${icons.crystal}</div>
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Recovery</div>
+                        <div style="font-size:32px; font-weight:800; color:${data.recovery_percent >= 70 ? "var(--text-success)" : data.recovery_percent >= 40 ? "var(--text-warning)" : "var(--text-error)"};">${data.recovery_percent ? data.recovery_percent.toFixed(1) + "%" : "-"}</div>
+                    </div>
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Concentration</div>
+                        <div style="font-size:32px; font-weight:800; color:var(--text-normal);">${data.concentration ? data.concentration.toFixed(1) : "-"} <span style="font-size:16px; color:var(--text-muted); font-weight:500;">mg/mL</span></div>
+                    </div>
+                </div>`;
       } else if (data.type === "catalyst_metrics") {
         html += `
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Product Formed</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("product_mmol", data.product_mmol)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mmol</span></div>
                     </div>
-                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Catalyst Loading</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("catalyst_mmol", data.catalyst_mmol)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mmol</span></div>
                     </div>
-                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Time</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("time_hours", data.time_hours)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">h</span></div>
                     </div>
@@ -571679,6 +573765,75 @@ var OrganicHelpersRenderer = class {
                     <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
                         <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Turnover Frequency (TOF)</div>
                         <div style="font-size:32px; font-weight:800; color:${themeColor};">${data.tof ? data.tof.toLocaleString(void 0, { maximumFractionDigits: 2 }) : "-"} <span style="font-size:16px; color:var(--text-muted); font-weight:500;">h\u207B\xB9</span></div>
+                    </div>
+                </div>`;
+      } else if (data.type === "titration") {
+        html += `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                        <h4 style="margin: 0 0 10px 0; color: var(--text-normal); font-size: 13px;">Titration Standard</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Name:</span> ${makeEditableRoot("standard_name", data.standard_name, "text")}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">MW (g/mol):</span> ${makeEditableRoot("standard_mw", data.standard_mw)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Mass used (mg):</span> ${makeEditableRoot("standard_mass_mg", data.standard_mass_mg)}
+                        </div>
+                    </div>
+
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                        <h4 style="margin: 0 0 10px 0; color: var(--text-normal); font-size: 13px;">Titrant</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Reagent:</span> ${makeEditableRoot("titrant_name", data.titrant_name, "text")}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Volume added (mL):</span> ${makeEditableRoot("titrant_vol_ml", data.titrant_vol_ml)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Stoichiometry Ratio:</span> ${makeEditableRoot("stoichiometry_ratio", data.stoichiometry_ratio)}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                    <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:700;">Calculated Molarity</div>
+                    <div style="font-size:32px; font-weight:800; color:${themeColor};">${data.molarity ? data.molarity.toFixed(3) : "-"} <span style="font-size:16px; color:var(--text-muted); font-weight:500;">M</span></div>
+                </div>`;
+      } else if (data.type === "chromatography") {
+        html += `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--text-normal); font-size: 14px;">TLC Retention Factors</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Product Rf:</span> ${makeEditableRoot("rf_product", data.rf_product)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Closest Impurity Rf:</span> ${makeEditableRoot("rf_impurity", data.rf_impurity)}
+                        </div>
+                    </div>
+
+                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--text-normal); font-size: 14px; display:flex; align-items:center; gap:6px;">${icons.column} Column Dimensions</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Diameter (cm):</span> ${makeEditableRoot("column_diameter_cm", data.column_diameter_cm)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Silica Height (cm):</span> ${makeEditableRoot("silica_height_cm", data.silica_height_cm)}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Separation (\u0394CV)</div>
+                        <div style="font-size:26px; font-weight:800; color:var(--text-normal);">${data.delta_cv ? data.delta_cv.toFixed(2) : "-"}</div>
+                        <div style="font-size:12px; color:${data.delta_cv > 0.4 ? "var(--text-success)" : data.delta_cv > 0.2 ? "var(--text-warning)" : "var(--text-error)"}; font-weight:600; margin-top:8px;">${data.difficulty}</div>
+                    </div>
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Column Volume (CV)</div>
+                        <div style="font-size:26px; font-weight:800; color:${themeColor};">${data.column_volume_ml ? data.column_volume_ml.toFixed(0) : "-"} <span style="font-size:16px; color:var(--text-muted); font-weight:500;">mL</span></div>
                     </div>
                 </div>`;
       }
@@ -571713,7 +573868,7 @@ var OrganicHelpersRenderer = class {
           input.focus();
           const finishEdit = () => {
             const newValStr = input.value.trim().replace(/,/g, ".");
-            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian11.MarkdownView);
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian19.MarkdownView);
             let info = ctx.getSectionInfo(el2);
             if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
             if (view && info) {
@@ -571781,71 +573936,70 @@ var OrganicHelpersRenderer = class {
         return btn;
       };
       createActionBarBtn("\u{1F4CB} Copy Data", () => {
-        var _a2, _b, _c, _d, _e2, _f, _g2, _h, _i2;
+        var _a2, _b, _c, _d, _e2, _f, _g2, _h, _i2, _j, _k, _l3, _m, _n2, _o2;
         let txt = "";
         if (data.type === "nmr_yield") {
           txt = `Parameter	Value
-`;
-          txt += `Internal Standard	${data.standard_name || "-"}
-`;
-          txt += `Standard Mass (mg)	${data.standard_mass_mg}
-`;
-          txt += `Theory (mmol)	${data.theory_mmol}
-`;
-          txt += `Calculated Amount (mmol)	${(_a2 = data.product_mmol) == null ? void 0 : _a2.toFixed(3)}
-`;
-          txt += `Calculated Amount (mg)	${(_b = data.product_mass_mg) == null ? void 0 : _b.toFixed(1)}
-`;
-          txt += `NMR Yield (%)	${(_c = data.yield_percent) == null ? void 0 : _c.toFixed(1)}
+Internal Standard	${data.standard_name || "-"}
+Standard Mass (mg)	${data.standard_mass_mg}
+Theory (mmol)	${data.theory_mmol}
+Calculated Amount (mmol)	${(_a2 = data.product_mmol) == null ? void 0 : _a2.toFixed(3)}
+Calculated Amount (mg)	${(_b = data.product_mass_mg) == null ? void 0 : _b.toFixed(1)}
+NMR Yield (%)	${(_c = data.yield_percent) == null ? void 0 : _c.toFixed(1)}
 `;
         } else if (data.type === "faradaic_efficiency") {
           txt = `Parameter	Value
-`;
-          txt += `Product Formed (mmol)	${data.product_mmol}
-`;
-          txt += `Electrons (z)	${data.electrons_z}
-`;
-          txt += `Current (mA)	${data.current_mA}
-`;
-          txt += `Time (h)	${data.time_hours}
-`;
-          txt += `Total Charge (C)	${(_d = data.total_coulombs) == null ? void 0 : _d.toFixed(1)}
-`;
-          txt += `Theoretical Max (mmol)	${(_e2 = data.theory_max_mmol) == null ? void 0 : _e2.toFixed(3)}
-`;
-          txt += `Faradaic Efficiency (%)	${(_f = data.faradaic_efficiency) == null ? void 0 : _f.toFixed(1)}
-`;
-        } else if (data.type === "reaction_screening") {
-          txt = `Component	MW	Eq	Total mmol	Mass to Weigh (mg)
-`;
-          data.components.forEach((c10) => {
-            var _a3, _b2;
-            return txt += `${c10.name || "-"}	${c10.mw || "-"}	${c10.eq || "-"}	${((_a3 = c10.total_mmol) == null ? void 0 : _a3.toFixed(3)) || "-"}	${((_b2 = c10.total_mass_mg) == null ? void 0 : _b2.toFixed(1)) || "-"}
-`;
-          });
-          txt += `
-Master Mix Total Volume (mL)	${(_g2 = data.total_stock_vol_ml) == null ? void 0 : _g2.toFixed(2)}
-`;
-          txt += `Dispense Volume per Vial (mL)	${data.vol_per_vial_ml}
+Product Formed (mmol)	${data.product_mmol}
+Electrons (z)	${data.electrons_z}
+Current (mA)	${data.current_mA}
+Time (h)	${data.time_hours}
+Total Charge (C)	${(_d = data.total_coulombs) == null ? void 0 : _d.toFixed(1)}
+Theoretical Max (mmol)	${(_e2 = data.theory_max_mmol) == null ? void 0 : _e2.toFixed(3)}
+Faradaic Efficiency (%)	${(_f = data.faradaic_efficiency) == null ? void 0 : _f.toFixed(1)}
 `;
         } else if (data.type === "catalyst_metrics") {
           txt = `Parameter	Value
+Product (mmol)	${data.product_mmol}
+Catalyst (mmol)	${data.catalyst_mmol}
+Time (h)	${data.time_hours}
+TON	${(_g2 = data.ton) == null ? void 0 : _g2.toFixed(1)}
+TOF (h-1)	${(_h = data.tof) == null ? void 0 : _h.toFixed(2)}
 `;
-          txt += `Product (mmol)	${data.product_mmol}
+        } else if (data.type === "titration") {
+          txt = `Parameter	Value
+Standard	${data.standard_name || "-"}
+Standard Mass (mg)	${data.standard_mass_mg}
+Titrant	${data.titrant_name || "-"}
+Volume (mL)	${data.titrant_vol_ml}
+Molarity (M)	${(_i2 = data.molarity) == null ? void 0 : _i2.toFixed(3)}
 `;
-          txt += `Catalyst (mmol)	${data.catalyst_mmol}
+        } else if (data.type === "chromatography") {
+          txt = `Parameter	Value
+Product Rf	${data.rf_product}
+Impurity Rf	${data.rf_impurity}
+Delta CV	${(_j = data.delta_cv) == null ? void 0 : _j.toFixed(2)}
+Column Volume (mL)	${(_k = data.column_volume_ml) == null ? void 0 : _k.toFixed(0)}
 `;
-          txt += `Time (h)	${data.time_hours}
+        } else if (data.type === "green_metrics") {
+          txt = `Parameter	Value
+Reagents Mass (g)	${data.total_reagents_mass_g}
+Solvent Mass (g)	${data.total_solvent_mass_g}
+Product Mass (g)	${data.product_mass_g}
+Process Mass Intensity (PMI)	${(_l3 = data.pmi) == null ? void 0 : _l3.toFixed(2)}
+E-Factor	${(_m = data.e_factor) == null ? void 0 : _m.toFixed(2)}
+Atom Economy (%)	${(_n2 = data.atom_economy) == null ? void 0 : _n2.toFixed(1)}
 `;
-          txt += `TON	${(_h = data.ton) == null ? void 0 : _h.toFixed(1)}
-`;
-          txt += `TOF (h-1)	${(_i2 = data.tof) == null ? void 0 : _i2.toFixed(2)}
+        } else if (data.type === "recrystallization") {
+          txt = `Parameter	Value
+Crude Mass (mg)	${data.crude_mass_mg}
+Recovered Mass (mg)	${data.recovered_mass_mg}
+Recovery (%)	${(_o2 = data.recovery_percent) == null ? void 0 : _o2.toFixed(1)}
 `;
         } else {
           txt = JSON.stringify(data, null, 2);
         }
         navigator.clipboard.writeText(txt);
-        new import_obsidian11.Notice("Table copied to clipboard (Excel ready)!");
+        new import_obsidian19.Notice("Data copied to clipboard (Excel ready)!");
       });
       return wrapper2;
     } catch (err) {
@@ -571855,558 +574009,8 @@ Master Mix Total Volume (mL)	${(_g2 = data.total_stock_vol_ml) == null ? void 0 
   }
 };
 
-// PolymerEln.ts
-var import_obsidian12 = require("obsidian");
-init_SharedEln();
-var PolymerCalculator = class {
-  static calculate(data) {
-    var _a, _b, _c;
-    if (!data.monomers) data.monomers = [];
-    if (!data.initiators) data.initiators = [];
-    if (!data.agents) data.agents = [];
-    if (!data.components) data.components = [];
-    if (!data.characterization) data.characterization = {};
-    if (data.type === "formulation") {
-      let totalPhr = 0;
-      data.components.forEach((c10) => {
-        c10.phr = c10.phr || 0;
-        totalPhr += c10.phr;
-      });
-      const targetMassMg2 = data.target_mass_mg || (data.target_mass_g ? data.target_mass_g * 1e3 : 1e5);
-      data.components.forEach((c10) => {
-        c10.wt_frac = totalPhr > 0 ? c10.phr / totalPhr : 0;
-        c10.mass_mg = targetMassMg2 * c10.wt_frac;
-        c10.mass_g = c10.mass_mg / 1e3;
-        if (c10.density) c10.volume_ml = c10.mass_g / c10.density;
-      });
-      data.total_mass_g = targetMassMg2 / 1e3;
-      return data;
-    }
-    let totalMonomerEq = 0;
-    let baseMonomerMw = 0;
-    data.monomers.forEach((m9) => {
-      m9.eq = m9.eq || m9.mol_ratio || 1;
-      totalMonomerEq += m9.eq;
-      if (m9.eq === 1 && m9.mw) baseMonomerMw = m9.mw;
-    });
-    if (baseMonomerMw === 0 && ((_a = data.monomers[0]) == null ? void 0 : _a.mw)) baseMonomerMw = data.monomers[0].mw;
-    const targetDp = data.target_dp || 100;
-    const targetMassMg = data.target_mass_mg || (data.target_mass_g ? data.target_mass_g * 1e3 : null);
-    let totalMonomerMassWeight = 0;
-    if (totalMonomerEq > 0) {
-      data.monomers.forEach((m9) => {
-        totalMonomerMassWeight += m9.eq / totalMonomerEq * (m9.mw || 0);
-      });
-    }
-    data.initiators.forEach((i8) => {
-      if (i8.ratio_to_monomer) i8.eq = totalMonomerEq * i8.ratio_to_monomer;
-      else if (!i8.eq) i8.eq = totalMonomerEq / targetDp;
-    });
-    data.agents.forEach((a9) => {
-      if (a9.ratio_to_monomer) a9.eq = totalMonomerEq * a9.ratio_to_monomer;
-      else if (!a9.eq) a9.eq = totalMonomerEq / targetDp;
-    });
-    const activeChainEq = data.agents.length > 0 ? data.agents[0].eq : data.initiators.length > 0 ? data.initiators[0].eq : 1;
-    const theoryDp = activeChainEq > 0 ? totalMonomerEq / activeChainEq : 0;
-    data.theoretical_mn = theoryDp * totalMonomerMassWeight + (((_b = data.agents[0]) == null ? void 0 : _b.mw) || ((_c = data.initiators[0]) == null ? void 0 : _c.mw) || 0);
-    if (targetMassMg) {
-      let totalRelativeMass = 0;
-      data.monomers.forEach((m9) => totalRelativeMass += m9.eq * (m9.mw || 0));
-      data.initiators.forEach((i8) => totalRelativeMass += i8.eq * (i8.mw || 0));
-      data.agents.forEach((a9) => totalRelativeMass += a9.eq * (a9.mw || 0));
-      const scaleFactor = totalRelativeMass > 0 ? targetMassMg / totalRelativeMass : 0;
-      const applyScale = (arr) => {
-        arr.forEach((item) => {
-          item.mmol = item.eq * scaleFactor;
-          item.mass_mg = item.mmol * (item.mw || 0);
-          item.mass_g = item.mass_mg / 1e3;
-          if (item.density) item.volume_ml = item.mass_g / item.density;
-        });
-      };
-      applyScale(data.monomers);
-      applyScale(data.initiators);
-      applyScale(data.agents);
-    }
-    return data;
-  }
-};
-var PolymerElnRenderer = class {
-  constructor(plugin) {
-    __publicField(this, "plugin");
-    this.plugin = plugin;
-  }
-  async renderPolymerBlock(source, el2, ctx) {
-    const { parseYaml, stringifyYaml } = require("obsidian");
-    const wrapper2 = el2.createDiv();
-    wrapper2.style.position = "relative";
-    wrapper2.style.border = "1px solid var(--interactive-accent)";
-    wrapper2.style.padding = "45px 15px 15px 15px";
-    wrapper2.style.borderRadius = "12px";
-    wrapper2.style.backgroundColor = "var(--background-primary-alt)";
-    wrapper2.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.05)";
-    wrapper2.style.fontFamily = "var(--font-interface)";
-    wrapper2.style.width = "100%";
-    wrapper2.innerHTML = `<h3 class="color-text-muted" style="text-align:center;">\u23F3 Calculating Macromolecules...</h3>`;
-    try {
-      const safeSource = source.replace(/smiles:\s*(.*)$/gm, (match2, p1) => {
-        let s8 = p1.trim();
-        if (!s8) return match2;
-        let comment2 = "";
-        const commentMatch = s8.match(/(\s+#.*)$/);
-        if (commentMatch) {
-          comment2 = commentMatch[1];
-          s8 = s8.substring(0, s8.length - comment2.length).trim();
-        }
-        if (s8.startsWith('"') && s8.endsWith('"') || s8.startsWith("'") && s8.endsWith("'")) s8 = s8.substring(1, s8.length - 1);
-        s8 = s8.replace(/\\"/g, '"');
-        s8 = s8.replace(/'/g, "''");
-        return `smiles: '${s8}'${comment2}`;
-      });
-      let data = parseYaml(safeSource);
-      if (!data) throw new Error("Empty YAML Data.");
-      const fetchMws = async (arr) => {
-        if (!arr) return;
-        for (const item of arr) {
-          if (item.smiles && (!item.mw || item.mw <= 0)) {
-            const p7 = await calculateMwOffline(item.smiles, this.plugin);
-            if (p7 && p7.mw > 0) item.mw = p7.mw;
-          }
-        }
-      };
-      await fetchMws(data.monomers);
-      await fetchMws(data.initiators);
-      await fetchMws(data.agents);
-      await fetchMws(data.components);
-      data = PolymerCalculator.calculate(data);
-      const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian12.MarkdownView);
-      const currentFile = view ? view.file : null;
-      const expCode = data.code || (currentFile ? currentFile.basename : "POLY");
-      wrapper2.innerHTML = "";
-      wrapper2.addEventListener("dblclick", (e6) => {
-        let target = e6.target;
-        while (target && target !== wrapper2 && !target.classList.contains("eln-editable")) {
-          target = target.parentElement;
-        }
-        if (target && target.classList.contains("eln-editable") && !target.querySelector("input")) {
-          e6.stopPropagation();
-          const type3 = target.getAttribute("data-type");
-          const idx = parseInt(target.getAttribute("data-idx") || "0", 10);
-          const key = target.getAttribute("data-key");
-          const inputType = target.getAttribute("data-input-type") || "number";
-          if (!key) return;
-          const originalHTML = target.innerHTML;
-          const currentValText = target.getAttribute("data-raw-value") || "";
-          target.innerHTML = "";
-          target.style.padding = "4px";
-          const input = document.createElement("input");
-          input.type = inputType === "text" ? "text" : "number";
-          if (inputType === "number") input.step = "any";
-          input.value = currentValText;
-          Object.assign(input.style, { width: "100%", boxSizing: "border-box", padding: "4px 6px", border: "1px solid var(--interactive-accent)", borderRadius: "4px", background: "var(--background-primary)" });
-          target.appendChild(input);
-          input.focus();
-          const finishEdit = () => {
-            const newValStr = input.value.trim().replace(/,/g, ".");
-            let info = ctx.getSectionInfo(el2);
-            if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
-            if (view && info) {
-              const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
-              try {
-                let yamlObj = parseYaml(blockText);
-                let valToSave = newValStr;
-                if (inputType === "number") {
-                  const num = parseFloat(newValStr);
-                  valToSave = isNaN(num) ? void 0 : num;
-                } else {
-                  valToSave = newValStr === "" ? void 0 : newValStr;
-                }
-                if (type3 === "root") {
-                  if (valToSave === void 0) delete yamlObj[key];
-                  else yamlObj[key] = valToSave;
-                } else if (type3 === "characterization") {
-                  if (!yamlObj.characterization) yamlObj.characterization = {};
-                  if (valToSave === void 0) delete yamlObj.characterization[key];
-                  else yamlObj.characterization[key] = valToSave;
-                } else {
-                  if (!yamlObj[type3]) yamlObj[type3] = [];
-                  if (!yamlObj[type3][idx]) yamlObj[type3] = {};
-                  if (valToSave === void 0) {
-                    delete yamlObj[type3][idx][key];
-                  } else {
-                    yamlObj[type3][idx][key] = valToSave;
-                  }
-                }
-                yamlObj = PolymerCalculator.calculate(yamlObj);
-                const newYaml = stringifyYaml(yamlObj);
-                view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
-              } catch (err) {
-                target.innerHTML = originalHTML;
-                target.style.padding = "10px";
-              }
-            } else {
-              target.innerHTML = originalHTML;
-              target.style.padding = "10px";
-            }
-          };
-          input.onblur = finishEdit;
-          input.onkeydown = (ev) => {
-            if (ev.key === "Enter") input.blur();
-            else if (ev.key === "Escape") {
-              target.innerHTML = originalHTML;
-              target.style.padding = "10px";
-            }
-          };
-        }
-      });
-      const actionBar = wrapper2.createDiv();
-      Object.assign(actionBar.style, { position: "absolute", top: "8px", right: "10px", display: "flex", gap: "5px", zIndex: "10", flexWrap: "wrap", justifyContent: "flex-end" });
-      const createBtn = (text2, title, onClick) => {
-        const btn = actionBar.createDiv();
-        btn.innerHTML = text2;
-        btn.title = title;
-        btn.style.cursor = "pointer";
-        btn.style.fontSize = "11px";
-        btn.style.padding = "4px 8px";
-        btn.style.backgroundColor = "var(--background-secondary)";
-        btn.style.border = "1px solid var(--background-modifier-border)";
-        btn.style.color = "var(--text-normal)";
-        btn.style.borderRadius = "4px";
-        btn.onmouseover = () => btn.style.backgroundColor = "var(--background-modifier-hover)";
-        btn.onmouseout = () => btn.style.backgroundColor = "var(--background-secondary)";
-        btn.onclick = onClick;
-        return btn;
-      };
-      const updateYamlState = (mutate) => {
-        if (!view) return;
-        let info = ctx.getSectionInfo(el2);
-        if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
-        if (!info) return;
-        const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
-        try {
-          const yamlObj = parseYaml(blockText);
-          mutate(yamlObj);
-          const newYaml = stringifyYaml(yamlObj);
-          view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
-        } catch (err) {
-        }
-      };
-      createBtn("\u2699\uFE0F Status", "Change Experiment Status", (e6) => {
-        if (!e6) return;
-        const menu = new import_obsidian12.Menu();
-        menu.addItem((item) => item.setTitle("Mark as Planned").setIcon("calendar").onClick(() => updateYamlState((y9) => y9.status = "Planned")));
-        menu.addItem((item) => item.setTitle("Mark as Running").setIcon("play").onClick(() => updateYamlState((y9) => y9.status = "Running")));
-        menu.addItem((item) => item.setTitle("Mark as Completed").setIcon("check").onClick(() => updateYamlState((y9) => y9.status = "Completed")));
-        menu.addItem((item) => item.setTitle("Mark as Failed").setIcon("cross").onClick(() => updateYamlState((y9) => y9.status = "Failed")));
-        menu.showAtMouseEvent(e6);
-      });
-      createBtn("\u{1F4DD} Edit", "Open Visual Polymer Editor", () => {
-        if (!view) return;
-        let info = ctx.getSectionInfo(el2);
-        if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
-        if (info) {
-          new PolymerMetaEditorModal(this.plugin.app, this.plugin, data, async (updatedYamlObj) => {
-            const newYaml = stringifyYaml(updatedYamlObj);
-            view.editor.replaceRange(`\`\`\`polymer-eln
-${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: view.editor.getLine(info.lineEnd).length });
-          }).open();
-        }
-      });
-      const thColor = "var(--background-secondary)";
-      const bdColor = "var(--background-modifier-border-hover)";
-      const textColor = "var(--text-normal)";
-      let statusColor = "var(--text-muted)";
-      if (data.status === "Completed") statusColor = "var(--text-success)";
-      else if (data.status === "Running") statusColor = "var(--text-warning)";
-      else if (data.status === "Failed") statusColor = "var(--text-error)";
-      else if (data.status === "Planned") statusColor = "var(--text-accent)";
-      const statusBadge = data.status ? `<span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: var(--background-primary); border: 1px solid ${statusColor}; color: ${statusColor}; vertical-align: middle; margin-left: 10px; font-weight: 500;">${data.status}</span>` : "";
-      let html = `<div style="font-size: 14px; color: ${textColor}; margin-top:5px;">`;
-      html += `
-            <div style="border-bottom: 2px solid var(--interactive-accent); padding-bottom: 10px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
-                <div>
-                    <h2 style="margin: 0; font-size: 22px; font-weight: 700; color: var(--interactive-accent);">${expCode} ${statusBadge}</h2>
-                    <div style="font-size: 13px; color: var(--text-muted); margin-top:4px;">${data.title || data.type || "Polymerization"}</div>
-                </div>
-            </div>`;
-      const makeEditableTd = (type3, i8, key, val, inputType = "number", customHtml, extraStyles = "") => {
-        let innerHTML = customHtml !== void 0 ? customHtml : "-";
-        let rawValAttr = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
-        if (customHtml === void 0) {
-          if (inputType === "text") innerHTML = val ? val : "-";
-          else {
-            const numVal = Number(val);
-            innerHTML = !isNaN(numVal) && numVal > 0 ? numVal.toFixed(2) : "-";
-          }
-        }
-        return `<td class="eln-editable" data-type="${type3}" data-idx="${i8}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawValAttr}" title="Double-click to edit" style="padding: 10px; cursor: text; transition: background 0.2s; ${extraStyles}">${innerHTML}</td>`;
-      };
-      const makeEditableRoot = (key, val, type3 = "root", inputType = "number") => {
-        const displayVal = val || "-";
-        const rawVal = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
-        return `<span class="eln-editable" data-type="${type3}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawVal}" title="Double-click to edit" style="cursor: text; border-bottom: 1px dashed var(--interactive-accent); display: inline-block;">${displayVal}</span>`;
-      };
-      if (data.type === "formulation") {
-        html += `
-                <div style="margin-bottom: 15px; font-size: 13px; background: var(--background-secondary); padding: 10px; border-radius: 6px;">
-                    <span style="color:var(--text-muted)">Target Mass [g]:</span> ${makeEditableRoot("target_mass_g", data.target_mass_g)}
-                </div>
-                <h4 style="margin-bottom: 10px; color: var(--text-normal);">Formulation Components (PHR Base)</h4>
-                <div style="overflow-x: auto; margin-bottom: 20px;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
-                    <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
-                        <th style="padding: 10px;">Component</th><th style="padding: 10px;">Structure</th><th style="padding: 10px;">PHR</th><th style="padding: 10px;">Wt %</th><th style="padding: 10px;">Mass [g]</th><th style="padding: 10px;">Vol [mL]</th>
-                    </tr>`;
-        data.components.forEach((c10, i8) => {
-          html += `<tr style="border-bottom: 1px solid ${bdColor};">
-                        ${makeEditableTd("components", i8, "name", c10.name, "text", c10.name, "font-weight:600;")}
-                        <td style="padding: 10px;"><div class="poly-struct" data-type="components" data-idx="${i8}" data-smiles="${c10.smiles || ""}"></div></td>
-                        ${makeEditableTd("components", i8, "phr", c10.phr, "number", void 0, "color:var(--text-accent); font-weight:bold;")}
-                        <td style="padding: 10px;">${(c10.wt_frac * 100).toFixed(1)}%</td>
-                        <td style="padding: 10px;">${c10.mass_g ? c10.mass_g.toFixed(3) : "-"}</td>
-                        <td style="padding: 10px;">${c10.volume_ml ? c10.volume_ml.toFixed(2) : "-"}</td>
-                    </tr>`;
-        });
-        html += `</table></div>`;
-      } else {
-        html += `
-                <div style="display: flex; gap: 15px; margin-bottom: 20px; font-size: 13px; background: var(--background-secondary); padding: 10px; border-radius: 6px;">
-                    <div><span style="color:var(--text-muted)">Target DP:</span> ${makeEditableRoot("target_dp", data.target_dp)}</div>
-                    <div><span style="color:var(--text-muted)">Target Mass [g]:</span> ${makeEditableRoot("target_mass_g", data.target_mass_g)}</div>
-                </div>`;
-        const char2 = data.characterization || {};
-        html += `
-                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 25px;">
-                    <div style="flex: 1; min-width: 120px; background: var(--background-secondary); padding: 10px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
-                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Theoretical Mn</div>
-                        <div style="font-size:18px; font-weight:bold; color:var(--interactive-accent);">${data.theoretical_mn ? Math.round(data.theoretical_mn).toLocaleString() : "-"}</div>
-                    </div>
-                    <div style="flex: 1; min-width: 120px; background: var(--background-secondary); padding: 10px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
-                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">GPC Actual Mn</div>
-                        <div style="font-size:18px; font-weight:bold; color:var(--text-normal);">${makeEditableRoot("Mn_gpc", char2.Mn_gpc, "characterization")}</div>
-                    </div>
-                    <div style="flex: 1; min-width: 120px; background: var(--background-secondary); padding: 10px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
-                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Dispersity (\u0110)</div>
-                        <div style="font-size:18px; font-weight:bold; color:${char2.dispersity < 1.2 ? "var(--text-success)" : "var(--text-warning)"};">${makeEditableRoot("dispersity", char2.dispersity, "characterization")}</div>
-                    </div>
-                    <div style="flex: 1; min-width: 120px; background: var(--background-secondary); padding: 10px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
-                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Thermal Tg [\xB0C]</div>
-                        <div style="font-size:18px; font-weight:bold; color:var(--text-normal);">${makeEditableRoot("Tg", char2.Tg, "characterization")}</div>
-                    </div>
-                </div>`;
-        html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Monomers</h4>
-                <div style="overflow-x: auto; margin-bottom: 20px;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
-                    <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
-                        <th style="padding: 10px;">Name</th><th style="padding: 10px;">Structure</th><th style="padding: 10px;">Eq (Ratio)</th><th style="padding: 10px;">MW</th><th style="padding: 10px;">n [mmol]</th><th style="padding: 10px;">m [g]</th><th style="padding: 10px;">V [mL]</th>
-                    </tr>`;
-        data.monomers.forEach((m9, i8) => {
-          html += `<tr style="border-bottom: 1px solid ${bdColor};">
-                        ${makeEditableTd("monomers", i8, "name", m9.name, "text", m9.name, "font-weight:600;")}
-                        <td style="padding: 10px;"><div class="poly-struct" data-type="monomers" data-idx="${i8}" data-smiles="${m9.smiles || ""}"></div></td>
-                        ${makeEditableTd("monomers", i8, "eq", m9.eq, "number", void 0, "font-weight:bold;")}
-                        <td style="padding: 10px; color:var(--text-muted);">${m9.mw ? m9.mw.toFixed(1) : "-"}</td>
-                        <td style="padding: 10px;">${m9.mmol ? m9.mmol.toFixed(2) : "-"}</td>
-                        <td style="padding: 10px; color:var(--interactive-accent); font-weight:bold;">${m9.mass_g ? m9.mass_g.toFixed(3) : "-"}</td>
-                        <td style="padding: 10px;">${m9.volume_ml ? m9.volume_ml.toFixed(2) : "-"}</td>
-                    </tr>`;
-        });
-        html += `</table></div>`;
-        if (data.initiators.length > 0 || data.agents.length > 0) {
-          html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Initiators, Catalysts & Agents</h4>
-                    <div style="overflow-x: auto; margin-bottom: 20px;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
-                        <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
-                            <th style="padding: 10px;">Role</th><th style="padding: 10px;">Name</th><th style="padding: 10px;">Structure</th><th style="padding: 10px;">[M]/[I] Ratio</th><th style="padding: 10px;">n [mmol]</th><th style="padding: 10px;">m [mg]</th>
-                        </tr>`;
-          const renderAgent = (a9, role, type3, idx) => {
-            var _a;
-            const baseEq = ((_a = data.monomers[0]) == null ? void 0 : _a.eq) || 1;
-            const aEq = a9.eq || 1;
-            const mToIRatio = baseEq / aEq;
-            html += `<tr style="border-bottom: 1px solid ${bdColor};">
-                            <td style="padding: 10px; color:var(--text-muted); font-size:11px; text-transform:uppercase;">${role}</td>
-                            ${makeEditableTd(type3, idx, "name", a9.name, "text", a9.name, "font-weight:600;")}
-                            <td style="padding: 10px;"><div class="poly-struct" data-type="${type3}" data-idx="${idx}" data-smiles="${a9.smiles || ""}"></div></td>
-                            <td style="padding: 10px; font-weight:bold; color:var(--text-warning);">${Math.round(mToIRatio)} : 1</td>
-                            <td style="padding: 10px;">${a9.mmol ? a9.mmol.toFixed(3) : "-"}</td>
-                            <td style="padding: 10px; color:var(--text-normal); font-weight:bold;">${a9.mass_mg ? a9.mass_mg.toFixed(1) : "-"}</td>
-                        </tr>`;
-          };
-          data.initiators.forEach((i8, idx) => renderAgent(i8, "Initiator", "initiators", idx));
-          data.agents.forEach((a9, idx) => renderAgent(a9, "CTA/Agent", "agents", idx));
-          html += `</table></div>`;
-        }
-      }
-      html += `</div>`;
-      const styleBlock = document.createElement("style");
-      styleBlock.innerHTML = `.eln-editable:hover { background-color: var(--background-modifier-hover); }`;
-      wrapper2.appendChild(styleBlock);
-      const contentDiv = document.createElement("div");
-      contentDiv.innerHTML = html;
-      wrapper2.appendChild(contentDiv);
-      const nodes = contentDiv.querySelectorAll(".poly-struct");
-      nodes.forEach((node2) => {
-        const elNode = node2;
-        const smiles = elNode.dataset.smiles;
-        const type3 = elNode.dataset.type;
-        const idx = parseInt(elNode.dataset.idx || "0", 10);
-        elNode.style.width = `120px`;
-        elNode.style.height = `80px`;
-        elNode.style.cursor = "pointer";
-        elNode.title = "Double-click to edit structure";
-        elNode.innerHTML = "\u23F3";
-        if (smiles) {
-          requestAnimationFrame(async () => {
-            const renderEl = await this.plugin.api.renderStructure(smiles, 120, 80);
-            elNode.empty();
-            if (renderEl) {
-              renderEl.style.maxWidth = "100%";
-              renderEl.style.maxHeight = "100%";
-              elNode.appendChild(renderEl);
-            } else elNode.innerHTML = "\u274C";
-          });
-        } else {
-          elNode.innerHTML = "Draw...";
-          elNode.style.color = "var(--text-muted)";
-        }
-        elNode.addEventListener("dblclick", (e6) => {
-          e6.stopPropagation();
-          let info = ctx.getSectionInfo(el2);
-          if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
-          if (!view || !info) return;
-          this.plugin.api.ketcher.openEditor(smiles || "", "smiles", (newData) => {
-            const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
-            try {
-              const yamlObj = parseYaml(blockText);
-              yamlObj[type3][idx].smiles = newData;
-              delete yamlObj[type3][idx].mw;
-              const newYaml = stringifyYaml(yamlObj);
-              view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
-            } catch (err) {
-            }
-          });
-        });
-      });
-      return wrapper2;
-    } catch (err) {
-      wrapper2.innerHTML = `<div style="padding: 20px; color: var(--text-error); background: var(--background-secondary); border-radius: 8px;"><b>Polymer ELN Error:</b><br>${err.message}</div>`;
-      return wrapper2;
-    }
-  }
-};
-var PolymerMetaEditorModal = class extends import_obsidian12.Modal {
-  constructor(app, plugin, yamlObj, onSave) {
-    super(app);
-    __publicField(this, "plugin");
-    __publicField(this, "data");
-    __publicField(this, "onSave");
-    this.plugin = plugin;
-    this.data = JSON.parse(JSON.stringify(yamlObj));
-    if (!this.data.monomers) this.data.monomers = [];
-    if (!this.data.initiators) this.data.initiators = [];
-    if (!this.data.agents) this.data.agents = [];
-    if (!this.data.components) this.data.components = [];
-    this.onSave = onSave;
-  }
-  onOpen() {
-    this.render();
-  }
-  render() {
-    const { contentEl } = this;
-    contentEl.empty();
-    const header = contentEl.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--background-modifier-border); padding-bottom: 10px;" } });
-    header.createEl("h2", { text: "Edit Polymer Meta", attr: { style: "margin: 0; font-size: 1.2em;" } });
-    const saveBtn = header.createEl("button", { text: "Save", cls: "mod-cta" });
-    saveBtn.onclick = () => {
-      this.onSave(this.data);
-      this.close();
-    };
-    const metaGrid = contentEl.createDiv({ attr: { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;" } });
-    const addInput = (parent, label, key) => {
-      const wrap = parent.createDiv();
-      wrap.createEl("div", { text: label, cls: "color-text-muted", attr: { style: "font-size:12px; margin-bottom:3px;" } });
-      const inp = wrap.createEl("input", { type: "text", value: this.data[key] || "", attr: { style: "width:100%;" } });
-      inp.onchange = (e6) => this.data[key] = e6.target.value;
-    };
-    addInput(metaGrid, "Experiment Code", "code");
-    addInput(metaGrid, "Title", "title");
-    addInput(metaGrid, "Target Mass (g)", "target_mass_g");
-    if (this.data.type !== "formulation") addInput(metaGrid, "Target DP", "target_dp");
-    const renderChemRow = (item, type3, idx) => {
-      const row = contentEl.createDiv({ attr: { style: "background: var(--background-secondary-alt); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--background-modifier-border); display: flex; flex-direction: column; gap: 10px;" } });
-      const topWrap = row.createDiv({ attr: { style: "display: flex; gap: 10px; align-items: center;" } });
-      const nameInp = topWrap.createEl("input", { type: "text", value: item.name || "", attr: { placeholder: "Chemical Name", style: "width: 100%; font-weight: bold;" } });
-      nameInp.onchange = (e6) => item.name = e6.target.value;
-      const actionRow = row.createDiv({ attr: { style: "display: flex; gap: 6px; justify-content: flex-start; flex-wrap: wrap;" } });
-      const drawBtn = actionRow.createEl("button", { text: "\u270F\uFE0F Draw", attr: { style: "font-size:11px; padding: 4px 8px;" } });
-      drawBtn.onclick = () => {
-        this.plugin.api.ketcher.openEditor(item.smiles || "", "smiles", (newSmiles) => {
-          item.smiles = newSmiles;
-          this.render();
-        });
-      };
-      const libBtn = actionRow.createEl("button", { text: "\u{1F4DA} Lib", attr: { style: "font-size:11px; padding: 4px 8px;" } });
-      libBtn.onclick = async () => {
-        const lib = await getCompoundLibrary(this.plugin);
-        new CompoundSuggestModal(this.plugin.app, lib, (selected6) => {
-          item.name = selected6.name;
-          item.smiles = selected6.smiles;
-          this.render();
-        }).open();
-      };
-      const delBtn = actionRow.createEl("button", { text: "\u{1F5D1}\uFE0F Remove", attr: { style: "color: var(--text-error); font-size:11px; padding: 4px 8px; margin-left:auto;" } });
-      delBtn.onclick = () => {
-        this.data[type3].splice(idx, 1);
-        this.render();
-      };
-      const botRow = row.createDiv({ attr: { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(75px, 1fr)); gap: 8px; margin-top: 5px;" } });
-      const makeNumInp = (key, label) => {
-        const wrap = botRow.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
-        wrap.createEl("span", { text: label, attr: { style: "font-size: 10px; color: var(--text-muted); margin-bottom: 2px; white-space: nowrap;" } });
-        const inp = wrap.createEl("input", { type: "number", value: item[key] !== void 0 ? item[key] : "", attr: { style: "width: 100%; padding: 4px; box-sizing: border-box;" } });
-        inp.onchange = (e6) => {
-          const val = parseFloat(e6.target.value.replace(/,/g, "."));
-          if (isNaN(val)) delete item[key];
-          else item[key] = val;
-          this.render();
-        };
-      };
-      if (type3 === "monomers") {
-        makeNumInp("eq", "Eq");
-      }
-      if (type3 === "initiators" || type3 === "agents") {
-        makeNumInp("ratio_to_monomer", "Ratio [I]/[M]");
-      }
-      if (type3 === "components") {
-        makeNumInp("phr", "PHR");
-      }
-    };
-    const makeSection = (title, typeKey) => {
-      const h5 = contentEl.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;" } });
-      h5.createEl("h3", { text: title, attr: { style: "margin: 0; font-size: 1.1em;" } });
-      const btn = h5.createEl("button", { text: "+ Add" });
-      btn.onclick = () => {
-        this.data[typeKey].push({ name: "", smiles: "" });
-        this.render();
-      };
-      this.data[typeKey].forEach((x25, idx) => renderChemRow(x25, typeKey, idx));
-    };
-    if (this.data.type === "formulation") {
-      makeSection("Components (Resins, Fillers)", "components");
-    } else {
-      makeSection("Monomers", "monomers");
-      makeSection("Initiators & Catalysts", "initiators");
-      makeSection("RAFT / CTA Agents", "agents");
-    }
-    contentEl.createDiv({ attr: { style: "height: 50px;" } });
-  }
-  onClose() {
-    this.contentEl.empty();
-  }
-};
-
 // MatrixEln.ts
-var import_obsidian13 = require("obsidian");
+var import_obsidian20 = require("obsidian");
 var MatrixCalculator = class {
   static calculate(data) {
     if (!data.variables) data.variables = {};
@@ -572443,24 +574047,6 @@ var MatrixCalculator = class {
     }
     return data;
   }
-  // Expert System Rules based on current literature
-  static getExpertAdvice(text2) {
-    const lower3 = text2.toLowerCase();
-    if (lower3.includes("ni") && (lower3.includes("deaminative") || lower3.includes("katritzky") || lower3.includes("pyridinium"))) {
-      return `<b>Expert Advice (Roy et al. 2026):</b><br>
-            \u2022 <b>Ligands:</b> For C(sp\xB2)-C(sp\xB3) with <i>primary</i> amines, tridentate ligands (<b>terpy</b>) are crucial. For <i>secondary</i> amines or C(sp\xB3)-C(sp\xB3), bidentate ligands (<b>dtbbpy</b>) work best.<br>
-            \u2022 <b>Reductant:</b> <b>Mn</b> is generally superior to Zn for Katritzky salts to prevent over-reduction.<br>
-            \u2022 <b>Conditions:</b> Optimal solvents are usually DMA or NMP at 60-80\xB0C. Adding NaI or MgCl\u2082 can accelerate the reaction.<br>
-            \u2022 <b>Strategy:</b> Deaminative coupling circumvents the need for alkyl halides, offering excellent late-stage functionalization.`;
-    }
-    if (lower3.includes("bayesian") || lower3.includes("optimization")) {
-      return `<b>Bayesian Optimization (Shey et al. 2026):</b><br>
-            \u2022 Do not use OVAT (One-Variable-At-A-Time).<br>
-            \u2022 <b>Batch Size:</b> For standard organic chemistry, BO batch sizes of 5 to 10 reactions per round are optimal.<br>
-            \u2022 <b>Categorical Variables:</b> Ensure your BO algorithm uses One-Hot-Encoding (OHE) or DFT descriptors for categorical variables like Ligands and Solvents.`;
-    }
-    return null;
-  }
 };
 var MatrixElnRenderer = class {
   constructor(plugin) {
@@ -572471,14 +574057,13 @@ var MatrixElnRenderer = class {
     const { parseYaml, stringifyYaml } = require("obsidian");
     const wrapper2 = el2.createDiv();
     const themeColor = "#6366f1";
-    const bgSec = "var(--background-secondary)";
     const bdColor = "var(--background-modifier-border)";
     wrapper2.style.position = "relative";
-    wrapper2.style.border = `1px solid ${themeColor}`;
+    wrapper2.style.border = `1px solid ${bdColor}`;
     wrapper2.style.borderRadius = "12px";
     wrapper2.style.backgroundColor = "var(--background-primary)";
     wrapper2.style.padding = "24px";
-    wrapper2.style.boxShadow = "0 4px 12px rgba(99, 102, 241, 0.1)";
+    wrapper2.style.boxShadow = "0 4px 12px rgba(99, 102, 241, 0.05)";
     wrapper2.style.fontFamily = "var(--font-interface)";
     wrapper2.style.width = "100%";
     wrapper2.style.marginBottom = "15px";
@@ -572486,38 +574071,31 @@ var MatrixElnRenderer = class {
       let data = parseYaml(source);
       if (!data) throw new Error("Empty YAML Data.");
       data = MatrixCalculator.calculate(data);
-      const expertAdvice = MatrixCalculator.getExpertAdvice(source);
       let html = `
             <div style="position: relative; margin-bottom: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="display:flex; flex-direction:column;">
-                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${themeColor};">\u{1F4CA} ${data.title || "HTE Optimization Matrix"}</h2>
-                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">${data.strategy || "Design of Experiments (DoE)"}</div>
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${themeColor};">\u2697\uFE0F ${data.title || "HTE Reaction Array"}</h2>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">High-Throughput Experimentation Matrix</div>
                     </div>
                     <div style="text-align:right;">
                         <div style="font-size:28px; font-weight:800; color:var(--text-normal);">${data.total_reactions} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">Rxns</span></div>
                     </div>
                 </div>
             </div>`;
-      if (expertAdvice) {
-        html += `
-                <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid ${themeColor}; padding: 12px 15px; border-radius: 4px; margin-bottom: 20px; font-size: 13px; color: var(--text-normal); line-height: 1.5;">
-                    ${expertAdvice}
-                </div>`;
-      }
       const formatNum = (num, decimals = 2) => {
         const n8 = Number(num);
         if (isNaN(n8) || n8 === 0) return "-";
         return n8 % 1 === 0 ? n8.toString() : n8.toFixed(decimals);
       };
       html += `
-            <h4 style="color: var(--text-normal); margin-bottom: 10px;">1. High-Throughput Master Mix</h4>
+            <h4 style="color: var(--text-normal); margin-bottom: 10px; font-size: 14px;">1. Master Mix Preparation</h4>
             <div style="display: flex; align-items: stretch; background: var(--background-secondary-alt); border-radius: 8px; border: 1px solid ${bdColor}; padding: 20px 10px; gap: 15px; margin-bottom: 24px;">
                 
                 <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                     <svg stroke="${themeColor}" fill="rgba(99, 102, 241, 0.15)" width="48" height="48" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a2 2 0 0 0 1.8 2.45h10.96a2 2 0 0 0 1.8-2.45L14.21 10.42a2 2 0 0 1-.21-.896V2"/><path d="M8.5 2h7"/><path d="M14 16H5.5"/></svg>
                     <div style="font-weight: 700; font-size: 14px; color: var(--text-normal); margin-top: 10px;">Master Vial</div>
-                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Fill to Total Volume:</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Total Required Volume:</div>
                     <div style="font-size: 20px; font-weight: 800; color: ${themeColor}; margin-top: 4px;">${formatNum(data.total_master_vol_ul / 1e3)} <span style="font-size:12px; font-weight:500;">mL</span></div>
                     <div style="font-size: 10px; color: var(--text-muted); margin-top: 6px;">(Includes ${data.overage_percent}% overage)</div>
                 </div>
@@ -572533,7 +574111,7 @@ var MatrixElnRenderer = class {
 
                 <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                     <svg stroke="var(--text-muted)" fill="none" width="48" height="48" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg>
-                    <div style="font-weight: 700; font-size: 14px; color: var(--text-normal); margin-top: 10px;">HTE Plate</div>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-normal); margin-top: 10px;">HTE Array</div>
                     <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Reactions:</div>
                     <div style="font-size: 20px; font-weight: 800; color: var(--text-normal); margin-top: 4px;">${data.total_reactions}</div>
                     <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">Scale: ${data.scale_mmol} mmol</div>
@@ -572555,7 +574133,7 @@ var MatrixElnRenderer = class {
       });
       html += `</table></div>`;
       const varKeys = Object.keys(data.variables);
-      html += `<h4 style="color: var(--text-normal); margin-bottom: 10px;">2. Experimental Matrix & Results</h4>
+      html += `<h4 style="color: var(--text-normal); margin-bottom: 10px; font-size: 14px;">2. Experimental Array</h4>
             <div style="overflow-x: auto; margin-bottom: 10px;">
             <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; border: 1px solid ${bdColor};">
                 <tr style="background-color: ${bgSec}; border-bottom: 2px solid ${bdColor};">
@@ -572618,9 +574196,9 @@ var MatrixElnRenderer = class {
           csv += row + "\n";
         });
         navigator.clipboard.writeText(csv);
-        new import_obsidian13.Notice("Excel-ready Data copied to clipboard!");
+        new import_obsidian20.Notice("Excel-ready Array copied to clipboard!");
       });
-      createBtn("\u{1F916} Export BO Dataset (EDBO+)", () => {
+      createBtn("\u{1F916} Export CSV (ML-Ready)", () => {
         let csv = `${varKeys.join(",")},Yield
 `;
         data.matrix.forEach((combo, i8) => {
@@ -572632,7 +574210,7 @@ var MatrixElnRenderer = class {
           csv += row.join(",") + "\n";
         });
         navigator.clipboard.writeText(csv);
-        new import_obsidian13.Notice("Machine-Learning ready CSV copied to clipboard!");
+        new import_obsidian20.Notice("Machine-Learning ready CSV copied to clipboard!");
       });
       const styleBlock = document.createElement("style");
       styleBlock.innerHTML = `.matrix-yield-cell:hover { background-color: rgba(99, 102, 241, 0.1); }`;
@@ -572661,7 +574239,7 @@ var MatrixElnRenderer = class {
           input.focus();
           const finishEdit = () => {
             const newValStr = input.value.trim().replace(/,/g, ".");
-            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian13.MarkdownView);
+            const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
             let info = ctx.getSectionInfo(el2);
             if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
             if (view && info) {
@@ -572686,7 +574264,7 @@ var MatrixElnRenderer = class {
       });
       return wrapper2;
     } catch (err) {
-      wrapper2.innerHTML = `<div style="padding: 20px; color: var(--text-error); background: var(--background-secondary); border-radius: 8px;"><b>Matrix ELN Error:</b><br>${err.message}</div>`;
+      wrapper2.innerHTML = `<div style="padding: 20px; color: var(--text-error); background: var(--background-secondary); border-radius: 8px;"><b>Matrix Error:</b><br>${err.message}</div>`;
       return wrapper2;
     }
   }
@@ -572696,7 +574274,7 @@ var MatrixElnRenderer = class {
 init_SharedMedia();
 
 // SharedGallery.ts
-var import_obsidian14 = require("obsidian");
+var import_obsidian21 = require("obsidian");
 var SharedGalleryRenderer = class {
   constructor(plugin) {
     __publicField(this, "plugin");
@@ -572715,7 +574293,7 @@ var SharedGalleryRenderer = class {
       return;
     }
     const validExts = ["mol", "cdxml", "sdf", "rxn", "ket", "smi", "smiles", "md"];
-    const files = folder.children.filter((f9) => f9 instanceof import_obsidian14.TFile && validExts.includes(f9.extension.toLowerCase()));
+    const files = folder.children.filter((f9) => f9 instanceof import_obsidian21.TFile && validExts.includes(f9.extension.toLowerCase()));
     if (files.length === 0) {
       el2.createEl("div", { text: "No supported files found in this folder.", cls: "color-text-muted" });
       return;
@@ -572878,7 +574456,7 @@ function extractDataFromSvg(svgStr) {
   }
   return null;
 }
-var ChemEditPlugin = class extends import_obsidian15.Plugin {
+var ChemEditPlugin = class extends import_obsidian22.Plugin {
   constructor() {
     super(...arguments);
     __publicField(this, "settings");
@@ -572912,17 +574490,17 @@ var ChemEditPlugin = class extends import_obsidian15.Plugin {
         openData = ex.data;
         openFormat = "svg";
       } else {
-        new import_obsidian15.Notice("Not a Ketcher SVG");
+        new import_obsidian22.Notice("Not a Ketcher SVG");
         return;
       }
     }
     new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
       if (isFile) {
-        new import_obsidian15.Notice(`Saved as new file: ${newData}. Please update the link.`);
+        new import_obsidian22.Notice(`Saved as new file: ${newData}. Please update the link.`);
         return;
       }
       if (newFormat && newFormat !== format3 && format3 !== "svg") {
-        new import_obsidian15.Notice(`Format upgraded to ${newFormat}. Remember to rename your file.`);
+        new import_obsidian22.Notice(`Format upgraded to ${newFormat}. Remember to rename your file.`);
       }
       await this.app.vault.modify(file, newData);
       wrapper2.innerHTML = `<span class="color-text-muted">Updating...</span>`;
@@ -572955,9 +574533,9 @@ var ChemEditPlugin = class extends import_obsidian15.Plugin {
     if (this.settings.showMediaRibbonIcons) {
       if (!this.cameraRibbonEl) {
         this.cameraRibbonEl = this.addRibbonIcon("camera", "Take Lab Photo", () => {
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
           if (!view) {
-            new import_obsidian15.Notice("Place cursor in a Markdown file first.");
+            new import_obsidian22.Notice("Place cursor in a Markdown file first.");
             return;
           }
           takeStandardPhoto(async (buffer, ext) => {
@@ -572972,9 +574550,9 @@ var ChemEditPlugin = class extends import_obsidian15.Plugin {
       }
       if (!this.tlcRibbonEl) {
         this.tlcRibbonEl = this.addRibbonIcon("image-file", "Add TLC Plate", () => {
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
           if (!view) {
-            new import_obsidian15.Notice("Place cursor in a Markdown file first.");
+            new import_obsidian22.Notice("Place cursor in a Markdown file first.");
             return;
           }
           new TlcModal(this.app, async (pngData, rfData) => {
@@ -573001,7 +574579,7 @@ var ChemEditPlugin = class extends import_obsidian15.Plugin {
       if (!this.elnRibbonEl) {
         this.elnRibbonEl = this.addRibbonIcon("flask-round", "Create Blank ELN Experiment", () => {
           var _a, _b;
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
           const currentFolder = this.settings.elnDirectory ? this.settings.elnDirectory : ((_b = (_a = view == null ? void 0 : view.file) == null ? void 0 : _a.parent) == null ? void 0 : _b.path) || "";
           new CreateExperimentModal(this.app, this, this.settings.elnPrefix, currentFolder, async (expCode) => {
             await createNewElnExperiment(this.app, expCode, currentFolder, this.settings.elnSections);
@@ -573037,12 +574615,12 @@ var ChemEditPlugin = class extends import_obsidian15.Plugin {
     }
   }
   async onload() {
-    (0, import_obsidian15.addIcon)("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
+    (0, import_obsidian22.addIcon)("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
     const compassIcon = `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,82 36,50" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,50" fill="currentColor"/><polygon points="50,82 36,50 50,50" fill="currentColor"/>`;
-    (0, import_obsidian15.addIcon)("chem-navigator", compassIcon);
-    (0, import_obsidian15.addIcon)("flask-conical", compassIcon);
+    (0, import_obsidian22.addIcon)("chem-navigator", compassIcon);
+    (0, import_obsidian22.addIcon)("flask-conical", compassIcon);
     const dashboardIcon = `<path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 20 85 A 10 10 0 0 1 30 75 L 85 75" /><path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 30 15 L 85 15 L 85 85 L 30 85 A 10 10 0 0 1 20 75 L 20 25 A 10 10 0 0 1 30 15 Z" /><polygon fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" points="57,32 72,40 72,58 57,66 42,58 42,40" />`;
-    (0, import_obsidian15.addIcon)("chem-dashboard", dashboardIcon);
+    (0, import_obsidian22.addIcon)("chem-dashboard", dashboardIcon);
     await this.loadSettings();
     this.api = buildChemEditAPI(this);
     this.addSettingTab(new ChemEditSettingTab(this.app, this));
@@ -573060,23 +574638,17 @@ var ChemEditPlugin = class extends import_obsidian15.Plugin {
     this.addRibbonIcon("hexagon", "Draw New Molecule", () => {
       this.openNewDrawingModal();
     });
+    this.refreshRibbonIcons();
     if (this.settings.enableNavigator) {
       this.registerView(CHEM_NAVIGATOR_VIEW_TYPE, (leaf) => new ChemNavigatorView(leaf, this));
       this.addCommand({ id: "open-chem-navigator", name: "Open Chem Navigator", callback: () => {
         this.activateNavigator();
       } });
     }
-    if (this.settings.enableElnDashboard) {
-      this.registerView(ELN_DASHBOARD_VIEW_TYPE, (leaf) => new ElnDashboardView(leaf, this));
-      this.addCommand({ id: "open-eln-dashboard", name: "Open ELN Dashboard", callback: () => {
-        this.activateElnDashboard();
-      } });
-    }
-    this.refreshRibbonIcons();
     if (this.settings.enableContextMenu) {
       this.registerEvent(
         this.app.workspace.on("file-menu", (menu, file) => {
-          if (file instanceof import_obsidian15.TFile) {
+          if (file instanceof import_obsidian22.TFile) {
             const ext = file.extension.toLowerCase();
             if (ext === "svg") {
               menu.addItem((item) => {
@@ -573086,10 +574658,10 @@ var ChemEditPlugin = class extends import_obsidian15.Plugin {
                   if (extracted) {
                     new KetcherModal(this, data, "svg", async (newData) => {
                       await this.app.vault.modify(file, newData);
-                      new import_obsidian15.Notice(`Saved ${file.name}`);
+                      new import_obsidian22.Notice(`Saved ${file.name}`);
                     }).open();
                   } else {
-                    new import_obsidian15.Notice("This SVG does not contain editable Ketcher metadata.");
+                    new import_obsidian22.Notice("This SVG does not contain editable Ketcher metadata.");
                   }
                 });
               });
@@ -573110,7 +574682,7 @@ var ChemEditPlugin = class extends import_obsidian15.Plugin {
                   const data = await this.app.vault.read(file);
                   const smiles = ext === "mol" || ext === "sdf" ? ChemDataEngine.molToSmiles(data) : data.trim();
                   if (smiles) window.open(`https://www.nmrdb.org/simulator/?smiles=${encodeURIComponent(smiles)}`);
-                  else new import_obsidian15.Notice("Could not extract SMILES for NMR prediction.");
+                  else new import_obsidian22.Notice("Could not extract SMILES for NMR prediction.");
                 });
               });
             }
@@ -573127,11 +574699,120 @@ var ChemEditPlugin = class extends import_obsidian15.Plugin {
         })
       );
     }
-    this.addCommand({
-      id: "bio-insert-pcr",
-      name: "ChemEdit Bio: Insert PCR Master Mix Template",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`bio-eln
+    if (this.settings.enableEln) {
+      if (this.settings.enableElnDashboard) {
+        this.registerView(ELN_DASHBOARD_VIEW_TYPE, (leaf) => new ElnDashboardView(leaf, this));
+        this.addCommand({ id: "open-eln-dashboard", name: "Open ELN Dashboard", callback: () => this.activateElnDashboard() });
+      }
+      if (this.settings.enableInventoryDashboard) {
+        this.registerView(INVENTORY_DASHBOARD_VIEW_TYPE, (leaf) => new InventoryDashboardView(leaf, this));
+        this.addCommand({ id: "open-inventory-dashboard", name: "Open Chemical Inventory Dashboard", callback: () => this.activateInventoryDashboard() });
+      }
+      if (this.settings.enableEquipmentDashboard) {
+        this.registerView(EQUIPMENT_DASHBOARD_VIEW_TYPE, (leaf) => new EquipmentDashboardView(leaf, this));
+        this.addCommand({ id: "open-equipment-dashboard", name: "Open Lab Equipment Dashboard", callback: () => this.activateEquipmentDashboard() });
+      }
+      if (this.settings.enableOrdersDashboard) {
+        this.registerView(ORDERS_DASHBOARD_VIEW_TYPE, (leaf) => new OrdersDashboardView(leaf, this));
+        this.addCommand({ id: "open-orders-dashboard", name: "Open Orders Dashboard", callback: () => this.activateOrdersDashboard() });
+      }
+      if (this.settings.enableProtocolsDashboard) {
+        this.registerView(PROTOCOLS_DASHBOARD_VIEW_TYPE, (leaf) => new ProtocolsDashboardView(leaf, this));
+        this.addCommand({ id: "open-protocols-dashboard", name: "Open Lab Protocols Dashboard", callback: () => this.activateProtocolsDashboard() });
+      }
+      if (this.settings.enableLibraryDashboard) {
+        this.registerView(LIBRARY_DASHBOARD_VIEW_TYPE, (leaf) => new LibraryDashboardView(leaf, this));
+        this.addCommand({ id: "open-library-dashboard", name: "Open Compounds Library Dashboard", callback: () => this.activateLibraryDashboard() });
+      }
+      if (this.settings.enableGalleryDashboard) {
+        this.registerView(GALLERY_DASHBOARD_VIEW_TYPE, (leaf) => new GalleryDashboardView(leaf, this));
+        this.addCommand({ id: "open-gallery-dashboard", name: "Open Drawings Gallery Dashboard", callback: () => this.activateGalleryDashboard() });
+      }
+      if (this.settings.enableCharacterizationDashboard) {
+        this.registerView(CHARACTERIZATION_DASHBOARD_VIEW_TYPE, (leaf) => new CharacterizationDashboardView(leaf, this));
+        this.addCommand({ id: "open-characterization-dashboard", name: "Open Compound Data Organizer", callback: () => this.activateCharacterizationDashboard() });
+      }
+      this.registerMarkdownCodeBlockProcessor("chem-db", async (source, el2, ctx) => {
+        const r12 = new ChemDatabaseRenderer(this);
+        await r12.renderDatabase(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("chem-gallery", async (source, el2, ctx) => {
+        const r12 = new SharedGalleryRenderer(this);
+        await r12.renderChemGallery(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("eln-gallery", async (source, el2, ctx) => {
+        const r12 = new ElnGalleryRenderer(this);
+        await r12.renderGalleryBlock(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("eln", async (source, el2, ctx) => {
+        const elnRenderer = new SharedElnRenderer(this);
+        await elnRenderer.renderElnBlock(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("polymer-eln", async (source, el2, ctx) => {
+        const r12 = new PolymerElnRenderer(this);
+        await r12.renderPolymerBlock(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("bio-eln", async (source, el2, ctx) => {
+        const r12 = new BioElnRenderer(this);
+        await r12.renderBioBlock(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("analytical-eln", async (source, el2, ctx) => {
+        const r12 = new AnalyticalElnRenderer(this);
+        await r12.renderAnalyticalBlock(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("org-helpers", async (source, el2, ctx) => {
+        const r12 = new OrganicHelpersRenderer(this);
+        await r12.renderBlock(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("matrix-eln", async (source, el2, ctx) => {
+        const r12 = new MatrixElnRenderer(this);
+        await r12.renderBlock(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("chem-3d", async (source, el2, ctx) => {
+        const r12 = new Chem3DRenderer(this);
+        await r12.render3DBlock(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("plate-map", async (source, el2, ctx) => {
+        const r12 = new PlateMapRenderer(this);
+        await r12.renderPlateBlock(source, el2, ctx);
+      });
+      this.addCommand({ id: "db-insert-library", name: "ChemEdit DB: Insert Compound Library", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
+type: library
+path: Library/
+layout: table
+\`\`\`
+`) });
+      this.addCommand({ id: "db-insert-inventory", name: "ChemEdit DB: Insert Chemical Inventory", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
+type: inventory
+path: Inventory/
+layout: table
+\`\`\`
+`) });
+      this.addCommand({ id: "db-insert-equipment", name: "ChemEdit DB: Insert Lab Equipment Tracker", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
+type: equipment
+path: Equipment/
+layout: table
+\`\`\`
+`) });
+      this.addCommand({ id: "insert-eln-gallery", name: "Insert ELN Experiment Gallery", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`eln-gallery
+path: Experiments/
+\`\`\`
+`) });
+      this.addCommand({
+        id: "insert-from-library",
+        name: "Insert SMILES from Library",
+        editorCallback: async (editor4) => {
+          const lib = await getCompoundLibrary(this);
+          new CompoundSuggestModal(this.app, lib, (selected6) => {
+            editor4.replaceSelection(selected6.smiles);
+          }).open();
+        }
+      });
+      this.addCommand({
+        id: "bio-insert-pcr",
+        name: "ChemEdit Bio: Insert PCR Master Mix Template",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`bio-eln
 type: pcr
 title: Genotyping PCR
 reactions: 10
@@ -573154,13 +574835,13 @@ components:
   - name: Nuclease-Free Water
 \`\`\`
 `);
-      }
-    });
-    this.addCommand({
-      id: "bio-insert-ligation",
-      name: "ChemEdit Bio: Insert Ligation / Cloning Calculator",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`bio-eln
+        }
+      });
+      this.addCommand({
+        id: "bio-insert-ligation",
+        name: "ChemEdit Bio: Insert Ligation / Cloning Calculator",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`bio-eln
 type: ligation
 title: pET28a + Insert Ligation
 
@@ -573170,16 +574851,16 @@ insert_kb: 1.2
 ratio: 3
 \`\`\`
 `);
-      }
-    });
-    this.addCommand({
-      id: "bio-insert-protocol",
-      name: "ChemEdit Bio: Insert Interactive Protocol Checklist",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`bio-eln
+        }
+      });
+      this.addCommand({
+        id: "bio-insert-protocol",
+        name: "ChemEdit Bio: Insert Interactive Protocol Checklist",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`bio-eln
 type: protocol
 title: Plasmid Miniprep
-date: 2026-10-14
+date: ${window.moment().format("YYYY-MM-DD")}
 
 steps:
   - text: "Pellet 1-5 mL bacterial overnight culture at 10,000 x g for 3 min."
@@ -573192,25 +574873,25 @@ steps:
     done: false
 \`\`\`
 `);
-      }
-    });
-    this.addCommand({
-      id: "bio-insert-oligo",
-      name: "ChemEdit Bio: Insert Oligo Analyzer",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`bio-eln
+        }
+      });
+      this.addCommand({
+        id: "bio-insert-oligo",
+        name: "ChemEdit Bio: Insert Oligo Analyzer",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`bio-eln
 type: oligo_analyzer
 title: T7 Promoter Primer
 sequence: "TAATACGACTCACTATAGGG"
 \`\`\`
 `);
-      }
-    });
-    this.addCommand({
-      id: "bio-insert-cell-seeding",
-      name: "ChemEdit Bio: Insert Cell Seeding Calculator",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`bio-eln
+        }
+      });
+      this.addCommand({
+        id: "bio-insert-cell-seeding",
+        name: "ChemEdit Bio: Insert Cell Seeding Calculator",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`bio-eln
 type: cell_seeding
 title: 96-well Plate Seeding
 
@@ -573221,13 +574902,13 @@ vol_per_well_ml: 0.1
 overage_percent: 10
 \`\`\`
 `);
-      }
-    });
-    this.addCommand({
-      id: "polymer-insert-raft",
-      name: "ChemEdit Polymer: Insert Synthesis Template (RAFT, ATRP)",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`polymer-eln
+        }
+      });
+      this.addCommand({
+        id: "polymer-insert-raft",
+        name: "ChemEdit Polymer: Insert Synthesis Template (RAFT, ATRP)",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`polymer-eln
 code: POLY-001
 type: polymerization
 title: RAFT Polymerization of Styrene
@@ -573250,13 +574931,13 @@ agents:
     ratio_to_monomer: 0.01
 \`\`\`
 `);
-      }
-    });
-    this.addCommand({
-      id: "polymer-insert-formulation",
-      name: "ChemEdit Polymer: Insert Resin Formulation (PHR)",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`polymer-eln
+        }
+      });
+      this.addCommand({
+        id: "polymer-insert-formulation",
+        name: "ChemEdit Polymer: Insert Resin Formulation (PHR)",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`polymer-eln
 code: FORM-001
 type: formulation
 title: Epoxy Resin Blend
@@ -573271,13 +574952,45 @@ components:
     phr: 25
 \`\`\`
 `);
-      }
-    });
-    this.addCommand({
-      id: "org-insert-faradaic",
-      name: "ChemEdit Org: Insert Faradaic Efficiency Calculator",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`org-helpers
+        }
+      });
+      this.addCommand({
+        id: "analytical-insert-calibration",
+        name: "ChemEdit Analytics: Insert Calibration Curve (Linear Reg.)",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`analytical-eln
+type: calibration
+title: HPLC Quantification of Caffeine
+smiles: CN1C=NC2=C1C(=O)N(C(=O)N2C)C
+units: "\xB5g/mL"
+
+standards:
+  - name: Std 1
+    conc: 5
+    area: 12500
+  - name: Std 2
+    conc: 10
+    area: 25400
+  - name: Std 3
+    conc: 50
+    area: 126000
+  - name: Std 4
+    conc: 100
+    area: 258000
+
+samples:
+  - name: Energy Drink A
+    dilution_factor: 10
+    area: 45000
+\`\`\`
+`);
+        }
+      });
+      this.addCommand({
+        id: "org-insert-faradaic",
+        name: "ChemEdit Org: Insert Faradaic Efficiency Calculator",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`org-helpers
 type: faradaic_efficiency
 title: Ni-Catalyzed CD3-Methylation
 
@@ -573287,43 +575000,13 @@ current_mA: 10
 time_hours: 5
 \`\`\`
 `);
-      }
-    });
-    this.addCommand({
-      id: "org-insert-screening",
-      name: "ChemEdit Org: Insert Optimization / Master Mix Calculator",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`org-helpers
-type: reaction_screening
-title: Ni/Ligand Optimization Matrix
-
-reactions: 10
-overage_percent: 10
-scale_mmol: 0.2
-vol_per_vial_ml: 4.0
-
-components:
-  - name: t-butyl 4-bromopiperidine-1-carboxylate
-    mw: 264.12
-    eq: 1.0
-  - name: CD3OTs
-    mw: 189.23
-    eq: 2.0
-  - name: NiCl2(dme)
-    mw: 219.66
-    eq: 0.1
-  - name: TBAB
-    mw: 322.37
-    eq: 0.5
-\`\`\`
-`);
-      }
-    });
-    this.addCommand({
-      id: "org-insert-catalyst",
-      name: "ChemEdit Org: Insert Catalyst TON/TOF Metrics",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`org-helpers
+        }
+      });
+      this.addCommand({
+        id: "org-insert-catalyst",
+        name: "ChemEdit Org: Insert Catalyst TON/TOF Metrics",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`org-helpers
 type: catalyst_metrics
 title: Catalyst Performance
 
@@ -573332,13 +575015,13 @@ catalyst_mmol: 0.04
 time_hours: 5
 \`\`\`
 `);
-      }
-    });
-    this.addCommand({
-      id: "org-insert-nmr-yield",
-      name: "ChemEdit Org: Insert NMR Yield Calculator",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`org-helpers
+        }
+      });
+      this.addCommand({
+        id: "org-insert-nmr-yield",
+        name: "ChemEdit Org: Insert NMR Yield Calculator",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`org-helpers
 type: nmr_yield
 title: NMR Yield (vs Mesitylene)
 
@@ -573354,306 +575037,215 @@ standard_protons: 3
 standard_integral: 0.85
 \`\`\`
 `);
-      }
-    });
-    this.addCommand({
-      id: "insert-matrix-eln",
-      name: "ChemEdit Org: Insert High-Throughput Optimization Matrix (DoE)",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`matrix-eln
-title: Ni/Ligand Cross-Coupling Screen
+        }
+      });
+      this.addCommand({
+        id: "org-insert-titration",
+        name: "ChemEdit Org: Insert Organometallic Titration Calculator",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`org-helpers
+type: titration
+title: n-BuLi Titration
+
+standard_name: Diphenylacetic Acid
+standard_mw: 212.25
+standard_mass_mg: 200
+
+titrant_name: n-BuLi
+titrant_vol_ml: 0.65
+stoichiometry_ratio: 1
+\`\`\`
+`);
+        }
+      });
+      this.addCommand({
+        id: "org-insert-chromatography",
+        name: "ChemEdit Org: Insert Chromatography (Column) Calculator",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`org-helpers
+type: chromatography
+title: Column Separation Planning
+
+rf_product: 0.35
+rf_impurity: 0.45
+
+column_diameter_cm: 2.0
+silica_height_cm: 15.0
+\`\`\`
+`);
+        }
+      });
+      this.addCommand({
+        id: "org-insert-matrix",
+        name: "ChemEdit Org: Insert High-Throughput Experimentation Matrix",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`matrix-eln
+title: Ni-Catalyzed Deaminative Cross-Coupling Screen
+strategy: Catalyst & Ligand Screen
 scale_mmol: 0.1
-vol_per_vial_ml: 1.0
+vol_per_vial_ul: 500
 overage_percent: 10
 
 fixed_components:
+  - name: Katritzky Salt
+    mw: 350.2
+    eq: 1.0
   - name: Aryl Bromide
     mw: 157.01
-    eq: 1.0
-  - name: NiCl2(dme)
-    mw: 219.66
-    eq: 0.1
+    eq: 1.5
 
 variables:
+  Catalyst:
+    - name: NiCl2(dme)
+      mw: 219.66
+      eq: 0.1
+    - name: NiBr2(diglyme)
+      mw: 351.6
+      eq: 0.1
   Ligand:
-    - name: L1 (dtbbpy)
+    - name: dtbbpy
       mw: 268.4
-      eq: 0.1
-    - name: L2 (phen)
-      mw: 180.2
-      eq: 0.1
-  Base:
-    - name: K2CO3
-      mw: 138.2
+      eq: 0.12
+    - name: terpy
+      mw: 233.3
+      eq: 0.12
+  Reductant:
+    - name: Mn dust
+      mw: 54.9
       eq: 2.0
-    - name: Cs2CO3
-      mw: 325.8
+    - name: Zn dust
+      mw: 65.4
       eq: 2.0
+  Solvent:
+    - DMA
+    - NMP
 \`\`\`
 `);
-      }
-    });
-    this.addCommand({
-      id: "analytical-insert-calibration",
-      name: "ChemEdit Analytics: Insert Calibration Curve (Linear Reg.)",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`analytical-eln
-type: calibration
-title: HPLC Quantification of Caffeine
-smiles: CN1C=NC2=C1C(=O)N(C(=O)N2C)C
-units: "\xB5g/mL"
-
-standards:
-  - name: Std 1
-    conc: 5
-    area: 12500
-  - name: Std 2
-    conc: 10
-    area: 25400
-  - name: Std 3
-    conc: 50
-    area: 126000
-  - name: Std 4
-    conc: 100
-    area: 258000
-
-samples:
-  - name: Energy Drink A
-    dilution_factor: 10
-    area: 45000
-\`\`\`
-`);
-      }
-    });
-    this.addCommand({ id: "db-insert-library", name: "ChemEdit DB: Insert Compound Library", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
-type: library
-path: Library/
-layout: table
-\`\`\`
-`) });
-    this.addCommand({ id: "db-insert-inventory", name: "ChemEdit DB: Insert Chemical Inventory", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
-type: inventory
-path: Inventory/
-layout: table
-\`\`\`
-`) });
-    this.addCommand({ id: "db-insert-equipment", name: "ChemEdit DB: Insert Lab Equipment Tracker", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
-type: equipment
-path: Equipment/
-layout: table
-\`\`\`
-`) });
-    this.addCommand({
-      id: "insert-calibration-eln",
-      name: "Insert Calibration Curve / Quantification",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`analytical-eln
-type: calibration
-title: HPLC Quantification of Caffeine
-smiles: CN1C=NC2=C1C(=O)N(C(=O)N2C)C
-units: "\xB5g/mL"
-
-standards:
-  - name: Std 1
-    conc: 5
-    area: 12500
-  - name: Std 2
-    conc: 10
-    area: 25400
-  - name: Std 3
-    conc: 50
-    area: 126000
-  - name: Std 4
-    conc: 100
-    area: 258000
-
-samples:
-  - name: Energy Drink A
-    dilution_factor: 10
-    area: 45000
-  - name: Energy Drink B
-    dilution_factor: 5
-    area: 88000
-\`\`\`
-`);
-      }
-    });
-    this.addCommand({
-      id: "insert-dilution-eln",
-      name: "Insert Serial Dilution Calculator",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`analytical-eln
-type: serial_dilution
-title: Standard Prep
-stock_conc: 1000
-stock_units: "mg/L"
-diluent: "Methanol"
-
-targets:
-  - target_conc: 100
-    target_vol: 1000
-  - target_conc: 50
-    target_vol: 1000
-  - target_conc: 10
-    target_vol: 1000
-\`\`\`
-`);
-      }
-    });
-    this.addCommand({
-      id: "insert-hplc-method-eln",
-      name: "Insert HPLC/GC Method Parameters",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`analytical-eln
-type: hplc_method
-title: Method A (Purity)
-instrument: Agilent 1260
-column: "C18, 50x2.1mm, 1.8\xB5m"
-flow_rate: "0.5 mL/min"
-temp: "40 \xB0C"
-detection: "UV 254 nm"
-solvent_a: "Water + 0.1% FA"
-solvent_b: "Acetonitrile + 0.1% FA"
-
-gradient:
-  - time: 0.0
-    b_percent: 5
-  - time: 5.0
-    b_percent: 95
-  - time: 6.0
-    b_percent: 95
-  - time: 6.1
-    b_percent: 5
-\`\`\`
-`);
-      }
-    });
-    this.addCommand({
-      id: "insert-polymer-eln",
-      name: "Insert Polymer Synthesis / RAFT Template",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`polymer-eln
-code: POLY-001
-type: polymerization
-title: RAFT Polymerization of Styrene
-
-target_mass_g: 5
-target_dp: 100
-
-monomers:
-  - name: Styrene
-    smiles: C=CC1=CC=CC=C1
-    mol_ratio: 1.0
-
-initiators:
-  - name: AIBN
-    smiles: CC(C)(C#N)/N=N/C(C)(C)C#N
-    ratio_to_monomer: 0.1
-
-agents:
-  - name: CPDB (RAFT Agent)
-    ratio_to_monomer: 0.01
-
-characterization:
-  conversion: 85%
-  Mn_gpc: 10500
-  dispersity: 1.06
-  Tg: 105 \xB0C
-\`\`\`
-`);
-      }
-    });
-    this.addCommand({
-      id: "insert-formulation-eln",
-      name: "Insert Resin Formulation (PHR) Template",
-      editorCallback: (editor4) => {
-        editor4.replaceSelection(`\`\`\`polymer-eln
-code: FORM-001
-type: formulation
-title: Epoxy Resin Blend
-
-target_mass_g: 10
-
-components:
-  - name: Bisphenol A Diglycidyl Ether
-    smiles: CC(C)(C1=CC=C(OCC2CO2)C=C1)C3=CC=C(OCC4CO4)C=C3
-    phr: 100
-  - name: Amine Hardener
-    phr: 25
-  - name: Silica Nanoparticles
-    phr: 5
-\`\`\`
-`);
-      }
-    });
-    if (this.settings.enableEln) {
-      this.addCommand({ id: "insert-compound-library", name: "Insert Compound Library Database", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
-type: library
-path: Library/
-layout: table
-\`\`\`
-`) });
-      this.addCommand({ id: "insert-inventory-database", name: "Insert Chemical Inventory Database", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
-type: inventory
-path: Inventory/
-layout: table
-\`\`\`
-`) });
-      this.addCommand({ id: "insert-equipment-database", name: "Insert Lab Equipment / Instrument Tracker", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
-type: equipment
-path: Equipment/
-layout: table
-\`\`\`
-`) });
-      this.addCommand({ id: "insert-eln-gallery", name: "Insert ELN Experiment Gallery", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`eln-gallery
-path: Experiments/
-\`\`\`
-`) });
-      this.addCommand({
-        id: "insert-from-library",
-        name: "Insert SMILES from Library",
-        editorCallback: async (editor4) => {
-          const lib = await getCompoundLibrary(this);
-          new CompoundSuggestModal(this.app, lib, (selected6) => {
-            editor4.replaceSelection(selected6.smiles);
-          }).open();
         }
       });
-      this.registerMarkdownCodeBlockProcessor("chem-db", async (source, el2, ctx) => {
-        const r12 = new ChemDatabaseRenderer(this);
-        await r12.renderDatabase(source, el2, ctx);
+      this.addCommand({
+        id: "org-insert-faradaic",
+        name: "ChemEdit Org: Insert Faradaic Efficiency Calculator",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`org-helpers
+type: faradaic_efficiency
+title: Ni-Catalyzed Electroreduction
+
+product_mmol: 0.376
+electrons_z: 2
+current_mA: 10
+time_hours: 5
+\`\`\`
+`);
+        }
       });
-      this.registerMarkdownCodeBlockProcessor("chem-gallery", async (source, el2, ctx) => {
-        const r12 = new SharedGalleryRenderer(this);
-        await r12.renderChemGallery(source, el2, ctx);
+      this.addCommand({
+        id: "org-insert-catalyst",
+        name: "ChemEdit Org: Insert Catalyst TON/TOF Metrics",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`org-helpers
+type: catalyst_metrics
+title: Catalyst Performance
+
+product_mmol: 0.376
+catalyst_mmol: 0.04
+time_hours: 5
+\`\`\`
+`);
+        }
       });
-      this.registerMarkdownCodeBlockProcessor("eln-gallery", async (source, el2, ctx) => {
-        const r12 = new ElnGalleryRenderer(this);
-        await r12.renderGalleryBlock(source, el2, ctx);
+      this.addCommand({
+        id: "org-insert-nmr-yield",
+        name: "ChemEdit Org: Insert NMR Yield Calculator",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`org-helpers
+type: nmr_yield
+title: NMR Yield (vs Mesitylene)
+
+theory_mmol: 0.2
+product_mw: 250.2
+product_protons: 2
+product_integral: 1.0
+
+standard_name: Mesitylene
+standard_mw: 120.19
+standard_mass_mg: 12.0
+standard_protons: 3
+standard_integral: 0.85
+\`\`\`
+`);
+        }
       });
-      this.registerMarkdownCodeBlockProcessor("eln", async (source, el2, ctx) => {
-        const elnRenderer = new SharedElnRenderer(this);
-        await elnRenderer.renderElnBlock(source, el2, ctx);
+      this.addCommand({
+        id: "org-insert-titration",
+        name: "ChemEdit Org: Insert Organometallic Titration Calculator",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`org-helpers
+type: titration
+title: n-BuLi Titration
+
+standard_name: Diphenylacetic Acid
+standard_mw: 212.25
+standard_mass_mg: 200
+
+titrant_name: n-BuLi
+titrant_vol_ml: 0.65
+stoichiometry_ratio: 1
+\`\`\`
+`);
+        }
       });
-      this.registerMarkdownCodeBlockProcessor("org-helpers", async (source, el2, ctx) => {
-        const r12 = new OrganicHelpersRenderer(this);
-        await r12.renderBlock(source, el2, ctx);
+      this.addCommand({
+        id: "org-insert-chromatography",
+        name: "ChemEdit Org: Insert Chromatography (Column) Calculator",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`org-helpers
+type: chromatography
+title: Column Separation Planning
+
+rf_product: 0.35
+rf_impurity: 0.45
+
+column_diameter_cm: 2.0
+silica_height_cm: 15.0
+\`\`\`
+`);
+        }
       });
-      this.registerMarkdownCodeBlockProcessor("matrix-eln", async (source, el2, ctx) => {
-        const r12 = new MatrixElnRenderer(this);
-        await r12.renderBlock(source, el2, ctx);
+      this.addCommand({
+        id: "org-insert-green-metrics",
+        name: "ChemEdit Org: Insert Green Chemistry Metrics (PMI / E-Factor)",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`org-helpers
+type: green_metrics
+title: Sustainability Metrics
+
+total_reagents_mass_g: 1.5
+total_solvent_mass_g: 25.0
+product_mass_g: 0.8
+
+target_product_mw: 250.0
+total_reactants_mw: 320.0
+\`\`\`
+`);
+        }
       });
-      this.registerMarkdownCodeBlockProcessor("polymer-eln", async (source, el2, ctx) => {
-        const r12 = new PolymerElnRenderer(this);
-        await r12.renderPolymerBlock(source, el2, ctx);
-      });
-      this.registerMarkdownCodeBlockProcessor("bio-eln", async (source, el2, ctx) => {
-        const r12 = new BioElnRenderer(this);
-        await r12.renderBioBlock(source, el2, ctx);
-      });
-      this.registerMarkdownCodeBlockProcessor("analytical-eln", async (source, el2, ctx) => {
-        const r12 = new AnalyticalElnRenderer(this);
-        await r12.renderAnalyticalBlock(source, el2, ctx);
+      this.addCommand({
+        id: "org-insert-recrystallization",
+        name: "ChemEdit Org: Insert Recrystallization Recovery",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`org-helpers
+type: recrystallization
+title: Product Purification
+
+crude_mass_mg: 1500
+solvent_name: "EtOH / H2O"
+solvent_vol_ml: 15.0
+
+recovered_mass_mg: 1150
+\`\`\`
+`);
+        }
       });
     }
     if (this.settings.enablePathways) {
@@ -573704,7 +575296,7 @@ path: Experiments/
             editor4.setCursor({ line: cursor2.line, ch: cursor2.ch + newData.length + 2 });
           } else {
             if (newFormat === "ket") {
-              new import_obsidian15.Notice("Cannot save inline reaction. Inserting as block.");
+              new import_obsidian22.Notice("Cannot save inline reaction. Inserting as block.");
               this.insertSmilesAtCursor(editor4, newData, "ket");
               return;
             }
@@ -573735,7 +575327,7 @@ path: Experiments/
                 return;
               }
               if (newFormat === "ket") {
-                new import_obsidian15.Notice("Inline reactions not supported. Replaced with codeblock.");
+                new import_obsidian22.Notice("Inline reactions not supported. Replaced with codeblock.");
                 editor4.replaceRange(`
 \`\`\`ket
 ${newData}
@@ -573748,7 +575340,7 @@ ${newData}
             return;
           }
         }
-        new import_obsidian15.Notice("Place your cursor inside an inline $smiles= string first!");
+        new import_obsidian22.Notice("Place your cursor inside an inline $smiles= string first!");
       }
     });
     this.registerMarkdownPostProcessor(async (el2, ctx) => {
@@ -573822,7 +575414,7 @@ ${cleanText}
       if (filenameToSearch) {
         const cleanLink = decodeURIComponent(filenameToSearch).split("#")[0].split("?")[0].trim();
         const file = this.app.metadataCache.getFirstLinkpathDest(cleanLink, ctx.sourcePath);
-        if (file && file instanceof import_obsidian15.TFile) {
+        if (file && file instanceof import_obsidian22.TFile) {
           const format3 = file.extension.toLowerCase();
           const fileData = await this.app.vault.read(file);
           if (format3 === "svg") {
@@ -573860,13 +575452,13 @@ ${cleanText}
                 openData = ex.data;
                 openFormat = "svg";
               } else {
-                new import_obsidian15.Notice("Not a Ketcher SVG");
+                new import_obsidian22.Notice("Not a Ketcher SVG");
                 return;
               }
             }
             new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
               if (isFile) {
-                new import_obsidian15.Notice(`Saved as new file: ${newData}. Please update the link.`);
+                new import_obsidian22.Notice(`Saved as new file: ${newData}. Please update the link.`);
                 return;
               }
               await this.app.vault.modify(file, newData);
@@ -573910,7 +575502,7 @@ ${cleanText}
       });
       wrapper2.addEventListener("dblclick", async (e6) => {
         e6.stopPropagation();
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
+        const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
         if (!view) return;
         const info = ctx.getSectionInfo(el2);
         new KetcherModal(this, source, defaultFormat, (newData, isFile, newFormat) => {
@@ -573983,31 +575575,80 @@ ${newData}
     }
     workspace.revealLeaf(leaf);
   }
-  activateOrdersDashboard() {
-    new import_obsidian15.Notice("Orders Dashboard coming soon!");
+  async activateOrdersDashboard() {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(ORDERS_DASHBOARD_VIEW_TYPE)[0];
+    if (!leaf) {
+      const newLeaf = workspace.getLeaf(true);
+      await newLeaf.setViewState({ type: ORDERS_DASHBOARD_VIEW_TYPE, active: true });
+      leaf = newLeaf;
+    }
+    workspace.revealLeaf(leaf);
   }
-  activateInventoryDashboard() {
-    new import_obsidian15.Notice("Inventory Dashboard coming soon!");
+  async activateInventoryDashboard() {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(INVENTORY_DASHBOARD_VIEW_TYPE)[0];
+    if (!leaf) {
+      const newLeaf = workspace.getLeaf(true);
+      await newLeaf.setViewState({ type: INVENTORY_DASHBOARD_VIEW_TYPE, active: true });
+      leaf = newLeaf;
+    }
+    workspace.revealLeaf(leaf);
   }
-  activateEquipmentDashboard() {
-    new import_obsidian15.Notice("Equipment Dashboard coming soon!");
+  async activateEquipmentDashboard() {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(EQUIPMENT_DASHBOARD_VIEW_TYPE)[0];
+    if (!leaf) {
+      const newLeaf = workspace.getLeaf(true);
+      await newLeaf.setViewState({ type: EQUIPMENT_DASHBOARD_VIEW_TYPE, active: true });
+      leaf = newLeaf;
+    }
+    workspace.revealLeaf(leaf);
   }
-  activateProtocolsDashboard() {
-    new import_obsidian15.Notice("Protocols Dashboard coming soon!");
+  async activateProtocolsDashboard() {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(PROTOCOLS_DASHBOARD_VIEW_TYPE)[0];
+    if (!leaf) {
+      const newLeaf = workspace.getLeaf(true);
+      await newLeaf.setViewState({ type: PROTOCOLS_DASHBOARD_VIEW_TYPE, active: true });
+      leaf = newLeaf;
+    }
+    workspace.revealLeaf(leaf);
   }
-  activateLibraryDashboard() {
-    new import_obsidian15.Notice("Library Dashboard coming soon!");
+  async activateLibraryDashboard() {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(LIBRARY_DASHBOARD_VIEW_TYPE)[0];
+    if (!leaf) {
+      const newLeaf = workspace.getLeaf(true);
+      await newLeaf.setViewState({ type: LIBRARY_DASHBOARD_VIEW_TYPE, active: true });
+      leaf = newLeaf;
+    }
+    workspace.revealLeaf(leaf);
   }
-  activateGalleryDashboard() {
-    new import_obsidian15.Notice("Gallery Dashboard coming soon!");
+  async activateGalleryDashboard() {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(GALLERY_DASHBOARD_VIEW_TYPE)[0];
+    if (!leaf) {
+      const newLeaf = workspace.getLeaf(true);
+      await newLeaf.setViewState({ type: GALLERY_DASHBOARD_VIEW_TYPE, active: true });
+      leaf = newLeaf;
+    }
+    workspace.revealLeaf(leaf);
   }
-  activateCharacterizationDashboard() {
-    new import_obsidian15.Notice("Characterization Dashboard coming soon!");
+  async activateCharacterizationDashboard() {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(CHARACTERIZATION_DASHBOARD_VIEW_TYPE)[0];
+    if (!leaf) {
+      const newLeaf = workspace.getLeaf(true);
+      await newLeaf.setViewState({ type: CHARACTERIZATION_DASHBOARD_VIEW_TYPE, active: true });
+      leaf = newLeaf;
+    }
+    workspace.revealLeaf(leaf);
   }
   openNewDrawingModal() {
-    const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
+    const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
     if (!view) {
-      new import_obsidian15.Notice("Please open a Markdown file first to insert a drawing.");
+      new import_obsidian22.Notice("Please open a Markdown file first to insert a drawing.");
       return;
     }
     new KetcherModal(this, "", "smiles", (newData, isFile, newFormat) => {
@@ -574092,10 +575733,10 @@ ${data}
     wrapper2.addEventListener("dblclick", (e6) => {
       e6.stopPropagation();
       if (isGridItem) {
-        new import_obsidian15.Notice("Cannot inline-edit grids yet. Edit code block manually.");
+        new import_obsidian22.Notice("Cannot inline-edit grids yet. Edit code block manually.");
         return;
       }
-      const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
+      const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
       if (!view) return;
       const info = ctx.getSectionInfo(el2.parentElement || el2);
       new KetcherModal(this, smiles, "smiles", (newData, isFile, newFormat) => {
@@ -574252,7 +575893,7 @@ ${newData}
       });
       wrapper2.addEventListener("dblclick", (e6) => {
         e6.stopPropagation();
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
+        const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
         if (!view) return;
         new KetcherModal(this, rawData, "smiles", (newData, isFile, newFormat) => {
           const editor4 = view.editor;
@@ -574263,7 +575904,7 @@ ${newData}
             return;
           }
           if (newFormat === "ket") {
-            new import_obsidian15.Notice("Inline reactions not supported. Inserted as block.");
+            new import_obsidian22.Notice("Inline reactions not supported. Inserted as block.");
             const updatedContent2 = content4.replace(prefix2 + rawData, `
 \`\`\`ket
 ${newData}
@@ -574279,7 +575920,7 @@ ${newData}
     } else if (type3 === "file") {
       const cleanFileName = rawData.replace("[[", "").replace("]]", "");
       const file = this.app.metadataCache.getFirstLinkpathDest(cleanFileName, sourcePath);
-      if (file && file instanceof import_obsidian15.TFile) {
+      if (file && file instanceof import_obsidian22.TFile) {
         const format3 = file.extension.toLowerCase();
         const fileData = await this.app.vault.read(file);
         requestAnimationFrame(async () => {
@@ -574319,17 +575960,17 @@ ${newData}
               openData = ex.data;
               openFormat = "svg";
             } else {
-              new import_obsidian15.Notice("Not a Ketcher SVG");
+              new import_obsidian22.Notice("Not a Ketcher SVG");
               return;
             }
           }
           new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
             if (isFile) {
-              new import_obsidian15.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
+              new import_obsidian22.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
               return;
             }
             if (newFormat && newFormat !== format3 && format3 !== "svg") {
-              new import_obsidian15.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
+              new import_obsidian22.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
             }
             await this.app.vault.modify(file, newData);
             wrapper2.innerHTML = `\u23F3`;
@@ -574518,7 +576159,7 @@ ${newData}
   }
   async injectNativeEmbed(embed, src2, sourcePath) {
     const file = this.app.metadataCache.getFirstLinkpathDest(src2, sourcePath);
-    if (!(file instanceof import_obsidian15.TFile)) {
+    if (!(file instanceof import_obsidian22.TFile)) {
       embed.innerHTML = `<div class="chem-native-embed-wrapper color-red">File not found: ${src2}</div>`;
       return;
     }
@@ -574590,11 +576231,11 @@ ${newData}
       }
       new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
         if (isFile) {
-          new import_obsidian15.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
+          new import_obsidian22.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
           return;
         }
         if (newFormat && newFormat !== format3 && format3 !== "svg") {
-          new import_obsidian15.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
+          new import_obsidian22.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
         }
         await this.app.vault.modify(file, newData);
         wrapper2.innerHTML = `<div class="color-text-muted" style="padding:15px; border:1px solid var(--background-modifier-border); border-radius:8px;">\u23F3 Updating...</div>`;
@@ -574655,7 +576296,7 @@ ${newData}
           } else {
             const cleanName = this.data.replace("[[", "").replace("]]", "");
             const file = plugin.app.metadataCache.getFirstLinkpathDest(cleanName, "");
-            if (file && file instanceof import_obsidian15.TFile) {
+            if (file && file instanceof import_obsidian22.TFile) {
               const format3 = file.extension.toLowerCase();
               const fileData = await plugin.app.vault.read(file);
               if (format3 === "svg") {
@@ -574744,7 +576385,7 @@ ${newData}
     }, { decorations: (v8) => v8.decorations });
   }
 };
-var ChemFileView = class extends import_obsidian15.TextFileView {
+var ChemFileView = class extends import_obsidian22.TextFileView {
   constructor(leaf, plugin) {
     super(leaf);
     __publicField(this, "plugin");
@@ -574789,11 +576430,11 @@ var ChemFileView = class extends import_obsidian15.TextFileView {
     wrapper2.ondblclick = () => {
       new KetcherModal(this.plugin, this.data, format3, async (newData, isFile, newFormat) => {
         if (isFile) {
-          new import_obsidian15.Notice(`Saved as new file: ${newData}`);
+          new import_obsidian22.Notice(`Saved as new file: ${newData}`);
           return;
         }
         if (newFormat && newFormat !== format3) {
-          new import_obsidian15.Notice(`Format was upgraded to ${newFormat}. Please rename the file extension!`);
+          new import_obsidian22.Notice(`Format was upgraded to ${newFormat}. Please rename the file extension!`);
         }
         this.data = newData;
         this.requestSave();
@@ -574806,7 +576447,7 @@ var ChemFileView = class extends import_obsidian15.TextFileView {
     this.contentEl.empty();
   }
 };
-var KetcherModal = class extends import_obsidian15.Modal {
+var KetcherModal = class extends import_obsidian22.Modal {
   constructor(plugin, initialData, format3, onSave) {
     super(plugin.app);
     __publicField(this, "plugin");
@@ -574872,7 +576513,7 @@ var KetcherModal = class extends import_obsidian15.Modal {
     const cancelBtn = btnContainer.createEl("button", { text: "Cancel" });
     const doSave = async (formatToGet) => {
       if (!this.ketcherInstance || !this.ketcherInstance.editor && !this.ketcherInstance.server) {
-        new import_obsidian15.Notice("Ketcher is still initializing...");
+        new import_obsidian22.Notice("Ketcher is still initializing...");
         return;
       }
       try {
@@ -574947,7 +576588,7 @@ var KetcherModal = class extends import_obsidian15.Modal {
           if (err.message && err.message.toLowerCase().includes("reaction")) {
             resultData = await this.ketcherInstance.getKet();
             finalFormat = "ket";
-            new import_obsidian15.Notice("Reactions cannot be saved in this format. Automatically upgraded to .KET format.");
+            new import_obsidian22.Notice("Reactions cannot be saved in this format. Automatically upgraded to .KET format.");
             if (this.isSavingAsFile) {
               this.isSavingAsFile = this.isSavingAsFile.replace(/\.[a-zA-Z0-9]+$/i, ".ket");
             }
@@ -574955,14 +576596,14 @@ var KetcherModal = class extends import_obsidian15.Modal {
             console.warn("Primary save failed, forcing fallback to .ket", err);
             resultData = await this.ketcherInstance.getKet();
             finalFormat = "ket";
-            new import_obsidian15.Notice(`Export to requested format failed. Saved as .ket instead to prevent data loss.`);
+            new import_obsidian22.Notice(`Export to requested format failed. Saved as .ket instead to prevent data loss.`);
             if (this.isSavingAsFile) {
               this.isSavingAsFile = this.isSavingAsFile.replace(/\.[a-zA-Z0-9]+$/i, ".ket");
             }
           }
         }
         if (!resultData) {
-          new import_obsidian15.Notice("Failed to generate structure data. Format may not be supported by this structure.");
+          new import_obsidian22.Notice("Failed to generate structure data. Format may not be supported by this structure.");
           return;
         }
         if (this.isSavingAsFile) {
@@ -574984,7 +576625,7 @@ var KetcherModal = class extends import_obsidian15.Modal {
         this.close();
       } catch (e6) {
         console.error(e6);
-        new import_obsidian15.Notice("Error saving from Ketcher: " + (e6.message || e6));
+        new import_obsidian22.Notice("Error saving from Ketcher: " + (e6.message || e6));
       }
     };
     saveBtn.onclick = () => doSave(this.format);
@@ -575030,7 +576671,7 @@ var KetcherModal = class extends import_obsidian15.Modal {
     this.plugin.bootHeadlessKetcher();
   }
 };
-var SaveFileModal = class extends import_obsidian15.Modal {
+var SaveFileModal = class extends import_obsidian22.Modal {
   constructor(app, onSubmit) {
     super(app);
     __publicField(this, "onSubmit");
@@ -575041,17 +576682,17 @@ var SaveFileModal = class extends import_obsidian15.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.createEl("h3", { text: "Save as File..." });
-    new import_obsidian15.Setting(contentEl).setName("Filename").setDesc("Enter a name for the new chemical file.").addText((text2) => text2.setPlaceholder("molecule").onChange((value) => {
+    new import_obsidian22.Setting(contentEl).setName("Filename").setDesc("Enter a name for the new chemical file.").addText((text2) => text2.setPlaceholder("molecule").onChange((value) => {
       this.filename = value;
     }).inputEl.addEventListener("keypress", (e6) => {
       if (e6.key === "Enter" && this.filename) {
         this.submit();
       }
     }));
-    new import_obsidian15.Setting(contentEl).setName("Format").setDesc("Select the file format to save as.").addDropdown((drop) => drop.addOption("mol", ".mol (MDL Molfile)").addOption("cdxml", ".cdxml (ChemDraw)").addOption("ket", ".ket (Ketcher Native)").addOption("rxn", ".rxn (MDL Rxnfile)").addOption("sdf", ".sdf (Structure Data)").addOption("fasta", ".fasta (FASTA Sequence)").addOption("sequence", ".sequence (Raw Sequence)").addOption("idt", ".idt (IDT Sequence)").addOption("helm", ".helm (HELM Macromolecule)").addOption("biln", ".biln (BILN Macromolecule)").addOption("ketcher.svg", ".svg (Ketcher SVG)").setValue("mol").onChange((value) => {
+    new import_obsidian22.Setting(contentEl).setName("Format").setDesc("Select the file format to save as.").addDropdown((drop) => drop.addOption("mol", ".mol (MDL Molfile)").addOption("cdxml", ".cdxml (ChemDraw)").addOption("ket", ".ket (Ketcher Native)").addOption("rxn", ".rxn (MDL Rxnfile)").addOption("sdf", ".sdf (Structure Data)").addOption("fasta", ".fasta (FASTA Sequence)").addOption("sequence", ".sequence (Raw Sequence)").addOption("idt", ".idt (IDT Sequence)").addOption("helm", ".helm (HELM Macromolecule)").addOption("biln", ".biln (BILN Macromolecule)").addOption("ketcher.svg", ".svg (Ketcher SVG)").setValue("mol").onChange((value) => {
       this.format = value;
     }));
-    new import_obsidian15.Setting(contentEl).addButton((btn) => btn.setButtonText("Save File").setCta().onClick(() => this.submit()));
+    new import_obsidian22.Setting(contentEl).addButton((btn) => btn.setButtonText("Save File").setCta().onClick(() => this.submit()));
     setTimeout(() => {
       const input = contentEl.querySelector('input[type="text"]');
       if (input) input.focus();
@@ -575062,7 +576703,7 @@ var SaveFileModal = class extends import_obsidian15.Modal {
       this.onSubmit(this.filename, this.format);
       this.close();
     } else {
-      new import_obsidian15.Notice("Please enter a filename.");
+      new import_obsidian22.Notice("Please enter a filename.");
     }
   }
   onClose() {

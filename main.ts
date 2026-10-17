@@ -11,15 +11,24 @@ import { EditorView, ViewPlugin, ViewUpdate, WidgetType, Decoration, DecorationS
 import { ChemEditSettings, DEFAULT_SETTINGS, ChemEditSettingTab } from './Settings';
 import { ChemEditAPI, buildChemEditAPI } from './ChemEditAPI';
 import { CHEM_NAVIGATOR_VIEW_TYPE, ChemNavigatorView } from './ChemNavigator';
+
+// --- DASHBOARD IMPORTS ---
 import { ELN_DASHBOARD_VIEW_TYPE, ElnDashboardView } from './ElnDashboard';
+import { INVENTORY_DASHBOARD_VIEW_TYPE, InventoryDashboardView } from './InventoryDashboard';
+import { EQUIPMENT_DASHBOARD_VIEW_TYPE, EquipmentDashboardView } from './EquipmentDashboard';
+import { ORDERS_DASHBOARD_VIEW_TYPE, OrdersDashboardView } from './OrdersDashboard';
+import { LIBRARY_DASHBOARD_VIEW_TYPE, LibraryDashboardView } from './LibraryDashboard';
+import { GALLERY_DASHBOARD_VIEW_TYPE, GalleryDashboardView } from './GalleryDashboard';
+import { PROTOCOLS_DASHBOARD_VIEW_TYPE, ProtocolsDashboardView } from './ProtocolsDashboard';
+import { CHARACTERIZATION_DASHBOARD_VIEW_TYPE, CharacterizationDashboardView } from './CharacterizationDashboard';
+
+// --- RENDERER IMPORTS ---
 import { SynthesisMapRenderer } from './SharedPathway';
 import { SharedElnRenderer, createNewElnExperiment, CreateExperimentModal, ElnGalleryRenderer, getCompoundLibrary, CompoundSuggestModal, AddToLibraryModal, addCompoundToLibrary, calculateMwOffline } from './SharedEln';
-
-// --> NEW ELN IMPORT <--
+import { PolymerElnRenderer } from './PolymerEln';
 import { BioElnRenderer } from './BioEln';
 import { AnalyticalElnRenderer } from './AnalyticalEln';
 import { OrganicHelpersRenderer } from './OrganicHelpers';
-import { PolymerElnRenderer } from './PolymerEln';
 import { MatrixElnRenderer } from './MatrixEln';
 
 import { takeStandardPhoto, saveMediaFile, TlcModal } from './SharedMedia';
@@ -206,17 +215,14 @@ export default class ChemEditPlugin extends Plugin {
         this.registerEditorExtension(this.buildLivePreviewPlugin());
         this.addRibbonIcon('hexagon', 'Draw New Molecule', () => { this.openNewDrawingModal(); });
 
+        this.refreshRibbonIcons();
+
+        // --- OPTIONAL MODULES ---
+
         if (this.settings.enableNavigator) {
             this.registerView(CHEM_NAVIGATOR_VIEW_TYPE, (leaf) => new ChemNavigatorView(leaf, this));
             this.addCommand({ id: 'open-chem-navigator', name: 'Open Chem Navigator', callback: () => { this.activateNavigator(); } });
         }
-
-        if (this.settings.enableElnDashboard) {
-            this.registerView(ELN_DASHBOARD_VIEW_TYPE, (leaf) => new ElnDashboardView(leaf, this));
-            this.addCommand({ id: 'open-eln-dashboard', name: 'Open ELN Dashboard', callback: () => { this.activateElnDashboard(); } });
-        }
-
-        this.refreshRibbonIcons();
 
         if (this.settings.enableContextMenu) {
             this.registerEvent(
@@ -270,207 +276,229 @@ export default class ChemEditPlugin extends Plugin {
             );
         }
 
-        
-		// --- BIO ELN COMMANDS ---
-        this.addCommand({
-            id: 'bio-insert-pcr', 
-            name: 'ChemEdit Bio: Insert PCR Master Mix Template', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`bio-eln
-type: pcr
-title: Genotyping PCR
-reactions: 10
-overage_percent: 10
-total_volume_ul: 25
-
-components:
-  - name: 2X Taq Master Mix
-    stock: 2X
-    final: 1X
-  - name: Forward Primer
-    stock: 10 uM
-    final: 0.5 uM
-  - name: Reverse Primer
-    stock: 10 uM
-    final: 0.5 uM
-  - name: Template DNA
-    volume_ul: 1.0
-    add_to_mm_separately: true
-  - name: Nuclease-Free Water
-\`\`\`\n`);
+        // --- ELN AND DASHBOARD REGISTRATIONS ---
+        if (this.settings.enableEln) {
+            
+            // 1. Register Views (Dashboards)
+            if (this.settings.enableElnDashboard) {
+                this.registerView(ELN_DASHBOARD_VIEW_TYPE, (leaf) => new ElnDashboardView(leaf, this));
+                this.addCommand({ id: 'open-eln-dashboard', name: 'Open ELN Dashboard', callback: () => this.activateElnDashboard() });
             }
-        });
-
-        this.addCommand({
-            id: 'bio-insert-ligation', 
-            name: 'ChemEdit Bio: Insert Ligation / Cloning Calculator', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`bio-eln
-type: ligation
-title: pET28a + Insert Ligation
-
-vector_kb: 5.3
-vector_ng: 50
-insert_kb: 1.2
-ratio: 3
-\`\`\`\n`);
+            if (this.settings.enableInventoryDashboard) {
+                this.registerView(INVENTORY_DASHBOARD_VIEW_TYPE, (leaf) => new InventoryDashboardView(leaf, this));
+                this.addCommand({ id: 'open-inventory-dashboard', name: 'Open Chemical Inventory Dashboard', callback: () => this.activateInventoryDashboard() });
             }
-        });
-
-        this.addCommand({
-            id: 'bio-insert-protocol', 
-            name: 'ChemEdit Bio: Insert Interactive Protocol Checklist', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`bio-eln
-type: protocol
-title: Plasmid Miniprep
-date: 2026-10-14
-
-steps:
-  - text: "Pellet 1-5 mL bacterial overnight culture at 10,000 x g for 3 min."
-    done: false
-  - text: "Resuspend pelleted bacterial cells in 250 uL Buffer P1."
-    done: false
-  - text: "Add 250 uL Buffer P2 and mix thoroughly by inverting the tube 4-6 times."
-    done: false
-  - text: "Add 350 uL Buffer N3 and mix immediately and thoroughly by inverting."
-    done: false
-\`\`\`\n`);
+            if (this.settings.enableEquipmentDashboard) {
+                this.registerView(EQUIPMENT_DASHBOARD_VIEW_TYPE, (leaf) => new EquipmentDashboardView(leaf, this));
+                this.addCommand({ id: 'open-equipment-dashboard', name: 'Open Lab Equipment Dashboard', callback: () => this.activateEquipmentDashboard() });
             }
-        });
-
-        this.addCommand({
-            id: 'bio-insert-oligo', 
-            name: 'ChemEdit Bio: Insert Oligo Analyzer', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`bio-eln
-type: oligo_analyzer
-title: T7 Promoter Primer
-sequence: "TAATACGACTCACTATAGGG"
-\`\`\`\n`);
+            if (this.settings.enableOrdersDashboard) {
+                this.registerView(ORDERS_DASHBOARD_VIEW_TYPE, (leaf) => new OrdersDashboardView(leaf, this));
+                this.addCommand({ id: 'open-orders-dashboard', name: 'Open Orders Dashboard', callback: () => this.activateOrdersDashboard() });
             }
-        });
-
-        this.addCommand({
-            id: 'bio-insert-cell-seeding', 
-            name: 'ChemEdit Bio: Insert Cell Seeding Calculator', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`bio-eln
-type: cell_seeding
-title: 96-well Plate Seeding
-
-current_cells_per_ml: 1.5e6
-target_cells_per_well: 50000
-wells: 96
-vol_per_well_ml: 0.1
-overage_percent: 10
-\`\`\`\n`);
+            if (this.settings.enableProtocolsDashboard) {
+                this.registerView(PROTOCOLS_DASHBOARD_VIEW_TYPE, (leaf) => new ProtocolsDashboardView(leaf, this));
+                this.addCommand({ id: 'open-protocols-dashboard', name: 'Open Lab Protocols Dashboard', callback: () => this.activateProtocolsDashboard() });
             }
-        });
-
-        // --- POLYMER ELN COMMANDS ---
-        this.addCommand({
-            id: 'polymer-insert-raft', 
-            name: 'ChemEdit Polymer: Insert Synthesis Template (RAFT, ATRP)', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`polymer-eln
-code: POLY-001
-type: polymerization
-title: RAFT Polymerization of Styrene
-
-target_mass_g: 5
-target_dp: 100
-
-monomers:
-  - name: Styrene
-    smiles: C=CC1=CC=CC=C1
-    mol_ratio: 1.0
-
-initiators:
-  - name: AIBN
-    smiles: CC(C)(C#N)/N=N/C(C)(C)C#N
-    ratio_to_monomer: 0.1
-
-agents:
-  - name: CPDB (RAFT Agent)
-    ratio_to_monomer: 0.01
-\`\`\`\n`);
+            if (this.settings.enableLibraryDashboard) {
+                this.registerView(LIBRARY_DASHBOARD_VIEW_TYPE, (leaf) => new LibraryDashboardView(leaf, this));
+                this.addCommand({ id: 'open-library-dashboard', name: 'Open Compounds Library Dashboard', callback: () => this.activateLibraryDashboard() });
             }
-        });
-
-        this.addCommand({
-            id: 'polymer-insert-formulation', 
-            name: 'ChemEdit Polymer: Insert Resin Formulation (PHR)', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`polymer-eln
-code: FORM-001
-type: formulation
-title: Epoxy Resin Blend
-
-target_mass_g: 10
-
-components:
-  - name: Bisphenol A Diglycidyl Ether
-    smiles: CC(C)(C1=CC=C(OCC2CO2)C=C1)C3=CC=C(OCC4CO4)C=C3
-    phr: 100
-  - name: Amine Hardener
-    phr: 25
-\`\`\`\n`);
+            if (this.settings.enableGalleryDashboard) {
+                this.registerView(GALLERY_DASHBOARD_VIEW_TYPE, (leaf) => new GalleryDashboardView(leaf, this));
+                this.addCommand({ id: 'open-gallery-dashboard', name: 'Open Drawings Gallery Dashboard', callback: () => this.activateGalleryDashboard() });
             }
-        });
-		
-		// --- ORGANIC CHEM HELPERS ---
-        this.addCommand({
-            id: 'org-insert-faradaic', 
-            name: 'ChemEdit Org: Insert Faradaic Efficiency Calculator', 
+            if (this.settings.enableCharacterizationDashboard) {
+                this.registerView(CHARACTERIZATION_DASHBOARD_VIEW_TYPE, (leaf) => new CharacterizationDashboardView(leaf, this));
+                this.addCommand({ id: 'open-characterization-dashboard', name: 'Open Compound Data Organizer', callback: () => this.activateCharacterizationDashboard() });
+            }
+
+            // 2. Register Processors
+            this.registerMarkdownCodeBlockProcessor("chem-db", async (source, el, ctx) => { const r = new ChemDatabaseRenderer(this); await r.renderDatabase(source, el, ctx); });
+            this.registerMarkdownCodeBlockProcessor("chem-gallery", async (source, el, ctx) => { const r = new SharedGalleryRenderer(this); await r.renderChemGallery(source, el, ctx); });
+            this.registerMarkdownCodeBlockProcessor("eln-gallery", async (source, el, ctx) => { const r = new ElnGalleryRenderer(this); await r.renderGalleryBlock(source, el, ctx); });
+            this.registerMarkdownCodeBlockProcessor("eln", async (source, el, ctx) => { const elnRenderer = new SharedElnRenderer(this); await elnRenderer.renderElnBlock(source, el, ctx); });
+            this.registerMarkdownCodeBlockProcessor("polymer-eln", async (source, el, ctx) => { const r = new PolymerElnRenderer(this); await r.renderPolymerBlock(source, el, ctx); });
+            this.registerMarkdownCodeBlockProcessor("bio-eln", async (source, el, ctx) => { const r = new BioElnRenderer(this); await r.renderBioBlock(source, el, ctx); });
+            this.registerMarkdownCodeBlockProcessor("analytical-eln", async (source, el, ctx) => { const r = new AnalyticalElnRenderer(this); await r.renderAnalyticalBlock(source, el, ctx); });
+            this.registerMarkdownCodeBlockProcessor("org-helpers", async (source, el, ctx) => { const r = new OrganicHelpersRenderer(this); await r.renderBlock(source, el, ctx); });
+            this.registerMarkdownCodeBlockProcessor("matrix-eln", async (source, el, ctx) => { const r = new MatrixElnRenderer(this); await r.renderBlock(source, el, ctx); });
+            this.registerMarkdownCodeBlockProcessor("chem-3d", async (source, el, ctx) => { const r = new Chem3DRenderer(this); await r.render3DBlock(source, el, ctx); });
+            this.registerMarkdownCodeBlockProcessor("plate-map", async (source, el, ctx) => { const r = new PlateMapRenderer(this); await r.renderPlateBlock(source, el, ctx); });
+
+            // 3. Register DB Commands
+            this.addCommand({ id: 'db-insert-library', name: 'ChemEdit DB: Insert Compound Library', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: library\npath: Library/\nlayout: table\n\`\`\`\n`) });
+            this.addCommand({ id: 'db-insert-inventory', name: 'ChemEdit DB: Insert Chemical Inventory', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: inventory\npath: Inventory/\nlayout: table\n\`\`\`\n`) });
+            this.addCommand({ id: 'db-insert-equipment', name: 'ChemEdit DB: Insert Lab Equipment Tracker', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: equipment\npath: Equipment/\nlayout: table\n\`\`\`\n`) });
+            this.addCommand({ id: 'insert-eln-gallery', name: 'Insert ELN Experiment Gallery', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`eln-gallery\npath: Experiments/\n\`\`\`\n`) });
+            this.addCommand({
+                id: 'insert-from-library', name: 'Insert SMILES from Library',
+                editorCallback: async (editor: Editor) => {
+                    const lib = await getCompoundLibrary(this);
+                    new CompoundSuggestModal(this.app, lib, (selected) => { editor.replaceSelection(selected.smiles); }).open();
+                }
+            });
+
+            // 4. Register Domain Commands
+            // --- BIO ELN COMMANDS ---
+            this.addCommand({
+                id: 'bio-insert-pcr', name: 'ChemEdit Bio: Insert PCR Master Mix Template', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`bio-eln\ntype: pcr\ntitle: Genotyping PCR\nreactions: 10\noverage_percent: 10\ntotal_volume_ul: 25\n\ncomponents:\n  - name: 2X Taq Master Mix\n    stock: 2X\n    final: 1X\n  - name: Forward Primer\n    stock: 10 uM\n    final: 0.5 uM\n  - name: Reverse Primer\n    stock: 10 uM\n    final: 0.5 uM\n  - name: Template DNA\n    volume_ul: 1.0\n    add_to_mm_separately: true\n  - name: Nuclease-Free Water\n\`\`\`\n`); }
+            });
+            this.addCommand({
+                id: 'bio-insert-ligation', name: 'ChemEdit Bio: Insert Ligation / Cloning Calculator', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`bio-eln\ntype: ligation\ntitle: pET28a + Insert Ligation\n\nvector_kb: 5.3\nvector_ng: 50\ninsert_kb: 1.2\nratio: 3\n\`\`\`\n`); }
+            });
+            this.addCommand({
+                id: 'bio-insert-protocol', name: 'ChemEdit Bio: Insert Interactive Protocol Checklist', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`bio-eln\ntype: protocol\ntitle: Plasmid Miniprep\ndate: ${window.moment().format("YYYY-MM-DD")}\n\nsteps:\n  - text: "Pellet 1-5 mL bacterial overnight culture at 10,000 x g for 3 min."\n    done: false\n  - text: "Resuspend pelleted bacterial cells in 250 uL Buffer P1."\n    done: false\n  - text: "Add 250 uL Buffer P2 and mix thoroughly by inverting the tube 4-6 times."\n    done: false\n  - text: "Add 350 uL Buffer N3 and mix immediately and thoroughly by inverting."\n    done: false\n\`\`\`\n`); }
+            });
+            this.addCommand({
+                id: 'bio-insert-oligo', name: 'ChemEdit Bio: Insert Oligo Analyzer', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`bio-eln\ntype: oligo_analyzer\ntitle: T7 Promoter Primer\nsequence: "TAATACGACTCACTATAGGG"\n\`\`\`\n`); }
+            });
+            this.addCommand({
+                id: 'bio-insert-cell-seeding', name: 'ChemEdit Bio: Insert Cell Seeding Calculator', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`bio-eln\ntype: cell_seeding\ntitle: 96-well Plate Seeding\n\ncurrent_cells_per_ml: 1.5e6\ntarget_cells_per_well: 50000\nwells: 96\nvol_per_well_ml: 0.1\noverage_percent: 10\n\`\`\`\n`); }
+            });
+
+            // --- POLYMER ELN COMMANDS ---
+            this.addCommand({
+                id: 'polymer-insert-raft', name: 'ChemEdit Polymer: Insert Synthesis Template (RAFT, ATRP)', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`polymer-eln\ncode: POLY-001\ntype: polymerization\ntitle: RAFT Polymerization of Styrene\n\ntarget_mass_g: 5\ntarget_dp: 100\n\nmonomers:\n  - name: Styrene\n    smiles: C=CC1=CC=CC=C1\n    mol_ratio: 1.0\n\ninitiators:\n  - name: AIBN\n    smiles: CC(C)(C#N)/N=N/C(C)(C)C#N\n    ratio_to_monomer: 0.1\n\nagents:\n  - name: CPDB (RAFT Agent)\n    ratio_to_monomer: 0.01\n\`\`\`\n`); }
+            });
+            this.addCommand({
+                id: 'polymer-insert-formulation', name: 'ChemEdit Polymer: Insert Resin Formulation (PHR)', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`polymer-eln\ncode: FORM-001\ntype: formulation\ntitle: Epoxy Resin Blend\n\ntarget_mass_g: 10\n\ncomponents:\n  - name: Bisphenol A Diglycidyl Ether\n    smiles: CC(C)(C1=CC=C(OCC2CO2)C=C1)C3=CC=C(OCC4CO4)C=C3\n    phr: 100\n  - name: Amine Hardener\n    phr: 25\n\`\`\`\n`); }
+            });
+
+            // --- ANALYTICAL ELN COMMANDS ---
+            this.addCommand({
+                id: 'analytical-insert-calibration', name: 'ChemEdit Analytics: Insert Calibration Curve (Linear Reg.)', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`analytical-eln\ntype: calibration\ntitle: HPLC Quantification of Caffeine\nsmiles: CN1C=NC2=C1C(=O)N(C(=O)N2C)C\nunits: "µg/mL"\n\nstandards:\n  - name: Std 1\n    conc: 5\n    area: 12500\n  - name: Std 2\n    conc: 10\n    area: 25400\n  - name: Std 3\n    conc: 50\n    area: 126000\n  - name: Std 4\n    conc: 100\n    area: 258000\n\nsamples:\n  - name: Energy Drink A\n    dilution_factor: 10\n    area: 45000\n\`\`\`\n`); }
+            });
+
+            // --- ORGANIC CHEM HELPERS ---
+            this.addCommand({
+                id: 'org-insert-faradaic', name: 'ChemEdit Org: Insert Faradaic Efficiency Calculator', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`org-helpers\ntype: faradaic_efficiency\ntitle: Ni-Catalyzed CD3-Methylation\n\nproduct_mmol: 0.376\nelectrons_z: 2\ncurrent_mA: 10\ntime_hours: 5\n\`\`\`\n`); }
+            });
+            this.addCommand({
+                id: 'org-insert-catalyst', name: 'ChemEdit Org: Insert Catalyst TON/TOF Metrics', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`org-helpers\ntype: catalyst_metrics\ntitle: Catalyst Performance\n\nproduct_mmol: 0.376\ncatalyst_mmol: 0.04\ntime_hours: 5\n\`\`\`\n`); }
+            });
+            this.addCommand({
+                id: 'org-insert-nmr-yield', name: 'ChemEdit Org: Insert NMR Yield Calculator', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`org-helpers\ntype: nmr_yield\ntitle: NMR Yield (vs Mesitylene)\n\ntheory_mmol: 0.2\nproduct_mw: 250.2\nproduct_protons: 2\nproduct_integral: 1.0\n\nstandard_name: Mesitylene\nstandard_mw: 120.19\nstandard_mass_mg: 12.0\nstandard_protons: 3\nstandard_integral: 0.85\n\`\`\`\n`); }
+            });
+			
+			this.addCommand({
+            id: 'org-insert-titration', 
+            name: 'ChemEdit Org: Insert Organometallic Titration Calculator', 
             editorCallback: (editor: Editor) => {
                 editor.replaceSelection(`\`\`\`org-helpers
+type: titration
+title: n-BuLi Titration
+
+standard_name: Diphenylacetic Acid
+standard_mw: 212.25
+standard_mass_mg: 200
+
+titrant_name: n-BuLi
+titrant_vol_ml: 0.65
+stoichiometry_ratio: 1
+\`\`\`\n`);
+            }
+        });
+
+        this.addCommand({
+            id: 'org-insert-chromatography', 
+            name: 'ChemEdit Org: Insert Chromatography (Column) Calculator', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`org-helpers
+type: chromatography
+title: Column Separation Planning
+
+rf_product: 0.35
+rf_impurity: 0.45
+
+column_diameter_cm: 2.0
+silica_height_cm: 15.0
+\`\`\`\n`);
+            }
+        });
+
+
+            // --- HTE / DOE MATRIX ---
+            this.addCommand({
+                id: 'org-insert-matrix', 
+                name: 'ChemEdit Org: Insert High-Throughput Experimentation Matrix', 
+                editorCallback: (editor: Editor) => {
+                    editor.replaceSelection(`\`\`\`matrix-eln
+title: Ni-Catalyzed Deaminative Cross-Coupling Screen
+strategy: Catalyst & Ligand Screen
+scale_mmol: 0.1
+vol_per_vial_ul: 500
+overage_percent: 10
+
+fixed_components:
+  - name: Katritzky Salt
+    mw: 350.2
+    eq: 1.0
+  - name: Aryl Bromide
+    mw: 157.01
+    eq: 1.5
+
+variables:
+  Catalyst:
+    - name: NiCl2(dme)
+      mw: 219.66
+      eq: 0.1
+    - name: NiBr2(diglyme)
+      mw: 351.6
+      eq: 0.1
+  Ligand:
+    - name: dtbbpy
+      mw: 268.4
+      eq: 0.12
+    - name: terpy
+      mw: 233.3
+      eq: 0.12
+  Reductant:
+    - name: Mn dust
+      mw: 54.9
+      eq: 2.0
+    - name: Zn dust
+      mw: 65.4
+      eq: 2.0
+  Solvent:
+    - DMA
+    - NMP
+\`\`\`\n`);
+                }
+            });
+
+            // --- ORGANIC CHEM HELPERS ---
+            this.addCommand({
+                id: 'org-insert-faradaic', 
+                name: 'ChemEdit Org: Insert Faradaic Efficiency Calculator', 
+                editorCallback: (editor: Editor) => {
+                    editor.replaceSelection(`\`\`\`org-helpers
 type: faradaic_efficiency
-title: Ni-Catalyzed CD3-Methylation
+title: Ni-Catalyzed Electroreduction
 
 product_mmol: 0.376
 electrons_z: 2
 current_mA: 10
 time_hours: 5
 \`\`\`\n`);
-            }
-        });
-
-        this.addCommand({
-            id: 'org-insert-screening', 
-            name: 'ChemEdit Org: Insert Optimization / Master Mix Calculator', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`org-helpers
-type: reaction_screening
-title: Ni/Ligand Optimization Matrix
-
-reactions: 10
-overage_percent: 10
-scale_mmol: 0.2
-vol_per_vial_ml: 4.0
-
-components:
-  - name: t-butyl 4-bromopiperidine-1-carboxylate
-    mw: 264.12
-    eq: 1.0
-  - name: CD3OTs
-    mw: 189.23
-    eq: 2.0
-  - name: NiCl2(dme)
-    mw: 219.66
-    eq: 0.1
-  - name: TBAB
-    mw: 322.37
-    eq: 0.5
-\`\`\`\n`);
-            }
-        });
-
-        this.addCommand({
-            id: 'org-insert-catalyst', 
-            name: 'ChemEdit Org: Insert Catalyst TON/TOF Metrics', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`org-helpers
+                }
+            });
+            this.addCommand({
+                id: 'org-insert-catalyst', 
+                name: 'ChemEdit Org: Insert Catalyst TON/TOF Metrics', 
+                editorCallback: (editor: Editor) => {
+                    editor.replaceSelection(`\`\`\`org-helpers
 type: catalyst_metrics
 title: Catalyst Performance
 
@@ -478,14 +506,13 @@ product_mmol: 0.376
 catalyst_mmol: 0.04
 time_hours: 5
 \`\`\`\n`);
-            }
-        });
-
-        this.addCommand({
-            id: 'org-insert-nmr-yield', 
-            name: 'ChemEdit Org: Insert NMR Yield Calculator', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`org-helpers
+                }
+            });
+            this.addCommand({
+                id: 'org-insert-nmr-yield', 
+                name: 'ChemEdit Org: Insert NMR Yield Calculator', 
+                editorCallback: (editor: Editor) => {
+                    editor.replaceSelection(`\`\`\`org-helpers
 type: nmr_yield
 title: NMR Yield (vs Mesitylene)
 
@@ -500,281 +527,76 @@ standard_mass_mg: 12.0
 standard_protons: 3
 standard_integral: 0.85
 \`\`\`\n`);
-            }
-        });
-
-        // --- Extra ELN COMMANDS ---
-		
-		this.addCommand({
-            id: 'insert-matrix-eln', 
-            name: 'ChemEdit Org: Insert High-Throughput Optimization Matrix (DoE)', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`matrix-eln
-title: Ni/Ligand Cross-Coupling Screen
-scale_mmol: 0.1
-vol_per_vial_ml: 1.0
-overage_percent: 10
-
-fixed_components:
-  - name: Aryl Bromide
-    mw: 157.01
-    eq: 1.0
-  - name: NiCl2(dme)
-    mw: 219.66
-    eq: 0.1
-
-variables:
-  Ligand:
-    - name: L1 (dtbbpy)
-      mw: 268.4
-      eq: 0.1
-    - name: L2 (phen)
-      mw: 180.2
-      eq: 0.1
-  Base:
-    - name: K2CO3
-      mw: 138.2
-      eq: 2.0
-    - name: Cs2CO3
-      mw: 325.8
-      eq: 2.0
-\`\`\`\n`);
-            }
-        });
-
-
-        // --- ANALYTICAL ELN COMMANDS ---
-        this.addCommand({
-            id: 'analytical-insert-calibration', 
-            name: 'ChemEdit Analytics: Insert Calibration Curve (Linear Reg.)', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`analytical-eln
-type: calibration
-title: HPLC Quantification of Caffeine
-smiles: CN1C=NC2=C1C(=O)N(C(=O)N2C)C
-units: "µg/mL"
-
-standards:
-  - name: Std 1
-    conc: 5
-    area: 12500
-  - name: Std 2
-    conc: 10
-    area: 25400
-  - name: Std 3
-    conc: 50
-    area: 126000
-  - name: Std 4
-    conc: 100
-    area: 258000
-
-samples:
-  - name: Energy Drink A
-    dilution_factor: 10
-    area: 45000
-\`\`\`\n`);
-            }
-        });
-
-        // --- DATABASE COMMANDS ---
-        this.addCommand({ id: 'db-insert-library', name: 'ChemEdit DB: Insert Compound Library', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: library\npath: Library/\nlayout: table\n\`\`\`\n`) });
-        this.addCommand({ id: 'db-insert-inventory', name: 'ChemEdit DB: Insert Chemical Inventory', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: inventory\npath: Inventory/\nlayout: table\n\`\`\`\n`) });
-        this.addCommand({ id: 'db-insert-equipment', name: 'ChemEdit DB: Insert Lab Equipment Tracker', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: equipment\npath: Equipment/\nlayout: table\n\`\`\`\n`) });
-		
-		
-		// --- ANALYTICAL ELN COMMANDS ---
-        this.addCommand({
-            id: 'insert-calibration-eln', 
-            name: 'Insert Calibration Curve / Quantification', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`analytical-eln
-type: calibration
-title: HPLC Quantification of Caffeine
-smiles: CN1C=NC2=C1C(=O)N(C(=O)N2C)C
-units: "µg/mL"
-
-standards:
-  - name: Std 1
-    conc: 5
-    area: 12500
-  - name: Std 2
-    conc: 10
-    area: 25400
-  - name: Std 3
-    conc: 50
-    area: 126000
-  - name: Std 4
-    conc: 100
-    area: 258000
-
-samples:
-  - name: Energy Drink A
-    dilution_factor: 10
-    area: 45000
-  - name: Energy Drink B
-    dilution_factor: 5
-    area: 88000
-\`\`\`\n`);
-            }
-        });
-
-        this.addCommand({
-            id: 'insert-dilution-eln', 
-            name: 'Insert Serial Dilution Calculator', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`analytical-eln
-type: serial_dilution
-title: Standard Prep
-stock_conc: 1000
-stock_units: "mg/L"
-diluent: "Methanol"
-
-targets:
-  - target_conc: 100
-    target_vol: 1000
-  - target_conc: 50
-    target_vol: 1000
-  - target_conc: 10
-    target_vol: 1000
-\`\`\`\n`);
-            }
-        });
-
-        this.addCommand({
-            id: 'insert-hplc-method-eln', 
-            name: 'Insert HPLC/GC Method Parameters', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`analytical-eln
-type: hplc_method
-title: Method A (Purity)
-instrument: Agilent 1260
-column: "C18, 50x2.1mm, 1.8µm"
-flow_rate: "0.5 mL/min"
-temp: "40 °C"
-detection: "UV 254 nm"
-solvent_a: "Water + 0.1% FA"
-solvent_b: "Acetonitrile + 0.1% FA"
-
-gradient:
-  - time: 0.0
-    b_percent: 5
-  - time: 5.0
-    b_percent: 95
-  - time: 6.0
-    b_percent: 95
-  - time: 6.1
-    b_percent: 5
-\`\`\`\n`);
-            }
-        });
-		
-		// --- POLYMER ELN & MACROMOLECULE COMMANDS ---
-        this.addCommand({
-            id: 'insert-polymer-eln', 
-            name: 'Insert Polymer Synthesis / RAFT Template', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`polymer-eln
-code: POLY-001
-type: polymerization
-title: RAFT Polymerization of Styrene
-
-target_mass_g: 5
-target_dp: 100
-
-monomers:
-  - name: Styrene
-    smiles: C=CC1=CC=CC=C1
-    mol_ratio: 1.0
-
-initiators:
-  - name: AIBN
-    smiles: CC(C)(C#N)/N=N/C(C)(C)C#N
-    ratio_to_monomer: 0.1
-
-agents:
-  - name: CPDB (RAFT Agent)
-    ratio_to_monomer: 0.01
-
-characterization:
-  conversion: 85%
-  Mn_gpc: 10500
-  dispersity: 1.06
-  Tg: 105 °C
-\`\`\`\n`);
-            }
-        });
-
-        this.addCommand({
-            id: 'insert-formulation-eln', 
-            name: 'Insert Resin Formulation (PHR) Template', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`polymer-eln
-code: FORM-001
-type: formulation
-title: Epoxy Resin Blend
-
-target_mass_g: 10
-
-components:
-  - name: Bisphenol A Diglycidyl Ether
-    smiles: CC(C)(C1=CC=C(OCC2CO2)C=C1)C3=CC=C(OCC4CO4)C=C3
-    phr: 100
-  - name: Amine Hardener
-    phr: 25
-  - name: Silica Nanoparticles
-    phr: 5
-\`\`\`\n`);
-            }
-        });
-
-
-        if (this.settings.enableEln) {
-            this.addCommand({ id: 'insert-compound-library', name: 'Insert Compound Library Database', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: library\npath: Library/\nlayout: table\n\`\`\`\n`) });
-            this.addCommand({ id: 'insert-inventory-database', name: 'Insert Chemical Inventory Database', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: inventory\npath: Inventory/\nlayout: table\n\`\`\`\n`) });
-            this.addCommand({ id: 'insert-equipment-database', name: 'Insert Lab Equipment / Instrument Tracker', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: equipment\npath: Equipment/\nlayout: table\n\`\`\`\n`) });
-            this.addCommand({ id: 'insert-eln-gallery', name: 'Insert ELN Experiment Gallery', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`eln-gallery\npath: Experiments/\n\`\`\`\n`) });
+                }
+            });
             this.addCommand({
-                id: 'insert-from-library', name: 'Insert SMILES from Library',
-                editorCallback: async (editor: Editor) => {
-                    const lib = await getCompoundLibrary(this);
-                    new CompoundSuggestModal(this.app, lib, (selected) => { editor.replaceSelection(selected.smiles); }).open();
+                id: 'org-insert-titration', 
+                name: 'ChemEdit Org: Insert Organometallic Titration Calculator', 
+                editorCallback: (editor: Editor) => {
+                    editor.replaceSelection(`\`\`\`org-helpers
+type: titration
+title: n-BuLi Titration
+
+standard_name: Diphenylacetic Acid
+standard_mw: 212.25
+standard_mass_mg: 200
+
+titrant_name: n-BuLi
+titrant_vol_ml: 0.65
+stoichiometry_ratio: 1
+\`\`\`\n`);
+                }
+            });
+            this.addCommand({
+                id: 'org-insert-chromatography', 
+                name: 'ChemEdit Org: Insert Chromatography (Column) Calculator', 
+                editorCallback: (editor: Editor) => {
+                    editor.replaceSelection(`\`\`\`org-helpers
+type: chromatography
+title: Column Separation Planning
+
+rf_product: 0.35
+rf_impurity: 0.45
+
+column_diameter_cm: 2.0
+silica_height_cm: 15.0
+\`\`\`\n`);
+                }
+            });
+            this.addCommand({
+                id: 'org-insert-green-metrics', 
+                name: 'ChemEdit Org: Insert Green Chemistry Metrics (PMI / E-Factor)', 
+                editorCallback: (editor: Editor) => {
+                    editor.replaceSelection(`\`\`\`org-helpers
+type: green_metrics
+title: Sustainability Metrics
+
+total_reagents_mass_g: 1.5
+total_solvent_mass_g: 25.0
+product_mass_g: 0.8
+
+target_product_mw: 250.0
+total_reactants_mw: 320.0
+\`\`\`\n`);
+                }
+            });
+            this.addCommand({
+                id: 'org-insert-recrystallization', 
+                name: 'ChemEdit Org: Insert Recrystallization Recovery', 
+                editorCallback: (editor: Editor) => {
+                    editor.replaceSelection(`\`\`\`org-helpers
+type: recrystallization
+title: Product Purification
+
+crude_mass_mg: 1500
+solvent_name: "EtOH / H2O"
+solvent_vol_ml: 15.0
+
+recovered_mass_mg: 1150
+\`\`\`\n`);
                 }
             });
 
-            this.registerMarkdownCodeBlockProcessor("chem-db", async (source, el, ctx) => { const r = new ChemDatabaseRenderer(this); await r.renderDatabase(source, el, ctx); });
-            this.registerMarkdownCodeBlockProcessor("chem-gallery", async (source, el, ctx) => { const r = new SharedGalleryRenderer(this); await r.renderChemGallery(source, el, ctx); });
-            this.registerMarkdownCodeBlockProcessor("eln-gallery", async (source, el, ctx) => { const r = new ElnGalleryRenderer(this); await r.renderGalleryBlock(source, el, ctx); });
-            this.registerMarkdownCodeBlockProcessor("eln", async (source, el, ctx) => { const elnRenderer = new SharedElnRenderer(this); await elnRenderer.renderElnBlock(source, el, ctx); });
-
-            // --> REGISTER NEW ORGANIC RENDERER <--
-			this.registerMarkdownCodeBlockProcessor("org-helpers", async (source, el, ctx) => { 
-				const r = new OrganicHelpersRenderer(this); 
-				await r.renderBlock(source, el, ctx); 
-			});
-			
-			
-            // --> REGISTER NEW ELN RENDERER <--
-			
-			this.registerMarkdownCodeBlockProcessor("matrix-eln", async (source, el, ctx) => { 
-				const r = new MatrixElnRenderer(this); 
-				await r.renderBlock(source, el, ctx); 
-			});
-
-			
-			// --> REGISTER NEW POLYMER RENDERER <--
-            this.registerMarkdownCodeBlockProcessor("polymer-eln", async (source, el, ctx) => { const r = new PolymerElnRenderer(this); await r.renderPolymerBlock(source, el, ctx); });
-			
-            // --> REGISTER NEW BIO RENDERER <--
-			this.registerMarkdownCodeBlockProcessor("bio-eln", async (source, el, ctx) => { 
-				const r = new BioElnRenderer(this); 
-				await r.renderBioBlock(source, el, ctx); 
-			});
-
-            // --> REGISTER NEW ANALYTICAL ELN RENDERER <--
-			this.registerMarkdownCodeBlockProcessor("analytical-eln", async (source, el, ctx) => { 
-				const r = new AnalyticalElnRenderer(this); 
-				await r.renderAnalyticalBlock(source, el, ctx); 
-			});
         }
 
         if (this.settings.enablePathways) {
@@ -940,13 +762,54 @@ components:
         workspace.revealLeaf(leaf);
     }
 	
-    activateOrdersDashboard() { new Notice("Orders Dashboard coming soon!"); }
-    activateInventoryDashboard() { new Notice("Inventory Dashboard coming soon!"); }
-    activateEquipmentDashboard() { new Notice("Equipment Dashboard coming soon!"); }
-    activateProtocolsDashboard() { new Notice("Protocols Dashboard coming soon!"); }
-    activateLibraryDashboard() { new Notice("Library Dashboard coming soon!"); }
-    activateGalleryDashboard() { new Notice("Gallery Dashboard coming soon!"); }
-    activateCharacterizationDashboard() { new Notice("Characterization Dashboard coming soon!"); }
+    async activateOrdersDashboard() {
+        const { workspace } = this.app;
+        let leaf = workspace.getLeavesOfType(ORDERS_DASHBOARD_VIEW_TYPE)[0];
+        if (!leaf) { const newLeaf = workspace.getLeaf(true); await newLeaf.setViewState({ type: ORDERS_DASHBOARD_VIEW_TYPE, active: true }); leaf = newLeaf; }
+        workspace.revealLeaf(leaf);
+    }
+	
+    async activateInventoryDashboard() {
+        const { workspace } = this.app;
+        let leaf = workspace.getLeavesOfType(INVENTORY_DASHBOARD_VIEW_TYPE)[0];
+        if (!leaf) { const newLeaf = workspace.getLeaf(true); await newLeaf.setViewState({ type: INVENTORY_DASHBOARD_VIEW_TYPE, active: true }); leaf = newLeaf; }
+        workspace.revealLeaf(leaf);
+    }
+
+    async activateEquipmentDashboard() {
+        const { workspace } = this.app;
+        let leaf = workspace.getLeavesOfType(EQUIPMENT_DASHBOARD_VIEW_TYPE)[0];
+        if (!leaf) { const newLeaf = workspace.getLeaf(true); await newLeaf.setViewState({ type: EQUIPMENT_DASHBOARD_VIEW_TYPE, active: true }); leaf = newLeaf; }
+        workspace.revealLeaf(leaf);
+    }
+
+    async activateProtocolsDashboard() {
+        const { workspace } = this.app;
+        let leaf = workspace.getLeavesOfType(PROTOCOLS_DASHBOARD_VIEW_TYPE)[0];
+        if (!leaf) { const newLeaf = workspace.getLeaf(true); await newLeaf.setViewState({ type: PROTOCOLS_DASHBOARD_VIEW_TYPE, active: true }); leaf = newLeaf; }
+        workspace.revealLeaf(leaf);
+    }
+
+    async activateLibraryDashboard() {
+        const { workspace } = this.app;
+        let leaf = workspace.getLeavesOfType(LIBRARY_DASHBOARD_VIEW_TYPE)[0];
+        if (!leaf) { const newLeaf = workspace.getLeaf(true); await newLeaf.setViewState({ type: LIBRARY_DASHBOARD_VIEW_TYPE, active: true }); leaf = newLeaf; }
+        workspace.revealLeaf(leaf);
+    }
+
+    async activateGalleryDashboard() {
+        const { workspace } = this.app;
+        let leaf = workspace.getLeavesOfType(GALLERY_DASHBOARD_VIEW_TYPE)[0];
+        if (!leaf) { const newLeaf = workspace.getLeaf(true); await newLeaf.setViewState({ type: GALLERY_DASHBOARD_VIEW_TYPE, active: true }); leaf = newLeaf; }
+        workspace.revealLeaf(leaf);
+    }
+
+    async activateCharacterizationDashboard() {
+        const { workspace } = this.app;
+        let leaf = workspace.getLeavesOfType(CHARACTERIZATION_DASHBOARD_VIEW_TYPE)[0];
+        if (!leaf) { const newLeaf = workspace.getLeaf(true); await newLeaf.setViewState({ type: CHARACTERIZATION_DASHBOARD_VIEW_TYPE, active: true }); leaf = newLeaf; }
+        workspace.revealLeaf(leaf);
+    }
 
     openNewDrawingModal() {
         const view = this.app.workspace.getActiveViewOfType(MarkdownView); if (!view) { new Notice("Please open a Markdown file first to insert a drawing."); return; }

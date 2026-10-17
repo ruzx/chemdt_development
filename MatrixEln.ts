@@ -1,16 +1,16 @@
 // MatrixEln.ts
-import { App, MarkdownView, Notice, Menu } from 'obsidian';
+import { App, Notice } from 'obsidian';
 
 export class MatrixCalculator {
     static calculate(data: any) {
         if (!data.variables) data.variables = {};
         if (!data.fixed_components) data.fixed_components = [];
 
-        const scaleMmol = data.scale_mmol || 0.05; // Standard HTE scale
+        const scaleMmol = data.scale_mmol || 0.05; 
         const volPerVialUl = data.vol_per_vial_ul || 500;
         const overage = data.overage_percent !== undefined ? data.overage_percent : 10;
 
-        // 1. Generate Cartesian Product (Design of Experiments Matrix)
+        // Generate Cartesian Product (Reaction Array)
         const varKeys = Object.keys(data.variables);
         const combinations: any[] = [];
         
@@ -31,41 +31,18 @@ export class MatrixCalculator {
         data.calc_reactions = data.total_reactions * (1 + overage / 100);
         data.total_master_vol_ul = data.calc_reactions * volPerVialUl;
 
-        // 2. Calculate Master Mix
+        // Calculate Master Mix
         data.fixed_components.forEach((c: any) => {
             c.eq = c.eq || 1;
             c.total_mmol = scaleMmol * c.eq * data.calc_reactions;
             if (c.mw) c.total_mass_mg = c.total_mmol * c.mw;
         });
 
-        // 3. Ensure Yields Array Exists for Persistence
         if (!data.yields) {
             data.yields = new Array(data.total_reactions).fill(null);
         }
 
         return data;
-    }
-
-    // Expert System Rules based on current literature
-    static getExpertAdvice(text: string): string | null {
-        const lower = text.toLowerCase();
-        
-        if (lower.includes('ni') && (lower.includes('deaminative') || lower.includes('katritzky') || lower.includes('pyridinium'))) {
-            return `<b>Expert Advice (Roy et al. 2026):</b><br>
-            • <b>Ligands:</b> For C(sp²)-C(sp³) with <i>primary</i> amines, tridentate ligands (<b>terpy</b>) are crucial. For <i>secondary</i> amines or C(sp³)-C(sp³), bidentate ligands (<b>dtbbpy</b>) work best.<br>
-            • <b>Reductant:</b> <b>Mn</b> is generally superior to Zn for Katritzky salts to prevent over-reduction.<br>
-            • <b>Conditions:</b> Optimal solvents are usually DMA or NMP at 60-80°C. Adding NaI or MgCl₂ can accelerate the reaction.<br>
-            • <b>Strategy:</b> Deaminative coupling circumvents the need for alkyl halides, offering excellent late-stage functionalization.`;
-        }
-
-        if (lower.includes('bayesian') || lower.includes('optimization')) {
-            return `<b>Bayesian Optimization (Shey et al. 2026):</b><br>
-            • Do not use OVAT (One-Variable-At-A-Time).<br>
-            • <b>Batch Size:</b> For standard organic chemistry, BO batch sizes of 5 to 10 reactions per round are optimal.<br>
-            • <b>Categorical Variables:</b> Ensure your BO algorithm uses One-Hot-Encoding (OHE) or DFT descriptors for categorical variables like Ligands and Solvents.`;
-        }
-        
-        return null;
     }
 }
 
@@ -77,18 +54,15 @@ export class MatrixElnRenderer {
         const { parseYaml, stringifyYaml } = require('obsidian'); 
         
         const wrapper = el.createDiv();
-        
-        // Deep Indigo theme for HTE / Data Science
         const themeColor = "#6366f1"; 
-        const bgSec = "var(--background-secondary)";
         const bdColor = "var(--background-modifier-border)";
 
         wrapper.style.position = "relative"; 
-        wrapper.style.border = `1px solid ${themeColor}`; 
+        wrapper.style.border = `1px solid ${bdColor}`; 
         wrapper.style.borderRadius = "12px";
         wrapper.style.backgroundColor = "var(--background-primary)";
         wrapper.style.padding = "24px";
-        wrapper.style.boxShadow = "0 4px 12px rgba(99, 102, 241, 0.1)";
+        wrapper.style.boxShadow = "0 4px 12px rgba(99, 102, 241, 0.05)";
         wrapper.style.fontFamily = "var(--font-interface)";
         wrapper.style.width = "100%";
         wrapper.style.marginBottom = "15px";
@@ -98,14 +72,12 @@ export class MatrixElnRenderer {
             if (!data) throw new Error("Empty YAML Data.");
             data = MatrixCalculator.calculate(data);
 
-            const expertAdvice = MatrixCalculator.getExpertAdvice(source);
-
             let html = `
             <div style="position: relative; margin-bottom: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="display:flex; flex-direction:column;">
-                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${themeColor};">📊 ${data.title || 'HTE Optimization Matrix'}</h2>
-                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">${data.strategy || 'Design of Experiments (DoE)'}</div>
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${themeColor};">⚗️ ${data.title || 'HTE Reaction Array'}</h2>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">High-Throughput Experimentation Matrix</div>
                     </div>
                     <div style="text-align:right;">
                         <div style="font-size:28px; font-weight:800; color:var(--text-normal);">${data.total_reactions} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">Rxns</span></div>
@@ -113,30 +85,21 @@ export class MatrixElnRenderer {
                 </div>
             </div>`;
 
-            if (expertAdvice) {
-                html += `
-                <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid ${themeColor}; padding: 12px 15px; border-radius: 4px; margin-bottom: 20px; font-size: 13px; color: var(--text-normal); line-height: 1.5;">
-                    ${expertAdvice}
-                </div>`;
-            }
-
             const formatNum = (num: any, decimals: number = 2) => {
                 const n = Number(num);
                 if (isNaN(n) || n === 0) return '-';
                 return (n % 1 === 0) ? n.toString() : n.toFixed(decimals);
             };
 
-            // ==========================================
-            // 1. MASTER MIX / HTE VISUALIZER
-            // ==========================================
+            // 1. MASTER MIX VISUALIZER
             html += `
-            <h4 style="color: var(--text-normal); margin-bottom: 10px;">1. High-Throughput Master Mix</h4>
+            <h4 style="color: var(--text-normal); margin-bottom: 10px; font-size: 14px;">1. Master Mix Preparation</h4>
             <div style="display: flex; align-items: stretch; background: var(--background-secondary-alt); border-radius: 8px; border: 1px solid ${bdColor}; padding: 20px 10px; gap: 15px; margin-bottom: 24px;">
                 
                 <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                     <svg stroke="${themeColor}" fill="rgba(99, 102, 241, 0.15)" width="48" height="48" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a2 2 0 0 0 1.8 2.45h10.96a2 2 0 0 0 1.8-2.45L14.21 10.42a2 2 0 0 1-.21-.896V2"/><path d="M8.5 2h7"/><path d="M14 16H5.5"/></svg>
                     <div style="font-weight: 700; font-size: 14px; color: var(--text-normal); margin-top: 10px;">Master Vial</div>
-                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Fill to Total Volume:</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Total Required Volume:</div>
                     <div style="font-size: 20px; font-weight: 800; color: ${themeColor}; margin-top: 4px;">${formatNum(data.total_master_vol_ul / 1000)} <span style="font-size:12px; font-weight:500;">mL</span></div>
                     <div style="font-size: 10px; color: var(--text-muted); margin-top: 6px;">(Includes ${data.overage_percent}% overage)</div>
                 </div>
@@ -152,7 +115,7 @@ export class MatrixElnRenderer {
 
                 <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                     <svg stroke="var(--text-muted)" fill="none" width="48" height="48" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg>
-                    <div style="font-weight: 700; font-size: 14px; color: var(--text-normal); margin-top: 10px;">HTE Plate</div>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-normal); margin-top: 10px;">HTE Array</div>
                     <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Reactions:</div>
                     <div style="font-size: 20px; font-weight: 800; color: var(--text-normal); margin-top: 4px;">${data.total_reactions}</div>
                     <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">Scale: ${data.scale_mmol} mmol</div>
@@ -176,12 +139,10 @@ export class MatrixElnRenderer {
             });
             html += `</table></div>`;
 
-            // ==========================================
-            // 2. DESIGN OF EXPERIMENTS ARRAY (EDITABLE)
-            // ==========================================
+            // 2. ARRAY MATRIX
             const varKeys = Object.keys(data.variables);
             
-            html += `<h4 style="color: var(--text-normal); margin-bottom: 10px;">2. Experimental Matrix & Results</h4>
+            html += `<h4 style="color: var(--text-normal); margin-bottom: 10px; font-size: 14px;">2. Experimental Array</h4>
             <div style="overflow-x: auto; margin-bottom: 10px;">
             <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; border: 1px solid ${bdColor};">
                 <tr style="background-color: ${bgSec}; border-bottom: 2px solid ${bdColor};">
@@ -194,7 +155,6 @@ export class MatrixElnRenderer {
                 const currentYield = data.yields[i] !== null ? data.yields[i] : '';
                 const displayYield = currentYield !== '' ? currentYield : '-';
                 
-                // Color-code yields
                 let yColor = "var(--text-muted)";
                 if (currentYield !== '') {
                     const y = parseFloat(currentYield);
@@ -208,12 +168,10 @@ export class MatrixElnRenderer {
                 
                 varKeys.forEach(k => {
                     const item = combo[k];
-                    // Handle complex objects (like {name: dtbbpy}) or simple strings
                     const name = typeof item === 'object' ? item.name : item;
                     html += `<td style="padding: 8px; font-weight:600; color:var(--text-normal);">${name}</td>`;
                 });
                 
-                // The Editable Yield Cell
                 html += `<td class="matrix-yield-cell" data-idx="${i}" data-raw-value="${currentYield}" title="Double-click to enter yield" style="padding: 8px; text-align:right; font-weight:bold; font-size:14px; color:${yColor}; cursor:text; transition: background 0.2s;">${displayYield}</td></tr>`;
             });
             html += `</table></div>`;
@@ -242,14 +200,13 @@ export class MatrixElnRenderer {
                     csv += row + '\n';
                 });
                 navigator.clipboard.writeText(csv);
-                new Notice("Excel-ready Data copied to clipboard!");
+                new Notice("Excel-ready Array copied to clipboard!");
             });
 
-            createBtn("🤖 Export BO Dataset (EDBO+)", () => {
-                // BO algorithms require specific headers.
+            createBtn("🤖 Export CSV (ML-Ready)", () => {
                 let csv = `${varKeys.join(',')},Yield\n`;
                 data.matrix.forEach((combo: any, i: number) => {
-                    let row = [];
+                    let row: string[] = [];
                     varKeys.forEach(k => { row.push(`"${typeof combo[k] === 'object' ? combo[k].name : combo[k]}"`); });
                     row.push(data.yields[i] !== null ? data.yields[i] : '');
                     csv += row.join(',') + '\n';
@@ -267,7 +224,6 @@ export class MatrixElnRenderer {
             wrapper.appendChild(contentDiv);
             wrapper.appendChild(actionBar);
 
-            // Double-Click Inline Editing for Yields
             wrapper.addEventListener('dblclick', (e) => {
                 let target = e.target as HTMLElement;
                 while (target && target !== wrapper && !target.classList.contains('matrix-yield-cell')) { target = target.parentElement as HTMLElement; }
@@ -316,7 +272,7 @@ export class MatrixElnRenderer {
             return wrapper;
 
         } catch (err: any) {
-            wrapper.innerHTML = `<div style="padding: 20px; color: var(--text-error); background: var(--background-secondary); border-radius: 8px;"><b>Matrix ELN Error:</b><br>${err.message}</div>`;
+            wrapper.innerHTML = `<div style="padding: 20px; color: var(--text-error); background: var(--background-secondary); border-radius: 8px;"><b>Matrix Error:</b><br>${err.message}</div>`;
             return wrapper;
         }
     }
