@@ -561177,12 +561177,8 @@ var init_SharedEln = __esm({
             }
             if (targetLine !== -1) {
               let insertLine = targetLine + 1;
-              while (insertLine < lines.length && !lines[insertLine].startsWith("##")) {
-                insertLine++;
-              }
-              while (insertLine > targetLine + 1 && lines[insertLine - 1].trim() === "") {
-                insertLine--;
-              }
+              while (insertLine < lines.length && !lines[insertLine].startsWith("##")) insertLine++;
+              while (insertLine > targetLine + 1 && lines[insertLine - 1].trim() === "") insertLine--;
               editor4.replaceRange(`
 ${text2}
 `, { line: insertLine, ch: 0 });
@@ -561194,43 +561190,80 @@ ${text2}
 `, { line: info.lineEnd + 1, ch: 0 });
             }
           };
-          const updateYamlState = (mutate) => {
-            if (!view) return;
-            let info = ctx.getSectionInfo(el2);
-            if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
-            if (!info) return;
-            const { parseYaml: parseYaml2, stringifyYaml: stringifyYaml2 } = require("obsidian");
-            const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
-            try {
-              const yamlObj = parseYaml2(blockText);
-              mutate(yamlObj);
-              const newYaml = stringifyYaml2(yamlObj);
-              view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
-            } catch (err) {
+          createBtn("\u{1FA84} Auto-Write", "Generate ACS Experimental Paragraph", () => {
+            var _a2, _b2, _c2;
+            const lr2 = data.reactants.find((r12) => r12.is_limiting) || data.reactants[0];
+            const others = data.reactants.filter((r12) => r12 !== lr2);
+            let exp = `To a reaction vessel was added ${(lr2 == null ? void 0 : lr2.name) || "the limiting reagent"} (${((_a2 = lr2 == null ? void 0 : lr2.mass) == null ? void 0 : _a2.toFixed(1)) || "?"} mg, ${((_b2 = lr2 == null ? void 0 : lr2.mmol) == null ? void 0 : _b2.toFixed(3)) || "?"} mmol, 1.0 equiv)`;
+            if (others.length > 0) {
+              exp += ` and ` + others.map((r12) => {
+                var _a3, _b3;
+                return `${r12.name || "reagent"} (${((_a3 = r12.mass) == null ? void 0 : _a3.toFixed(1)) || "?"} mg, ${((_b3 = r12.mmol) == null ? void 0 : _b3.toFixed(3)) || "?"} mmol, ${r12.eq || "?"} equiv)`;
+              }).join(", ");
             }
-          };
+            exp += `. The mixture was dissolved in ${data.solvent || "solvent"} (${data.solvent_volume || "X"} mL) `;
+            if (data.atmosphere) exp += `under an atmosphere of ${data.atmosphere}. `;
+            else exp += `. `;
+            exp += `The reaction was stirred at ${data.temperature || "room temperature"} for ${data.duration || "the appropriate time"}. `;
+            if (data.products && data.products.length > 0) {
+              const p7 = data.products[0];
+              exp += `The product ${p7.name || ""} was isolated as a solid (${((_c2 = p7.mass_isolated) == null ? void 0 : _c2.toFixed(1)) || "?"} mg, ${p7.yield || "?"}% yield).`;
+            }
+            appendSmart(`> **Generated Experimental:**
+> ${exp}`, "Procedure");
+            new import_obsidian5.Notice("Experimental paragraph generated!");
+          });
+          createBtn("\u{1F331} Metrics", "Calculate Green Chemistry Metrics", () => {
+            var _a2, _b2, _c2, _d2;
+            let totalReactantMass = 0;
+            let desiredProductMw = 0;
+            let totalReactantMw = 0;
+            data.reactants.forEach((r12) => {
+              totalReactantMass += r12.mass || 0;
+              totalReactantMw += (r12.mw || 0) * (r12.eq || 1);
+            });
+            const productMass = ((_b2 = (_a2 = data.products) == null ? void 0 : _a2[0]) == null ? void 0 : _b2.mass_isolated) || 0;
+            desiredProductMw = ((_d2 = (_c2 = data.products) == null ? void 0 : _c2[0]) == null ? void 0 : _d2.mw) || 0;
+            const atomEconomy = totalReactantMw > 0 ? desiredProductMw / totalReactantMw * 100 : 0;
+            let msg = `**Green Chemistry Metrics:**
+`;
+            msg += `- **Atom Economy:** ${atomEconomy.toFixed(1)}%
+`;
+            if (productMass > 0 && totalReactantMass > 0) {
+              const eFactor = (totalReactantMass - productMass) / productMass;
+              const pmi = totalReactantMass / productMass;
+              msg += `- **Raw E-Factor:** ${eFactor.toFixed(2)} (Excludes solvent/water)
+`;
+              msg += `- **Raw PMI:** ${pmi.toFixed(2)}
+`;
+            } else {
+              msg += `_(Enter isolated product mass to calculate E-Factor/PMI)_
+`;
+            }
+            appendSmart(msg, "Analytical Data");
+            new import_obsidian5.Notice("Green metrics calculated!");
+          });
           createBtn("\u2699\uFE0F Status", "Change Experiment Status", (e6) => {
             if (!e6) return;
             const menu = new import_obsidian5.Menu();
+            const updateYamlState = (mutate) => {
+              if (!view) return;
+              let info = ctx.getSectionInfo(el2);
+              if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+              if (!info) return;
+              const { parseYaml: parseYaml2, stringifyYaml: stringifyYaml2 } = require("obsidian");
+              const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              try {
+                const yamlObj = parseYaml2(blockText);
+                mutate(yamlObj);
+                view.editor.replaceRange(stringifyYaml2(yamlObj), { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              } catch (err) {
+              }
+            };
             menu.addItem((item) => item.setTitle("Mark as Planned").setIcon("calendar").onClick(() => updateYamlState((y9) => y9.status = "Planned")));
             menu.addItem((item) => item.setTitle("Mark as Running").setIcon("play").onClick(() => updateYamlState((y9) => y9.status = "Running")));
             menu.addItem((item) => item.setTitle("Mark as Completed").setIcon("check").onClick(() => updateYamlState((y9) => y9.status = "Completed")));
             menu.addItem((item) => item.setTitle("Mark as Failed").setIcon("cross").onClick(() => updateYamlState((y9) => y9.status = "Failed")));
-            menu.addSeparator();
-            menu.addItem((item) => item.setTitle("Recalculate MWs").setIcon("refresh-cw").onClick(() => {
-              updateYamlState((y9) => {
-                var _a2, _b2;
-                (_a2 = y9.reactants) == null ? void 0 : _a2.forEach((r12) => {
-                  delete r12.mw;
-                  delete r12.formula;
-                });
-                (_b2 = y9.products) == null ? void 0 : _b2.forEach((p7) => {
-                  delete p7.mw;
-                  delete p7.formula;
-                });
-              });
-              new import_obsidian5.Notice("Molecular weights recalculated!");
-            }));
             menu.showAtMouseEvent(e6);
           });
           createBtn("\u26A1 Macros", "Insert useful text snippets", (e6) => {
@@ -562216,7 +562249,7 @@ __export(main_exports, {
   extractDataFromSvg: () => extractDataFromSvg
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian10 = require("obsidian");
+var import_obsidian15 = require("obsidian");
 var import_react25 = __toESM(require_react());
 var import_react_dom6 = __toESM(require_react_dom());
 
@@ -570301,10 +570334,2369 @@ var TextPromptModal = class extends import_obsidian8.Modal {
 
 // main.ts
 init_SharedEln();
+
+// BioEln.ts
+var import_obsidian9 = require("obsidian");
+var BioCalculator = class {
+  static calculate(data) {
+    if (!data.type) data.type = "pcr";
+    if (data.type === "pcr") {
+      if (!data.components) data.components = [];
+      const rxns = data.reactions || 1;
+      const overage = data.overage_percent !== void 0 ? data.overage_percent : 10;
+      const calcRxns = rxns * (1 + overage / 100);
+      const totalVol = data.total_volume_ul || 25;
+      let waterIdx = -1;
+      let currentVol = 0;
+      data.components.forEach((c10, i8) => {
+        var _a;
+        const name = ((_a = c10.name) == null ? void 0 : _a.toLowerCase()) || "";
+        if (name.includes("water") || name.includes("h2o")) {
+          waterIdx = i8;
+          return;
+        }
+        if (c10.volume_ul !== void 0 && c10.volume_ul !== null) {
+        } else if (c10.stock && c10.final) {
+          const stockVal = parseFloat(String(c10.stock).replace(/[^\d.-]/g, ""));
+          const finalVal = parseFloat(String(c10.final).replace(/[^\d.-]/g, ""));
+          if (!isNaN(stockVal) && !isNaN(finalVal) && stockVal > 0) c10.volume_ul = finalVal / stockVal * totalVol;
+        } else {
+          c10.volume_ul = 0;
+        }
+        c10.mm_volume_ul = c10.volume_ul * calcRxns;
+        if (!c10.add_to_mm_separately) currentVol += c10.volume_ul;
+      });
+      if (waterIdx !== -1) {
+        const waterVol = totalVol - currentVol;
+        data.components[waterIdx].volume_ul = waterVol > 0 ? waterVol : 0;
+        data.components[waterIdx].mm_volume_ul = data.components[waterIdx].volume_ul * calcRxns;
+      }
+      data.calculated_reactions = calcRxns;
+    }
+    if (data.type === "buffer") {
+      if (!data.components) data.components = [];
+      const volLiters = data.volume_L || 1;
+      data.components.forEach((c10) => {
+        if (c10.target_M && c10.mw) c10.mass_g = c10.target_M * volLiters * c10.mw;
+        else if (c10.target_mg_ml) c10.mass_g = c10.target_mg_ml * volLiters;
+      });
+    }
+    if (data.type === "cell_seeding") {
+      const currentConc = data.current_cells_per_ml || 0;
+      const targetPerWell = data.target_cells_per_well || 0;
+      const wells = data.wells || 1;
+      const volPerWell = data.vol_per_well_ml || 1;
+      const overage = data.overage_percent !== void 0 ? data.overage_percent : 10;
+      const calcWells = wells * (1 + overage / 100);
+      data.total_cells_needed = targetPerWell * calcWells;
+      data.total_media_needed_ml = volPerWell * calcWells;
+      if (currentConc > 0) {
+        data.cell_suspension_vol_ml = data.total_cells_needed / currentConc;
+        data.media_to_add_ml = data.total_media_needed_ml - data.cell_suspension_vol_ml;
+        if (data.media_to_add_ml < 0) data.media_to_add_ml = 0;
+      }
+    }
+    if (data.type === "ngs_pooling") {
+      if (!data.samples) data.samples = [];
+      let totalPoolVol = 0;
+      const targetFmol = data.target_fmol_per_sample || 100;
+      data.samples.forEach((s8) => {
+        if (s8.conc_ng_ul && s8.length_bp) s8.conc_nM = s8.conc_ng_ul * 1e6 / (s8.length_bp * 660);
+        if (s8.conc_nM > 0) {
+          s8.pool_vol_ul = targetFmol / s8.conc_nM;
+          totalPoolVol += s8.pool_vol_ul;
+        }
+      });
+      data.total_pool_vol_ul = totalPoolVol;
+    }
+    if (data.type === "protein_quant") {
+      if (!data.samples) data.samples = [];
+      const pathLength = data.path_length_cm || 1;
+      data.samples.forEach((s8) => {
+        if (s8.A280 && s8.ext_coeff) {
+          s8.conc_M = s8.A280 / (s8.ext_coeff * pathLength);
+          s8.conc_uM = s8.conc_M * 1e6;
+          if (s8.mw) s8.conc_mg_ml = s8.conc_M * s8.mw;
+        }
+      });
+    }
+    if (data.type === "oligo_analyzer") {
+      const seq = (data.sequence || "").toUpperCase().replace(/[^ATCGU]/g, "");
+      data.length = seq.length;
+      if (seq.length > 0) {
+        const gCount = (seq.match(/G/g) || []).length;
+        const cCount = (seq.match(/C/g) || []).length;
+        const aCount = (seq.match(/A/g) || []).length;
+        const tCount = (seq.match(/T/g) || []).length + (seq.match(/U/g) || []).length;
+        data.gc_percent = (gCount + cCount) / seq.length * 100;
+        if (seq.length < 14) data.tm = (aCount + tCount) * 2 + (gCount + cCount) * 4;
+        else data.tm = 64.9 + 41 * (gCount + cCount - 16.4) / seq.length;
+        data.mw = aCount * 313.2 + tCount * 304.2 + cCount * 289.2 + gCount * 329.2 - 61.96;
+        const compMap = { "A": "T", "T": "A", "U": "A", "C": "G", "G": "C" };
+        data.rev_comp = seq.split("").reverse().map((base) => compMap[base] || base).join("");
+        const codons = {
+          "ATA": "I",
+          "ATC": "I",
+          "ATT": "I",
+          "ATG": "M",
+          "ACA": "T",
+          "ACC": "T",
+          "ACG": "T",
+          "ACT": "T",
+          "AAC": "N",
+          "AAT": "N",
+          "AAA": "K",
+          "AAG": "K",
+          "AGC": "S",
+          "AGT": "S",
+          "AGA": "R",
+          "AGG": "R",
+          "CTA": "L",
+          "CTC": "L",
+          "CTG": "L",
+          "CTT": "L",
+          "CCA": "P",
+          "CCC": "P",
+          "CCG": "P",
+          "CCT": "P",
+          "CAC": "H",
+          "CAT": "H",
+          "CAA": "Q",
+          "CAG": "Q",
+          "CGA": "R",
+          "CGC": "R",
+          "CGG": "R",
+          "CGT": "R",
+          "GTA": "V",
+          "GTC": "V",
+          "GTG": "V",
+          "GTT": "V",
+          "GCA": "A",
+          "GCC": "A",
+          "GCG": "A",
+          "GCT": "A",
+          "GAC": "D",
+          "GAT": "D",
+          "GAA": "E",
+          "GAG": "E",
+          "GGA": "G",
+          "GGC": "G",
+          "GGG": "G",
+          "GGT": "G",
+          "TCA": "S",
+          "TCC": "S",
+          "TCG": "S",
+          "TCT": "S",
+          "TTC": "F",
+          "TTT": "F",
+          "TTA": "L",
+          "TTG": "L",
+          "TAC": "Y",
+          "TAT": "Y",
+          "TAA": "*",
+          "TAG": "*",
+          "TGC": "C",
+          "TGT": "C",
+          "TGA": "*",
+          "TGG": "W"
+        };
+        let protein = "";
+        for (let i8 = 0; i8 < seq.length - 2; i8 += 3) protein += codons[seq.substring(i8, i8 + 3).replace(/U/g, "T")] || "?";
+        data.translation = protein;
+      }
+    }
+    if (data.type === "ligation") {
+      const vKb = data.vector_kb || 0;
+      const vNg = data.vector_ng || 0;
+      const iKb = data.insert_kb || 0;
+      const ratio = data.ratio || 3;
+      if (vKb > 0 && iKb > 0 && vNg > 0) data.insert_ng_needed = iKb / vKb * vNg * ratio;
+    }
+    if (data.type === "protocol") {
+      if (!data.steps) data.steps = [];
+      let completed = 0;
+      data.steps.forEach((s8) => {
+        if (s8.done) completed++;
+      });
+      data.progress = data.steps.length > 0 ? completed / data.steps.length * 100 : 0;
+    }
+    return data;
+  }
+};
+var BioElnRenderer = class {
+  constructor(plugin) {
+    __publicField(this, "plugin");
+    this.plugin = plugin;
+  }
+  async renderBioBlock(source, el2, ctx) {
+    var _a;
+    const { parseYaml, stringifyYaml } = require("obsidian");
+    const wrapper2 = el2.createDiv();
+    wrapper2.style.position = "relative";
+    wrapper2.style.border = "1px solid var(--background-modifier-border)";
+    wrapper2.style.borderRadius = "12px";
+    wrapper2.style.backgroundColor = "var(--background-primary)";
+    wrapper2.style.padding = "24px";
+    wrapper2.style.boxShadow = "0 2px 6px rgba(0, 0, 0, 0.03)";
+    wrapper2.style.fontFamily = "var(--font-interface)";
+    wrapper2.style.width = "100%";
+    wrapper2.style.marginBottom = "15px";
+    try {
+      let data = parseYaml(source);
+      if (!data) throw new Error("Empty YAML Data.");
+      data = BioCalculator.calculate(data);
+      const greenColor = "#4cae4f";
+      const bdColor = "var(--background-modifier-border)";
+      let html = `
+            <div style="position: relative; margin-bottom: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${greenColor};">${data.title || data.code || "Biological Protocol"}</h2>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;">${data.type.replace("_", " ")}</div>
+                    </div>
+                </div>
+                <div style="height: 2px; background-color: ${greenColor}; margin-top: 12px;"></div>
+            </div>`;
+      const formatNum = (num, decimals = 2) => {
+        const n8 = Number(num);
+        if (isNaN(n8) || n8 === 0) return "-";
+        if (n8 > 1e6 || n8 < 1e-3 && n8 > 0) return n8.toExponential(decimals);
+        return n8 % 1 === 0 ? n8.toString() : n8.toFixed(decimals);
+      };
+      const makeEditableTd = (type3, i8, key, val, inputType = "number", customHtml, extraStyle = "") => {
+        let innerHTML = customHtml !== void 0 ? customHtml : inputType === "number" ? formatNum(val) : val || "-";
+        let rawValAttr = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
+        return `<td class="bio-editable" data-type="${type3}" data-idx="${i8}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawValAttr}" title="Double-click to edit" style="padding: 12px 10px; cursor: text; border-bottom: 1px solid ${bdColor}; ${extraStyle}">${innerHTML}</td>`;
+      };
+      const makeEditableRoot = (key, val, inputType = "number") => {
+        const displayVal = val !== void 0 ? inputType === "number" ? formatNum(val) : val : "-";
+        const rawVal = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
+        return `<span class="bio-editable" data-type="root" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawVal}" title="Double-click to edit" style="cursor: text; border-bottom: 2px dotted ${greenColor}; font-weight: 700; color: var(--text-normal); padding: 0 2px;">${displayVal}</span>`;
+      };
+      if (data.type === "pcr") {
+        html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--background-secondary); padding: 15px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 13px;">
+                    <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                        <div><span style="color:var(--text-muted); margin-right: 6px;">Reactions:</span> ${makeEditableRoot("reactions", data.reactions)}</div>
+                        <div><span style="color:var(--text-muted); margin-right: 6px;">Overage:</span> ${makeEditableRoot("overage_percent", data.overage_percent)} <span style="font-weight:700;">%</span></div>
+                        <div><span style="color:var(--text-muted); margin-right: 6px;">Vol/Rxn:</span> ${makeEditableRoot("total_volume_ul", data.total_volume_ul)} <span style="font-weight:700;">\xB5L</span></div>
+                    </div>
+                    <div style="color:${greenColor}; font-weight:700; font-size: 14px;">Master Mix prepared for: ${((_a = data.calculated_reactions) == null ? void 0 : _a.toFixed(1)) || 0} rxns</div>
+                </div>`;
+        html += `<div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                    <tr>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Component</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Stock</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Final</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: ${greenColor};">1x Rxn (\xB5L)</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 700; color: ${greenColor};">Master Mix (\xB5L)</th>
+                    </tr>`;
+        data.components.forEach((c10, i8) => {
+          const isSeparate = c10.add_to_mm_separately ? `<span style="font-size:9px; color:var(--text-warning); border:1px solid var(--text-warning); padding:2px 4px; border-radius:4px; margin-left:6px;">ADD SEP</span>` : "";
+          html += `<tr>
+                        ${makeEditableTd("components", i8, "name", c10.name, "text", (c10.name || "") + isSeparate, "font-weight:600; color:var(--text-normal);")}
+                        ${makeEditableTd("components", i8, "stock", c10.stock, "text")}
+                        ${makeEditableTd("components", i8, "final", c10.final, "text")}
+                        ${makeEditableTd("components", i8, "volume_ul", c10.volume_ul, "number")}
+                        <td style="padding: 12px 10px; font-weight:700; color:var(--text-normal); border-bottom: 1px solid ${bdColor}; font-size: 15px;">${c10.mm_volume_ul !== void 0 && !c10.add_to_mm_separately ? c10.mm_volume_ul.toFixed(1) : '<span style="color:var(--text-muted); font-weight:normal;">-</span>'}</td>
+                    </tr>`;
+        });
+        html += `</table></div>`;
+      } else if (data.type === "buffer") {
+        html += `
+                <div style="display: flex; gap: 24px; background: var(--background-secondary); padding: 15px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 13px;">
+                    <div><span style="color:var(--text-muted); margin-right: 6px;">Target Volume (L):</span> ${makeEditableRoot("volume_L", data.volume_L)}</div>
+                    <div><span style="color:var(--text-muted); margin-right: 6px;">Target pH:</span> ${makeEditableRoot("ph", data.ph, "text")}</div>
+                </div>`;
+        html += `<div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                    <tr>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Reagent</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">MW (g/mol)</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Target Conc.</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 700; color: ${greenColor};">Mass to Weigh (g)</th>
+                    </tr>`;
+        data.components.forEach((c10, i8) => {
+          const concStr = c10.target_M ? `${c10.target_M} M` : c10.target_mg_ml ? `${c10.target_mg_ml} mg/mL` : "-";
+          html += `<tr>
+                        ${makeEditableTd("components", i8, "name", c10.name, "text", c10.name, "font-weight:600; color:var(--text-normal);")}
+                        ${makeEditableTd("components", i8, "mw", c10.mw, "number")}
+                        ${makeEditableTd("components", i8, "target_M", c10.target_M, "number", concStr)}
+                        <td style="padding: 12px 10px; font-weight:700; color:var(--text-normal); border-bottom: 1px solid ${bdColor}; font-size: 15px;">${c10.mass_g ? c10.mass_g.toFixed(3) : "-"}</td>
+                    </tr>`;
+        });
+        html += `</table></div>`;
+      } else if (data.type === "cell_seeding") {
+        html += `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px;">Current Conc (cells/mL)</div>
+                        <div style="font-size:20px;">${makeEditableRoot("current_cells_per_ml", data.current_cells_per_ml)}</div>
+                    </div>
+                    <div style="background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px;">Target per Well</div>
+                        <div style="font-size:20px;">${makeEditableRoot("target_cells_per_well", data.target_cells_per_well)}</div>
+                    </div>
+                    <div style="background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px;">Number of Wells</div>
+                        <div style="font-size:20px;">${makeEditableRoot("wells", data.wells)}</div>
+                    </div>
+                </div>
+
+                <div style="background: var(--background-primary); border: 2px solid ${greenColor}; border-radius: 8px; padding: 20px;">
+                    <h4 style="margin: 0 0 15px 0; color: ${greenColor}; text-align: center;">Preparation Required</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px; max-width: 300px; margin: 0 auto;">
+                        <div style="color:var(--text-muted);">Cell Suspension:</div><div style="font-weight:bold; text-align:right;">${formatNum(data.cell_suspension_vol_ml)} mL</div>
+                        <div style="color:var(--text-muted);">Fresh Media:</div><div style="font-weight:bold; text-align:right;">${formatNum(data.media_to_add_ml)} mL</div>
+                        <div style="border-top: 1px dashed var(--background-modifier-border); padding-top: 10px; margin-top:5px; font-weight:bold;">Total Master Mix:</div>
+                        <div style="border-top: 1px dashed var(--background-modifier-border); padding-top: 10px; margin-top:5px; font-weight:bold; color:${greenColor}; text-align:right;">${formatNum(data.total_media_needed_ml)} mL</div>
+                    </div>
+                </div>`;
+      } else if (data.type === "ngs_pooling") {
+        html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--background-secondary); padding: 15px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 13px;">
+                    <div style="display: flex; gap: 24px;">
+                        <div><span style="color:var(--text-muted); margin-right: 6px;">Target per Sample (fmol):</span> ${makeEditableRoot("target_fmol_per_sample", data.target_fmol_per_sample)}</div>
+                    </div>
+                    <div style="color:${greenColor}; font-weight:700; font-size: 14px;">Total Pool Volume: ${formatNum(data.total_pool_vol_ul)} \xB5L</div>
+                </div>`;
+        html += `
+                <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                    <tr>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Library Name</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Length (bp)</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Conc (ng/\xB5L)</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Calc. Molarity</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 700; color: ${greenColor};">Vol to Pool (\xB5L)</th>
+                    </tr>`;
+        data.samples.forEach((s8, i8) => {
+          html += `<tr>
+                        ${makeEditableTd("samples", i8, "name", s8.name, "text", s8.name, "font-weight:600; color:var(--text-normal);")}
+                        ${makeEditableTd("samples", i8, "length_bp", s8.length_bp, "number")}
+                        ${makeEditableTd("samples", i8, "conc_ng_ul", s8.conc_ng_ul, "number")}
+                        <td style="padding: 12px 10px; color:var(--text-muted); border-bottom: 1px solid ${bdColor};">${formatNum(s8.conc_nM)} nM</td>
+                        <td style="padding: 12px 10px; font-weight:700; color:var(--text-normal); border-bottom: 1px solid ${bdColor}; font-size: 15px;">${formatNum(s8.pool_vol_ul)}</td>
+                    </tr>`;
+        });
+        html += `</table></div>`;
+      } else if (data.type === "protein_quant") {
+        html += `
+                <div style="background: var(--background-secondary); padding: 15px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 13px;">
+                    <span style="color:var(--text-muted); margin-right: 6px;">Cuvette Path Length (cm):</span> ${makeEditableRoot("path_length_cm", data.path_length_cm)}
+                </div>`;
+        html += `
+                <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                    <tr>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Protein Name</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Abs (A280)</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Ext. Coeff</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">MW (kDa)</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Conc. (\xB5M)</th>
+                        <th style="padding: 10px; border-bottom: 1px solid ${bdColor}; font-weight: 700; color: ${greenColor};">mg/mL</th>
+                    </tr>`;
+        data.samples.forEach((s8, i8) => {
+          const mwDisplay = s8.mw ? (s8.mw / 1e3).toFixed(1) : "-";
+          html += `<tr>
+                        ${makeEditableTd("samples", i8, "name", s8.name, "text", s8.name, "font-weight:600; color:var(--text-normal);")}
+                        ${makeEditableTd("samples", i8, "A280", s8.A280, "number")}
+                        ${makeEditableTd("samples", i8, "ext_coeff", s8.ext_coeff, "number")}
+                        ${makeEditableTd("samples", i8, "mw", s8.mw, "number", mwDisplay)}
+                        <td style="padding: 12px 10px; font-weight:600; color:var(--text-normal); border-bottom: 1px solid ${bdColor};">${formatNum(s8.conc_uM)}</td>
+                        <td style="padding: 12px 10px; font-weight:700; color:${greenColor}; border-bottom: 1px solid ${bdColor}; font-size: 15px;">${formatNum(s8.conc_mg_ml)}</td>
+                    </tr>`;
+        });
+        html += `</table></div>`;
+      } else if (data.type === "oligo_analyzer") {
+        html += `
+                <div style="margin-bottom: 20px; font-size: 13px; background: var(--background-secondary); padding: 15px; border-radius: 8px; border-left: 4px solid ${greenColor};">
+                    <div style="color:var(--text-muted); font-size:11px; margin-bottom:6px; text-transform:uppercase; font-weight:600;">Sequence (5' \u2192 3')</div>
+                    <div style="font-family: monospace; font-size: 16px; word-break: break-all; color: var(--text-normal); line-height: 1.5; letter-spacing: 1px;">${makeEditableRoot("sequence", data.sequence, "text")}</div>
+                </div>`;
+        if (data.length > 0) {
+          html += `
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
+                        <div style="background: var(--background-primary); padding: 15px; border-radius: 8px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                            <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Length</div>
+                            <div style="font-size:20px; font-weight:bold; color:var(--text-normal); margin-top:4px;">${data.length} <span style="font-size:12px; color:var(--text-muted);">bp</span></div>
+                        </div>
+                        <div style="background: var(--background-primary); padding: 15px; border-radius: 8px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                            <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:600;">GC Content</div>
+                            <div style="font-size:20px; font-weight:bold; color:var(--text-normal); margin-top:4px;">${data.gc_percent.toFixed(1)} <span style="font-size:12px; color:var(--text-muted);">%</span></div>
+                        </div>
+                        <div style="background: var(--background-primary); padding: 15px; border-radius: 8px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                            <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Melting Temp (Tm)</div>
+                            <div style="font-size:20px; font-weight:bold; color:${greenColor}; margin-top:4px;">${data.tm.toFixed(1)} <span style="font-size:12px; color:var(--text-muted);">\xB0C</span></div>
+                        </div>
+                        <div style="background: var(--background-primary); padding: 15px; border-radius: 8px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                            <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:600;">Mol. Weight</div>
+                            <div style="font-size:20px; font-weight:bold; color:var(--text-normal); margin-top:4px;">${Math.round(data.mw)} <span style="font-size:12px; color:var(--text-muted);">g/mol</span></div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: var(--background-secondary-alt); padding: 15px; border-radius: 8px; font-size:13px; font-family: monospace; border: 1px solid var(--background-modifier-border);">
+                        <div style="margin-bottom:10px;">
+                            <span style="color:var(--text-muted); display:inline-block; width:130px; font-family:var(--font-interface);">Reverse Complement:</span> 
+                            <span style="color: var(--text-normal); word-break:break-all; font-weight:bold; letter-spacing: 1px;">3' <span style="color:var(--interactive-accent)">${data.rev_comp}</span> 5'</span>
+                        </div>
+                        <div>
+                            <span style="color:var(--text-muted); display:inline-block; width:130px; font-family:var(--font-interface);">Translation (Frame 1):</span> 
+                            <span style="color: var(--text-normal); word-break:break-all; font-weight:bold; letter-spacing: 1px;"><span style="color:var(--text-warning)">${data.translation}</span></span>
+                        </div>
+                    </div>`;
+        }
+      } else if (data.type === "ligation") {
+        html += `
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Vector Size (kb)</div>
+                        <div style="font-size:20px;">${makeEditableRoot("vector_kb", data.vector_kb)}</div>
+                    </div>
+                    <div style="background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Vector Mass (ng)</div>
+                        <div style="font-size:20px;">${makeEditableRoot("vector_ng", data.vector_ng)}</div>
+                    </div>
+                    <div style="background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Insert Size (kb)</div>
+                        <div style="font-size:20px;">${makeEditableRoot("insert_kb", data.insert_kb)}</div>
+                    </div>
+                    <div style="background: var(--background-secondary); border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Molar Ratio (I:V)</div>
+                        <div style="font-size:20px;">${makeEditableRoot("ratio", data.ratio)} <span style="color:var(--text-muted)">: 1</span></div>
+                    </div>
+                </div>
+
+                <div style="background: var(--background-primary); border: 2px solid ${greenColor}; border-radius: 8px; padding: 20px; text-align: center;">
+                    <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Insert Mass Required</div>
+                    <div style="font-size:28px; font-weight:700; color:${greenColor};">${data.insert_ng_needed ? data.insert_ng_needed.toFixed(1) + " ng" : "-"}</div>
+                </div>`;
+      } else if (data.type === "protocol") {
+        html += `
+                <div style="margin-bottom: 20px; background: var(--background-secondary); padding: 15px; border-radius: 8px; border: 1px solid var(--background-modifier-border);">
+                    <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600; color:var(--text-normal); margin-bottom:8px;">
+                        <span>Protocol Progress</span><span style="color:${greenColor};">${data.progress.toFixed(0)}%</span>
+                    </div>
+                    <div style="width:100%; background:var(--background-primary-alt); height:8px; border-radius:4px; overflow:hidden;">
+                        <div style="width:${data.progress}%; background:${greenColor}; height:100%; transition:width 0.3s ease;"></div>
+                    </div>
+                </div>`;
+        html += `<div style="display:flex; flex-direction:column; gap:10px;">`;
+        data.steps.forEach((s8, i8) => {
+          const isDone = s8.done === true || s8.done === "true";
+          const bg = isDone ? "var(--background-secondary)" : "var(--background-primary)";
+          const opacity = isDone ? "0.5" : "1";
+          const textDec = isDone ? "line-through" : "none";
+          const checkSVG = isDone ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="${greenColor}" stroke="${greenColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="9 12 12 15 17 9" stroke="white"></polyline></svg>` : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
+          html += `
+                    <div class="bio-protocol-step" data-idx="${i8}" data-state="${isDone ? "true" : "false"}" style="display:flex; align-items:flex-start; gap:14px; background:${bg}; padding:14px; border-radius:8px; border:1px solid var(--background-modifier-border); cursor:pointer; opacity:${opacity}; transition:all 0.2s ease;">
+                        <div style="margin-top:2px;">${checkSVG}</div>
+                        <div style="font-size:14px; text-decoration:${textDec}; color:var(--text-normal); line-height: 1.5;">${s8.text}</div>
+                    </div>`;
+        });
+        html += `</div>`;
+      } else {
+        html += `<div style="padding: 20px; font-family: monospace; font-size:12px;">Data loaded for ${data.type}</div>`;
+      }
+      html += `</div>`;
+      const styleBlock = document.createElement("style");
+      styleBlock.innerHTML = `
+                .bio-editable:hover { background-color: rgba(76, 174, 79, 0.1); border-radius: 4px; }
+                .bio-protocol-step:hover { border-color: ${greenColor} !important; transform: translateX(2px); }
+            `;
+      wrapper2.appendChild(styleBlock);
+      const contentDiv = document.createElement("div");
+      contentDiv.innerHTML = html;
+      wrapper2.appendChild(contentDiv);
+      wrapper2.addEventListener("dblclick", (e6) => {
+        let target = e6.target;
+        while (target && target !== wrapper2 && !target.classList.contains("bio-editable")) {
+          target = target.parentElement;
+        }
+        if (target && target.classList.contains("bio-editable") && !target.querySelector("input")) {
+          e6.stopPropagation();
+          const type3 = target.getAttribute("data-type");
+          const idx = parseInt(target.getAttribute("data-idx") || "0", 10);
+          const key = target.getAttribute("data-key");
+          const inputType = target.getAttribute("data-input-type") || "number";
+          if (!key) return;
+          const originalHTML = target.innerHTML;
+          const currentValText = target.getAttribute("data-raw-value") || "";
+          target.innerHTML = "";
+          const input = document.createElement("input");
+          input.type = inputType === "text" || inputType === "string" ? "text" : "number";
+          if (inputType === "number") input.step = "any";
+          input.value = currentValText;
+          Object.assign(input.style, { width: "100%", boxSizing: "border-box", padding: "4px 6px", border: `2px solid ${greenColor}`, borderRadius: "4px", background: "var(--background-primary)", fontSize: "inherit", fontWeight: "inherit", color: "var(--text-normal)" });
+          target.appendChild(input);
+          input.focus();
+          const finishEdit = () => {
+            const newValStr = input.value.trim().replace(/,/g, ".");
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+            let info = ctx.getSectionInfo(el2);
+            if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+            if (view && info) {
+              const { parseYaml: parseYaml2, stringifyYaml: stringifyYaml2 } = require("obsidian");
+              const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              try {
+                let yamlObj = parseYaml2(blockText);
+                let valToSave = newValStr;
+                if (inputType === "number") {
+                  const num = parseFloat(newValStr);
+                  valToSave = isNaN(num) ? void 0 : num;
+                } else {
+                  valToSave = newValStr === "" ? void 0 : newValStr;
+                }
+                if (type3 === "root") {
+                  if (valToSave === void 0) delete yamlObj[key];
+                  else yamlObj[key] = valToSave;
+                } else {
+                  if (!yamlObj[type3]) yamlObj[type3] = [];
+                  if (!yamlObj[type3][idx]) yamlObj[type3] = {};
+                  if (valToSave === void 0) delete yamlObj[type3][idx][key];
+                  else yamlObj[type3][idx][key] = valToSave;
+                }
+                yamlObj = BioCalculator.calculate(yamlObj);
+                const newYaml = stringifyYaml2(yamlObj);
+                view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              } catch (err) {
+                target.innerHTML = originalHTML;
+              }
+            } else {
+              target.innerHTML = originalHTML;
+            }
+          };
+          input.onblur = finishEdit;
+          input.onkeydown = (ev) => {
+            if (ev.key === "Enter") input.blur();
+            else if (ev.key === "Escape") {
+              target.innerHTML = originalHTML;
+            }
+          };
+        }
+      });
+      if (data.type === "protocol") {
+        const steps = contentDiv.querySelectorAll(".bio-protocol-step");
+        steps.forEach((stepNode) => {
+          stepNode.addEventListener("click", (e6) => {
+            const elNode = stepNode;
+            const idx = parseInt(elNode.dataset.idx || "0", 10);
+            const currentState = elNode.dataset.state === "true";
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian9.MarkdownView);
+            let info = ctx.getSectionInfo(el2);
+            if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+            if (view && info) {
+              const { parseYaml: parseYaml2, stringifyYaml: stringifyYaml2 } = require("obsidian");
+              const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              try {
+                let yamlObj = parseYaml2(blockText);
+                yamlObj.steps[idx].done = !currentState;
+                yamlObj = BioCalculator.calculate(yamlObj);
+                const newYaml = stringifyYaml2(yamlObj);
+                view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              } catch (err) {
+              }
+            }
+          });
+        });
+      }
+      const actionBar = wrapper2.createDiv();
+      Object.assign(actionBar.style, { position: "absolute", top: "15px", right: "15px", display: "flex", gap: "8px", zIndex: "10" });
+      const createActionBarBtn = (text2, onClick) => {
+        const btn = actionBar.createDiv();
+        btn.innerHTML = text2;
+        btn.style.cursor = "pointer";
+        btn.style.fontSize = "11px";
+        btn.style.padding = "4px 10px";
+        btn.style.fontWeight = "600";
+        btn.style.backgroundColor = "transparent";
+        btn.style.border = "1px solid var(--background-modifier-border)";
+        btn.style.color = "var(--text-muted)";
+        btn.style.borderRadius = "4px";
+        btn.onmouseover = () => {
+          btn.style.borderColor = greenColor;
+          btn.style.color = greenColor;
+        };
+        btn.onmouseout = () => {
+          btn.style.borderColor = "var(--background-modifier-border)";
+          btn.style.color = "var(--text-muted)";
+        };
+        btn.onclick = onClick;
+        return btn;
+      };
+      if (data.type === "oligo_analyzer" && data.sequence) {
+        createActionBarBtn("\u{1F50D} BLAST", () => window.open(`https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE=Nucleotides&QUERY=${data.sequence}`, "_blank"));
+        createActionBarBtn("\u{1F4C4} FASTA", () => {
+          navigator.clipboard.writeText(`>${data.title || "Sequence"}
+${data.sequence}`);
+          new import_obsidian9.Notice("Copied as FASTA format!");
+        });
+      } else if (data.type === "pcr") {
+        createActionBarBtn("\u{1F321}\uFE0F NEB Tm Calc", () => window.open(`https://tmcalculator.neb.com/`, "_blank"));
+      }
+      createActionBarBtn("\u{1F4CB} Copy Table", () => {
+        let txt = "";
+        if (data.type === "pcr") {
+          txt = "Component	Stock	Final	1x (uL)	MM (uL)\n";
+          data.components.forEach((c10) => {
+            var _a2, _b;
+            return txt += `${c10.name || "-"}	${c10.stock || "-"}	${c10.final || "-"}	${((_a2 = c10.volume_ul) == null ? void 0 : _a2.toFixed(2)) || "-"}	${((_b = c10.mm_volume_ul) == null ? void 0 : _b.toFixed(1)) || "-"}
+`;
+          });
+        } else if (data.type === "buffer") {
+          txt = "Component	Target Conc	Mass (g)\n";
+          data.components.forEach((c10) => {
+            var _a2;
+            return txt += `${c10.name || "-"}	${c10.target_M ? c10.target_M + " M" : c10.target_mg_ml ? c10.target_mg_ml + " mg/mL" : "-"}	${((_a2 = c10.mass_g) == null ? void 0 : _a2.toFixed(3)) || "-"}
+`;
+          });
+        } else if (data.type === "ngs_pooling") {
+          txt = "Sample	Length (bp)	Conc (ng/uL)	Molarity (nM)	Vol to Pool (uL)\n";
+          data.samples.forEach((s8) => {
+            var _a2, _b;
+            return txt += `${s8.name || "-"}	${s8.length_bp || "-"}	${s8.conc_ng_ul || "-"}	${((_a2 = s8.conc_nM) == null ? void 0 : _a2.toFixed(2)) || "-"}	${((_b = s8.pool_vol_ul) == null ? void 0 : _b.toFixed(2)) || "-"}
+`;
+          });
+        } else if (data.type === "protein_quant") {
+          txt = "Protein	A280	Conc (uM)	Conc (mg/mL)\n";
+          data.samples.forEach((s8) => {
+            var _a2, _b;
+            return txt += `${s8.name || "-"}	${s8.A280 || "-"}	${((_a2 = s8.conc_uM) == null ? void 0 : _a2.toFixed(2)) || "-"}	${((_b = s8.conc_mg_ml) == null ? void 0 : _b.toFixed(2)) || "-"}
+`;
+          });
+        } else if (data.type === "protocol") {
+          txt = `Protocol: ${data.title}
+`;
+          data.steps.forEach((s8, i8) => txt += `${i8 + 1}. [${s8.done ? "x" : " "}] ${s8.text}
+`);
+        }
+        navigator.clipboard.writeText(txt);
+        new import_obsidian9.Notice("Copied to clipboard!");
+      });
+      return wrapper2;
+    } catch (err) {
+      wrapper2.innerHTML = `<div style="padding: 20px; color: var(--text-error); background: var(--background-secondary); border-radius: 8px;"><b>Bio ELN Error:</b><br>${err.message}</div>`;
+      return wrapper2;
+    }
+  }
+};
+
+// AnalyticalEln.ts
+var import_obsidian10 = require("obsidian");
+var AnalyticalCalculator = class {
+  static calculate(data) {
+    if (!data.type) data.type = "calibration";
+    if (data.type === "calibration") {
+      if (!data.standards) data.standards = [];
+      if (!data.samples) data.samples = [];
+      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, sumYY = 0;
+      let n8 = 0;
+      data.standards.forEach((std) => {
+        if (std.conc !== void 0 && std.area !== void 0 && std.exclude !== true) {
+          sumX += std.conc;
+          sumY += std.area;
+          sumXY += std.conc * std.area;
+          sumXX += std.conc * std.conc;
+          sumYY += std.area * std.area;
+          n8++;
+        }
+      });
+      if (n8 > 1) {
+        const denominator = n8 * sumXX - sumX * sumX;
+        if (denominator !== 0) {
+          data.slope = (n8 * sumXY - sumX * sumY) / denominator;
+          data.intercept = (sumY - data.slope * sumX) / n8;
+          const meanY = sumY / n8;
+          let ssTot = 0, ssRes = 0;
+          data.standards.forEach((std) => {
+            if (std.conc !== void 0 && std.area !== void 0 && std.exclude !== true) {
+              const predY = data.slope * std.conc + data.intercept;
+              ssTot += Math.pow(std.area - meanY, 2);
+              ssRes += Math.pow(std.area - predY, 2);
+            }
+          });
+          data.r_squared = ssTot !== 0 ? 1 - ssRes / ssTot : 1;
+        }
+      } else {
+        data.slope = null;
+        data.intercept = null;
+        data.r_squared = null;
+      }
+      if (data.slope && data.slope !== 0) {
+        data.samples.forEach((samp) => {
+          samp.dilution_factor = samp.dilution_factor || 1;
+          if (samp.area !== void 0) {
+            samp.vial_conc = (samp.area - data.intercept) / data.slope;
+            samp.original_conc = samp.vial_conc * samp.dilution_factor;
+          }
+        });
+      }
+    }
+    if (data.type === "serial_dilution") {
+      if (!data.targets) data.targets = [];
+      const stock = data.stock_conc || 0;
+      if (stock > 0) {
+        data.targets.forEach((t8) => {
+          if (t8.target_conc && t8.target_vol) {
+            t8.stock_vol = t8.target_conc * t8.target_vol / stock;
+            t8.diluent_vol = t8.target_vol - t8.stock_vol;
+          }
+        });
+      }
+    }
+    return data;
+  }
+};
+var AnalyticalElnRenderer = class {
+  constructor(plugin) {
+    __publicField(this, "plugin");
+    this.plugin = plugin;
+  }
+  async renderAnalyticalBlock(source, el2, ctx) {
+    const { parseYaml, stringifyYaml } = require("obsidian");
+    const wrapper2 = el2.createDiv();
+    wrapper2.style.position = "relative";
+    wrapper2.style.border = "1px solid #3b82f6";
+    wrapper2.style.padding = "45px 15px 15px 15px";
+    wrapper2.style.borderRadius = "12px";
+    wrapper2.style.backgroundColor = "var(--background-primary-alt)";
+    wrapper2.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.05)";
+    wrapper2.style.fontFamily = "var(--font-interface)";
+    wrapper2.style.width = "100%";
+    wrapper2.innerHTML = `<h3 class="color-text-muted" style="text-align:center;">\u23F3 Processing Analytical Data...</h3>`;
+    try {
+      const safeSource = source.replace(/smiles:\s*(.*)$/gm, (match2, p1) => {
+        let s8 = p1.trim();
+        if (!s8) return match2;
+        let comment2 = "";
+        const commentMatch = s8.match(/(\s+#.*)$/);
+        if (commentMatch) {
+          comment2 = commentMatch[1];
+          s8 = s8.substring(0, s8.length - comment2.length).trim();
+        }
+        if (s8.startsWith('"') && s8.endsWith('"') || s8.startsWith("'") && s8.endsWith("'")) s8 = s8.substring(1, s8.length - 1);
+        s8 = s8.replace(/\\"/g, '"');
+        s8 = s8.replace(/'/g, "''");
+        return `smiles: '${s8}'${comment2}`;
+      });
+      let data = parseYaml(safeSource);
+      if (!data) throw new Error("Empty YAML Data.");
+      data = AnalyticalCalculator.calculate(data);
+      wrapper2.innerHTML = "";
+      const thColor = "var(--background-secondary)";
+      const bdColor = "var(--background-modifier-border-hover)";
+      const textColor = "var(--text-normal)";
+      let html = `<div style="font-size: 14px; color: ${textColor}; margin-top:5px;">`;
+      html += `
+            <div style="border-bottom: 2px solid #3b82f6; padding-bottom: 10px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
+                <div>
+                    <h2 style="margin: 0; font-size: 22px; font-weight: 700; color: #3b82f6;">${data.title || data.code || "Analytical Assay"}</h2>
+                    <div style="font-size: 13px; color: var(--text-muted); margin-top:4px; text-transform: uppercase;">${data.type.replace("_", " ")}</div>
+                </div>
+                <div style="text-align:right; font-size:12px; color:var(--text-muted);">
+                    ${data.date ? `<b>Date:</b> ${data.date}<br>` : ""}
+                    ${data.instrument ? `<b>Instrument:</b> ${data.instrument}` : ""}
+                </div>
+            </div>`;
+      const formatNum = (num, dec = 2) => {
+        const n8 = Number(num);
+        if (isNaN(n8)) return "-";
+        if (n8 === 0) return "0";
+        if (n8 > 1e7) return n8.toExponential(2);
+        return n8 % 1 === 0 && dec !== 0 ? n8.toString() : n8.toFixed(dec);
+      };
+      const makeEditableTd = (type3, i8, key, val, inputType = "number", customHtml, extraStyle = "") => {
+        let innerHTML = customHtml !== void 0 ? customHtml : inputType === "number" ? formatNum(val) : val || "-";
+        let rawValAttr = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
+        return `<td class="ana-editable" data-type="${type3}" data-idx="${i8}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawValAttr}" title="Double-click to edit" style="padding: 8px 10px; cursor: text; transition: background 0.2s; ${extraStyle}">${innerHTML}</td>`;
+      };
+      const makeEditableRoot = (key, val, inputType = "number", unit2 = "") => {
+        const displayVal = val !== void 0 ? (inputType === "number" ? formatNum(val) : val) + unit2 : "-";
+        const rawVal = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
+        return `<span class="ana-editable" data-type="root" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawVal}" title="Double-click to edit" style="cursor: text; border-bottom: 1px dashed #3b82f6; display: inline-block; font-weight: bold; color: var(--text-normal);">${displayVal}</span>`;
+      };
+      if (data.type === "calibration") {
+        const u8 = data.units || "\xB5g/mL";
+        html += `
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 25px;">
+                    <div style="flex: 1; min-width: 140px; background: var(--background-secondary); padding: 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Linear Equation</div>
+                        <div style="font-size:16px; font-weight:bold; color:#3b82f6; font-family: monospace;">y = ${formatNum(data.slope, 4)}x ${data.intercept >= 0 ? "+" : "-"} ${formatNum(Math.abs(data.intercept), 4)}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 100px; background: var(--background-secondary); padding: 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">R-Squared (R\xB2)</div>
+                        <div style="font-size:18px; font-weight:bold; color:${data.r_squared >= 0.99 ? "var(--text-success)" : "var(--text-warning)"};">${formatNum(data.r_squared, 4)}</div>
+                    </div>
+                </div>`;
+        if (data.smiles) {
+          html += `<div style="display:flex; justify-content:center; margin-bottom:20px;">
+                        <div class="ana-struct" data-smiles="${data.smiles}"></div>
+                    </div>`;
+        }
+        html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Calibration Standards</h4>
+                <div style="overflow-x: auto; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                    <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
+                        <th style="padding: 10px;">Standard Name</th><th style="padding: 10px;">Conc [${u8}]</th><th style="padding: 10px;">Response (Area)</th><th style="padding: 10px; text-align:center;">Include</th>
+                    </tr>`;
+        data.standards.forEach((std, i8) => {
+          const isEx = std.exclude ? `<span style="color:var(--text-error); font-size:10px; font-weight:bold;">EXCLUDED</span>` : `<span style="color:var(--text-success);">\u2705</span>`;
+          const rowStyle = std.exclude ? "opacity: 0.5;" : "";
+          html += `<tr style="border-bottom: 1px solid ${bdColor}; ${rowStyle}">
+                        ${makeEditableTd("standards", i8, "name", std.name, "text", std.name, "font-weight:600;")}
+                        ${makeEditableTd("standards", i8, "conc", std.conc, "number")}
+                        ${makeEditableTd("standards", i8, "area", std.area, "number", void 0, "font-weight:bold; color:var(--interactive-accent);")}
+                        <td class="ana-exclude-toggle" data-idx="${i8}" data-state="${std.exclude ? "true" : "false"}" style="padding: 10px; text-align:center; cursor:pointer;" title="Click to toggle inclusion">${isEx}</td>
+                    </tr>`;
+        });
+        html += `</table></div>`;
+        if (data.samples && data.samples.length > 0) {
+          html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Quantified Samples</h4>
+                    <div style="overflow-x: auto; margin-bottom: 20px;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                        <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
+                            <th style="padding: 10px;">Sample Name</th><th style="padding: 10px;">Dilution Factor</th><th style="padding: 10px;">Response (Area)</th><th style="padding: 10px; color:#3b82f6;">Vial Conc [${u8}]</th><th style="padding: 10px; color:#3b82f6;">Original Conc [${u8}]</th>
+                        </tr>`;
+          data.samples.forEach((samp, i8) => {
+            html += `<tr style="border-bottom: 1px solid ${bdColor};">
+                            ${makeEditableTd("samples", i8, "name", samp.name, "text", samp.name, "font-weight:600;")}
+                            ${makeEditableTd("samples", i8, "dilution_factor", samp.dilution_factor || 1, "number")}
+                            ${makeEditableTd("samples", i8, "area", samp.area, "number", void 0, "font-weight:bold; color:var(--interactive-accent);")}
+                            <td style="padding: 10px; color:var(--text-muted);">${formatNum(samp.vial_conc, 3)}</td>
+                            <td style="padding: 10px; font-weight:bold; color:var(--text-normal); font-size:14px;">${formatNum(samp.original_conc, 3)}</td>
+                        </tr>`;
+          });
+          html += `</table></div>`;
+        }
+      } else if (data.type === "serial_dilution") {
+        const u8 = data.stock_units || "";
+        html += `
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; font-size: 13px; background: var(--background-secondary); padding: 10px; border-radius: 6px;">
+                    <div><span style="color:var(--text-muted)">Stock Concentration:</span> ${makeEditableRoot("stock_conc", data.stock_conc)} ${u8}</div>
+                    <div><span style="color:var(--text-muted)">Diluent:</span> ${makeEditableRoot("diluent", data.diluent, "text")}</div>
+                </div>`;
+        html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Dilution Scheme</h4>
+                <div style="overflow-x: auto; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                    <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
+                        <th style="padding: 10px;">Target Conc [${u8}]</th><th style="padding: 10px;">Target Volume</th><th style="padding: 10px; color:#3b82f6;">Vol of Stock Needed</th><th style="padding: 10px; color:#3b82f6;">Vol of Diluent Needed</th>
+                    </tr>`;
+        data.targets.forEach((t8, i8) => {
+          html += `<tr style="border-bottom: 1px solid ${bdColor};">
+                        ${makeEditableTd("targets", i8, "target_conc", t8.target_conc, "number", void 0, "font-weight:bold; color:var(--text-normal);")}
+                        ${makeEditableTd("targets", i8, "target_vol", t8.target_vol, "number")}
+                        <td style="padding: 10px; font-weight:bold; color:var(--text-accent);">${formatNum(t8.stock_vol)}</td>
+                        <td style="padding: 10px; font-weight:bold; color:var(--text-normal);">${formatNum(t8.diluent_vol)}</td>
+                    </tr>`;
+        });
+        html += `</table></div>`;
+      } else if (data.type === "hplc_method" || data.type === "gc_method") {
+        html += `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: var(--background-secondary-alt); padding: 15px; border-radius: 8px; border: 1px solid #3b82f6; margin-bottom: 20px;">
+                    <div><b style="color:var(--text-muted); font-size:11px; text-transform:uppercase;">Column</b><br><span style="font-weight:600;">${makeEditableRoot("column", data.column, "text")}</span></div>
+                    <div><b style="color:var(--text-muted); font-size:11px; text-transform:uppercase;">Flow Rate / Carrier</b><br><span style="font-weight:600;">${makeEditableRoot("flow_rate", data.flow_rate, "text")}</span></div>
+                    <div><b style="color:var(--text-muted); font-size:11px; text-transform:uppercase;">Temperature</b><br><span style="font-weight:600;">${makeEditableRoot("temp", data.temp, "text")}</span></div>
+                    <div><b style="color:var(--text-muted); font-size:11px; text-transform:uppercase;">Detection (UV/MS)</b><br><span style="font-weight:600;">${makeEditableRoot("detection", data.detection, "text")}</span></div>
+                </div>
+                
+                <div style="display:flex; gap:20px; margin-bottom: 15px; padding: 10px; background: var(--background-primary); border-radius:6px; border: 1px solid var(--background-modifier-border);">
+                    <div style="flex:1"><b style="color:var(--text-muted);">Solvent A:</b> ${makeEditableRoot("solvent_a", data.solvent_a, "text")}</div>
+                    <div style="flex:1"><b style="color:var(--text-muted);">Solvent B:</b> ${makeEditableRoot("solvent_b", data.solvent_b, "text")}</div>
+                </div>`;
+        if (data.gradient) {
+          html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Gradient / Oven Program</h4>
+                    <div style="overflow-x: auto; margin-bottom: 20px;">
+                    <table style="width: 50%; min-width:300px; border-collapse: collapse; text-align: left; font-size: 13px;">
+                        <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
+                            <th style="padding: 8px;">Time (min)</th><th style="padding: 8px;">% B (or \xB0C)</th>
+                        </tr>`;
+          data.gradient.forEach((g9, i8) => {
+            html += `<tr style="border-bottom: 1px solid ${bdColor};">
+                            ${makeEditableTd("gradient", i8, "time", g9.time, "number", void 0, "font-weight:bold;")}
+                            ${makeEditableTd("gradient", i8, "b_percent", g9.b_percent, "number")}
+                        </tr>`;
+          });
+          html += `</table></div>`;
+        }
+      }
+      html += `</div>`;
+      const attachEditListeners = () => {
+        wrapper2.addEventListener("dblclick", (e6) => {
+          let target = e6.target;
+          while (target && target !== wrapper2 && !target.classList.contains("ana-editable")) {
+            target = target.parentElement;
+          }
+          if (target && target.classList.contains("ana-editable") && !target.querySelector("input")) {
+            e6.stopPropagation();
+            const type3 = target.getAttribute("data-type");
+            const idx = parseInt(target.getAttribute("data-idx") || "0", 10);
+            const key = target.getAttribute("data-key");
+            const inputType = target.getAttribute("data-input-type") || "number";
+            if (!key) return;
+            const originalHTML = target.innerHTML;
+            const currentValText = target.getAttribute("data-raw-value") || "";
+            target.innerHTML = "";
+            target.style.padding = "4px";
+            const input = document.createElement("input");
+            input.type = inputType === "text" ? "text" : "number";
+            if (inputType === "number") input.step = "any";
+            input.value = currentValText;
+            Object.assign(input.style, { width: "100%", boxSizing: "border-box", padding: "4px 6px", border: "1px solid #3b82f6", borderRadius: "4px", background: "var(--background-primary)" });
+            target.appendChild(input);
+            input.focus();
+            const finishEdit = () => {
+              const newValStr = input.value.trim().replace(/,/g, ".");
+              const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+              let info = ctx.getSectionInfo(el2);
+              if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+              if (view && info) {
+                const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+                try {
+                  let yamlObj = parseYaml(blockText);
+                  let valToSave = newValStr;
+                  if (inputType === "number") {
+                    const num = parseFloat(newValStr);
+                    valToSave = isNaN(num) ? void 0 : num;
+                  } else {
+                    valToSave = newValStr === "" ? void 0 : newValStr;
+                  }
+                  if (type3 === "root") {
+                    if (valToSave === void 0) delete yamlObj[key];
+                    else yamlObj[key] = valToSave;
+                  } else {
+                    if (!yamlObj[type3]) yamlObj[type3] = [];
+                    if (!yamlObj[type3][idx]) yamlObj[type3] = {};
+                    if (valToSave === void 0) delete yamlObj[type3][idx][key];
+                    else yamlObj[type3][idx][key] = valToSave;
+                  }
+                  yamlObj = AnalyticalCalculator.calculate(yamlObj);
+                  const newYaml = stringifyYaml(yamlObj);
+                  view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+                } catch (err) {
+                  target.innerHTML = originalHTML;
+                  target.style.padding = "8px 10px";
+                }
+              } else {
+                target.innerHTML = originalHTML;
+                target.style.padding = "8px 10px";
+              }
+            };
+            input.onblur = finishEdit;
+            input.onkeydown = (ev) => {
+              if (ev.key === "Enter") input.blur();
+              else if (ev.key === "Escape") {
+                target.innerHTML = originalHTML;
+                target.style.padding = "8px 10px";
+              }
+            };
+          }
+        });
+        const toggles = contentDiv.querySelectorAll(".ana-exclude-toggle");
+        toggles.forEach((node2) => {
+          node2.addEventListener("click", (e6) => {
+            const elNode = node2;
+            const idx = parseInt(elNode.dataset.idx || "0", 10);
+            const currentState = elNode.dataset.state === "true";
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+            let info = ctx.getSectionInfo(el2);
+            if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+            if (view && info) {
+              const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              try {
+                let yamlObj = parseYaml(blockText);
+                yamlObj.standards[idx].exclude = !currentState;
+                yamlObj = AnalyticalCalculator.calculate(yamlObj);
+                const newYaml = stringifyYaml(yamlObj);
+                view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              } catch (err) {
+              }
+            }
+          });
+        });
+      };
+      const actionBar = wrapper2.createDiv();
+      Object.assign(actionBar.style, { position: "absolute", top: "8px", right: "10px", display: "flex", gap: "5px", zIndex: "10" });
+      const copyBtn = actionBar.createDiv();
+      copyBtn.innerHTML = "\u{1F4CB} Copy Data";
+      copyBtn.style.cursor = "pointer";
+      copyBtn.style.fontSize = "11px";
+      copyBtn.style.padding = "4px 8px";
+      copyBtn.style.backgroundColor = "var(--background-secondary)";
+      copyBtn.style.border = "1px solid var(--background-modifier-border)";
+      copyBtn.style.color = "var(--text-normal)";
+      copyBtn.style.borderRadius = "4px";
+      copyBtn.onclick = () => {
+        let txt = "";
+        if (data.type === "calibration") {
+          txt = "Type	Name	Conc	Area	Calc Conc\n";
+          data.standards.forEach((s8) => txt += `Standard	${s8.name || "-"}	${s8.conc || "-"}	${s8.area || "-"}	-
+`);
+          data.samples.forEach((s8) => {
+            var _a;
+            return txt += `Sample	${s8.name || "-"}	-	${s8.area || "-"}	${((_a = s8.original_conc) == null ? void 0 : _a.toFixed(3)) || "-"}
+`;
+          });
+        } else if (data.type === "serial_dilution") {
+          txt = "Target Conc	Target Vol	Stock Vol	Diluent Vol\n";
+          data.targets.forEach((t8) => {
+            var _a, _b;
+            return txt += `${t8.target_conc || "-"}	${t8.target_vol || "-"}	${((_a = t8.stock_vol) == null ? void 0 : _a.toFixed(2)) || "-"}	${((_b = t8.diluent_vol) == null ? void 0 : _b.toFixed(2)) || "-"}
+`;
+          });
+        }
+        navigator.clipboard.writeText(txt);
+        new import_obsidian10.Notice("Data copied to clipboard!");
+      };
+      const styleBlock = document.createElement("style");
+      styleBlock.innerHTML = `.ana-editable:hover { background-color: var(--background-modifier-hover); }`;
+      wrapper2.appendChild(styleBlock);
+      const contentDiv = document.createElement("div");
+      contentDiv.innerHTML = html;
+      wrapper2.appendChild(contentDiv);
+      attachEditListeners();
+      if (data.smiles) {
+        const structEl = contentDiv.querySelector(".ana-struct");
+        if (structEl) {
+          structEl.style.width = `180px`;
+          structEl.style.height = `120px`;
+          structEl.innerHTML = "\u23F3";
+          requestAnimationFrame(async () => {
+            const renderEl = await this.plugin.api.renderStructure(data.smiles, 180, 120);
+            structEl.empty();
+            if (renderEl) {
+              renderEl.style.maxWidth = "100%";
+              renderEl.style.maxHeight = "100%";
+              structEl.appendChild(renderEl);
+            } else structEl.innerHTML = "\u274C";
+          });
+        }
+      }
+      return wrapper2;
+    } catch (err) {
+      wrapper2.innerHTML = `<div style="padding: 20px; color: var(--text-error); background: var(--background-secondary); border-radius: 8px;"><b>Analytical ELN Error:</b><br>${err.message}</div>`;
+      return wrapper2;
+    }
+  }
+};
+
+// OrganicHelpers.ts
+var import_obsidian11 = require("obsidian");
+var OrgHelperCalculator = class {
+  static calculate(data) {
+    if (!data.type) return data;
+    if (data.type === "nmr_yield") {
+      const stdMass = data.standard_mass_mg || 0;
+      const stdMw = data.standard_mw || 1;
+      const stdInt = data.standard_integral || 1;
+      const stdH = data.standard_protons || 1;
+      const prodMw = data.product_mw || 1;
+      const prodInt = data.product_integral || 0;
+      const prodH = data.product_protons || 1;
+      const theoryMmol = data.theory_mmol || 1;
+      const stdMmol = stdMass / stdMw;
+      const normStdInt = stdInt / stdH;
+      const normProdInt = prodInt / prodH;
+      if (normStdInt > 0) {
+        data.product_mmol = stdMmol * (normProdInt / normStdInt);
+        data.product_mass_mg = data.product_mmol * prodMw;
+        data.yield_percent = data.product_mmol / theoryMmol * 100;
+      } else {
+        data.product_mmol = 0;
+        data.product_mass_mg = 0;
+        data.yield_percent = 0;
+      }
+    }
+    if (data.type === "faradaic_efficiency") {
+      const mA = data.current_mA || 0;
+      const h5 = data.time_hours || 0;
+      const z5 = data.electrons_z || 2;
+      const prodMmol = data.product_mmol || 0;
+      data.total_coulombs = mA * h5 * 3.6;
+      const molesOfElectrons = data.total_coulombs / 96485;
+      data.theory_max_mmol = molesOfElectrons / z5 * 1e3;
+      if (data.theory_max_mmol > 0) {
+        data.faradaic_efficiency = prodMmol / data.theory_max_mmol * 100;
+      } else {
+        data.faradaic_efficiency = 0;
+      }
+    }
+    if (data.type === "reaction_screening") {
+      if (!data.components) data.components = [];
+      const rxns = data.reactions || 1;
+      const overage = data.overage_percent !== void 0 ? data.overage_percent : 10;
+      const calcRxns = rxns * (1 + overage / 100);
+      const scaleMmol = data.scale_mmol || 0.1;
+      const volPerVial = data.vol_per_vial_ml || 1;
+      data.calculated_reactions = calcRxns;
+      data.total_stock_vol_ml = calcRxns * volPerVial;
+      data.components.forEach((c10) => {
+        c10.eq = c10.eq || 1;
+        c10.total_mmol = scaleMmol * c10.eq * calcRxns;
+        if (c10.mw) c10.total_mass_mg = c10.total_mmol * c10.mw;
+        else c10.total_mass_mg = 0;
+        if (c10.density) c10.total_vol_ul = c10.total_mass_mg / c10.density * 1e3;
+      });
+    }
+    if (data.type === "catalyst_metrics") {
+      const pMmol = data.product_mmol || 0;
+      const cMmol = data.catalyst_mmol || 1;
+      const t8 = data.time_hours || 1;
+      data.ton = pMmol / cMmol;
+      data.tof = data.ton / t8;
+    }
+    return data;
+  }
+};
+var OrganicHelpersRenderer = class {
+  constructor(plugin) {
+    __publicField(this, "plugin");
+    this.plugin = plugin;
+  }
+  async renderBlock(source, el2, ctx) {
+    var _a;
+    const { parseYaml, stringifyYaml } = require("obsidian");
+    const wrapper2 = el2.createDiv();
+    const themeColor = "#f59e0b";
+    const bgSec = "var(--background-secondary)";
+    const bdColor = "var(--background-modifier-border)";
+    wrapper2.style.position = "relative";
+    wrapper2.style.border = `1px solid ${bdColor}`;
+    wrapper2.style.borderRadius = "12px";
+    wrapper2.style.backgroundColor = "var(--background-primary)";
+    wrapper2.style.padding = "24px";
+    wrapper2.style.boxShadow = "0 2px 6px rgba(0, 0, 0, 0.03)";
+    wrapper2.style.fontFamily = "var(--font-interface)";
+    wrapper2.style.width = "100%";
+    wrapper2.style.marginBottom = "15px";
+    const icons = {
+      flask: `<svg stroke="${themeColor}" fill="rgba(245,158,11,0.15)" width="48" height="48" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a2 2 0 0 0 1.8 2.45h10.96a2 2 0 0 0 1.8-2.45L14.21 10.42a2 2 0 0 1-.21-.896V2"/><path d="M8.5 2h7"/><path d="M14 16H5.5"/></svg>`,
+      pipette: `<svg stroke="var(--text-muted)" fill="none" width="32" height="32" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/></svg>`,
+      vial: `<svg stroke="var(--text-muted)" fill="none" width="24" height="24" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v17.5A2.5 2.5 0 0 1 6.5 22v0A2.5 2.5 0 0 1 4 19.5V2"/><path d="M3 2h5"/><path d="M4 14h5"/></svg>`,
+      zap: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${themeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`,
+      clock: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+      current: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`,
+      nmrTube: `<svg stroke="${themeColor}" fill="none" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v18a2 2 0 0 0 4 0V2"/><path d="M8 2h8"/><path d="M10 16h4"/></svg>`
+    };
+    try {
+      let data = parseYaml(source);
+      if (!data) throw new Error("Empty YAML Data.");
+      data = OrgHelperCalculator.calculate(data);
+      let html = `
+            <div style="position: relative; margin-bottom: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="display:flex; flex-direction:column;">
+                        <div class="org-editable" data-type="root" data-key="title" data-input-type="text" data-raw-value="${((_a = data.title) == null ? void 0 : _a.replace(/"/g, "&quot;")) || ""}" title="Double-click to edit title" style="margin: 0; font-size: 24px; font-weight: 700; color: ${themeColor}; cursor: text; border-bottom: 2px dotted ${themeColor}; display: inline-block; width: max-content;">${data.title || "Organic Helper"}</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">${data.type.replace("_", " ")}</div>
+                    </div>
+                </div>
+                <div style="height: 2px; background-color: ${themeColor}; margin-top: 12px; opacity: 0.5;"></div>
+            </div>`;
+      const formatNum = (num, decimals = 2) => {
+        const n8 = Number(num);
+        if (isNaN(n8) || n8 === 0) return "-";
+        return n8 % 1 === 0 ? n8.toString() : n8.toFixed(decimals);
+      };
+      const makeEditableTd = (type3, i8, key, val, inputType = "number", customHtml) => {
+        let innerHTML = customHtml !== void 0 ? customHtml : inputType === "number" ? formatNum(val) : val || "-";
+        let rawValAttr = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
+        return `<td class="org-editable" data-type="${type3}" data-idx="${i8}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawValAttr}" title="Double-click to edit" style="padding: 12px 10px; cursor: text; border-bottom: 1px solid ${bdColor};">${innerHTML}</td>`;
+      };
+      const makeEditableRoot = (key, val, inputType = "number", unit2 = "") => {
+        const displayVal = val !== void 0 ? inputType === "number" ? formatNum(val, 2) : val : "-";
+        const rawVal = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
+        return `<span class="org-editable" data-type="root" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawVal}" title="Double-click to edit" style="cursor: text; border-bottom: 2px dotted ${themeColor}; font-weight: 700; color: var(--text-normal); padding: 0 2px;">${displayVal}${unit2}</span>`;
+      };
+      if (data.type === "nmr_yield") {
+        html += `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--text-normal); font-size: 14px; display:flex; align-items:center; gap:6px;">${icons.nmrTube} Internal Standard</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Name:</span> ${makeEditableRoot("standard_name", data.standard_name, "text")}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">MW (g/mol):</span> ${makeEditableRoot("standard_mw", data.standard_mw)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Mass added (mg):</span> ${makeEditableRoot("standard_mass_mg", data.standard_mass_mg)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Protons (N):</span> ${makeEditableRoot("standard_protons", data.standard_protons)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Integration (I):</span> ${makeEditableRoot("standard_integral", data.standard_integral)}
+                        </div>
+                    </div>
+
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                        <h4 style="margin: 0 0 15px 0; color: var(--text-normal); font-size: 14px; display:flex; align-items:center; gap:6px;">${icons.nmrTube} Target Product</h4>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Theory Scale (mmol):</span> ${makeEditableRoot("theory_mmol", data.theory_mmol)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">MW (g/mol):</span> ${makeEditableRoot("product_mw", data.product_mw)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Protons (N):</span> ${makeEditableRoot("product_protons", data.product_protons)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                            <span style="color:var(--text-muted); font-weight:600;">Integration (I):</span> ${makeEditableRoot("product_integral", data.product_integral)}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Calculated Amount</div>
+                        <div style="font-size:26px; font-weight:800; color:var(--text-normal);">${data.product_mmol ? data.product_mmol.toFixed(3) : "-"} <span style="font-size:14px; color:var(--text-muted); font-weight:500;">mmol</span> &nbsp;<span style="color:var(--background-modifier-border);">|</span>&nbsp; ${data.product_mass_mg ? data.product_mass_mg.toFixed(1) : "-"} <span style="font-size:14px; color:var(--text-muted); font-weight:500;">mg</span></div>
+                    </div>
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">NMR Yield</div>
+                        <div style="font-size:32px; font-weight:800; color:${data.yield_percent >= 80 ? "var(--text-success)" : data.yield_percent >= 40 ? "var(--text-warning)" : "var(--text-error)"};">${data.yield_percent ? data.yield_percent.toFixed(1) + "%" : "-"}</div>
+                        <div style="width:100%; background:var(--background-modifier-border); height:6px; border-radius:3px; overflow:hidden; margin-top: 12px;">
+                            <div style="width:${Math.min(data.yield_percent || 0, 100)}%; background:${data.yield_percent >= 80 ? "var(--text-success)" : data.yield_percent >= 40 ? "var(--text-warning)" : "var(--text-error)"}; height:100%; transition:width 0.3s;"></div>
+                        </div>
+                    </div>
+                </div>`;
+      } else if (data.type === "faradaic_efficiency") {
+        html += `
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Product Formed</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("product_mmol", data.product_mmol)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mmol</span></div>
+                    </div>
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
+                        <div style="position:absolute; top:10px; left:10px; opacity:0.5;">${icons.zap}</div>
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Electrons (z)</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("electrons_z", data.electrons_z)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">e\u207B</span></div>
+                    </div>
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
+                        <div style="position:absolute; top:10px; left:10px; opacity:0.5;">${icons.current}</div>
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Current</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("current_mA", data.current_mA)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mA</span></div>
+                    </div>
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
+                        <div style="position:absolute; top:10px; left:10px; opacity:0.5;">${icons.clock}</div>
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Time</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("time_hours", data.time_hours)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">h</span></div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Total Charge (Q)</div>
+                        <div style="font-size:26px; font-weight:800; color:var(--text-normal);">${data.total_coulombs ? data.total_coulombs.toFixed(1) : "-"} <span style="font-size:16px; color:var(--text-muted); font-weight:500;">C</span></div>
+                    </div>
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Theoretical Max</div>
+                        <div style="font-size:26px; font-weight:800; color:var(--text-normal);">${data.theory_max_mmol ? data.theory_max_mmol.toFixed(3) : "-"} <span style="font-size:16px; color:var(--text-muted); font-weight:500;">mmol</span></div>
+                    </div>
+                    <div style="flex: 1.5; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Faradaic Efficiency</div>
+                        <div style="font-size:32px; font-weight:800; color:${data.faradaic_efficiency >= 80 ? "var(--text-success)" : data.faradaic_efficiency >= 40 ? "var(--text-warning)" : "var(--text-error)"};">${data.faradaic_efficiency ? data.faradaic_efficiency.toFixed(1) + "%" : "-"}</div>
+                        <div style="width:100%; background:var(--background-modifier-border); height:6px; border-radius:3px; overflow:hidden; margin-top: 12px;">
+                            <div style="width:${Math.min(data.faradaic_efficiency || 0, 100)}%; background:${data.faradaic_efficiency >= 80 ? "var(--text-success)" : data.faradaic_efficiency >= 40 ? "var(--text-warning)" : "var(--text-error)"}; height:100%; transition:width 0.3s;"></div>
+                        </div>
+                    </div>
+                </div>`;
+      } else if (data.type === "reaction_screening") {
+        html += `
+                <div style="display: flex; align-items: stretch; background: var(--background-secondary-alt); border-radius: 8px; border: 1px solid var(--background-modifier-border); padding: 20px 10px; gap: 15px; margin-bottom: 24px;">
+                    
+                    <!-- Box 1: Master Mix -->
+                    <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        ${icons.flask}
+                        <div style="font-weight: 700; font-size: 15px; color: var(--text-normal); margin-top: 10px;">Master Vial</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Fill to Total Volume:</div>
+                        <div style="font-size: 24px; font-weight: 800; color: ${themeColor}; margin-top: 4px;">${formatNum(data.total_stock_vol_ml)} <span style="font-size:14px; font-weight:500;">mL</span></div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">(Includes ${makeEditableRoot("overage_percent", data.overage_percent, "number")}% overage)</div>
+                    </div>
+
+                    <!-- Box 2: Pipette -->
+                    <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+                        <div style="position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: ${themeColor}; z-index: 0; border-style: dashed; opacity: 0.5;"></div>
+                        <div style="background: var(--background-primary); padding: 15px; z-index: 1; display: flex; flex-direction: column; align-items: center; border-radius: 8px; border: 1px solid var(--background-modifier-border); box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            ${icons.pipette}
+                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 10px; text-transform: uppercase;">Dispense</div>
+                            <div style="font-size: 18px; font-weight: 800; color: var(--text-normal); margin-top: 4px;">${makeEditableRoot("vol_per_vial_ml", data.vol_per_vial_ml)} <span style="font-size:12px; font-weight:500;">mL / vial</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Box 3: Target Vials -->
+                    <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div style="display: flex; gap: 4px; justify-content: center; align-items: center;">
+                            ${Array.from({ length: Math.min(data.reactions, 4) }).map(() => icons.vial).join("")}
+                            ${data.reactions > 4 ? `<div style="font-weight:bold; color:var(--text-muted); margin-left:4px;">...</div>` : ""}
+                        </div>
+                        <div style="font-weight: 700; font-size: 15px; color: var(--text-normal); margin-top: 10px;">Reaction Vials</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Total Vials Prepared:</div>
+                        <div style="font-size: 24px; font-weight: 800; color: var(--text-normal); margin-top: 4px;">${makeEditableRoot("reactions", data.reactions)}</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Scale: ${makeEditableRoot("scale_mmol", data.scale_mmol)} mmol / vial</div>
+                    </div>
+                </div>`;
+        html += `<div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                    <tr>
+                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Component</th>
+                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">MW (g/mol)</th>
+                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 600; color: var(--text-normal);">Equiv.</th>
+                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 600; color: var(--text-muted);">Total mmol</th>
+                        <th style="padding: 10px; border-bottom: 2px solid ${bdColor}; font-weight: 700; color: ${themeColor};">Mass to Weigh (mg)</th>
+                    </tr>`;
+        data.components.forEach((c10, i8) => {
+          html += `<tr>
+                        ${makeEditableTd("components", i8, "name", c10.name, "text", c10.name, "font-weight:600; color:var(--text-normal);")}
+                        ${makeEditableTd("components", i8, "mw", c10.mw, "number")}
+                        ${makeEditableTd("components", i8, "eq", c10.eq, "number", void 0, "font-weight:bold;")}
+                        <td style="padding: 12px 10px; color:var(--text-muted); border-bottom: 1px solid ${bdColor};">${formatNum(c10.total_mmol, 3)}</td>
+                        <td style="padding: 12px 10px; font-weight:700; color:var(--text-normal); border-bottom: 1px solid ${bdColor}; font-size: 16px;">${c10.total_mass_mg !== void 0 && c10.total_mass_mg > 0 ? c10.total_mass_mg.toFixed(1) : '<span style="color:var(--text-muted); font-weight:normal;">-</span>'}</td>
+                    </tr>`;
+        });
+        html += `</table></div>`;
+      } else if (data.type === "catalyst_metrics") {
+        html += `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Product Formed</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("product_mmol", data.product_mmol)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mmol</span></div>
+                    </div>
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Catalyst Loading</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("catalyst_mmol", data.catalyst_mmol)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mmol</span></div>
+                    </div>
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Time</div>
+                        <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("time_hours", data.time_hours)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">h</span></div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px;">
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Turnover Number (TON)</div>
+                        <div style="font-size:32px; font-weight:800; color:var(--text-normal);">${data.ton ? data.ton.toLocaleString(void 0, { maximumFractionDigits: 1 }) : "-"}</div>
+                    </div>
+                    <div style="flex: 1; background: var(--background-primary); border: 2px solid ${themeColor}; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 12px; font-weight:700;">Turnover Frequency (TOF)</div>
+                        <div style="font-size:32px; font-weight:800; color:${themeColor};">${data.tof ? data.tof.toLocaleString(void 0, { maximumFractionDigits: 2 }) : "-"} <span style="font-size:16px; color:var(--text-muted); font-weight:500;">h\u207B\xB9</span></div>
+                    </div>
+                </div>`;
+      }
+      html += `</div>`;
+      const styleBlock = document.createElement("style");
+      styleBlock.innerHTML = `.org-editable:hover { background-color: rgba(245, 158, 11, 0.1); border-radius: 4px; }`;
+      wrapper2.appendChild(styleBlock);
+      const contentDiv = document.createElement("div");
+      contentDiv.innerHTML = html;
+      wrapper2.appendChild(contentDiv);
+      wrapper2.addEventListener("dblclick", (e6) => {
+        let target = e6.target;
+        while (target && target !== wrapper2 && !target.classList.contains("org-editable")) {
+          target = target.parentElement;
+        }
+        if (target && target.classList.contains("org-editable") && !target.querySelector("input")) {
+          e6.stopPropagation();
+          const type3 = target.getAttribute("data-type");
+          const idx = parseInt(target.getAttribute("data-idx") || "0", 10);
+          const key = target.getAttribute("data-key");
+          const inputType = target.getAttribute("data-input-type") || "number";
+          if (!key) return;
+          const originalHTML = target.innerHTML;
+          const currentValText = target.getAttribute("data-raw-value") || "";
+          target.innerHTML = "";
+          const input = document.createElement("input");
+          input.type = inputType === "text" || inputType === "string" ? "text" : "number";
+          if (inputType === "number") input.step = "any";
+          input.value = currentValText;
+          Object.assign(input.style, { width: "100%", boxSizing: "border-box", padding: "4px 6px", border: `2px solid ${themeColor}`, borderRadius: "4px", background: "var(--background-primary)", fontSize: "inherit", fontWeight: "inherit", color: "var(--text-normal)" });
+          target.appendChild(input);
+          input.focus();
+          const finishEdit = () => {
+            const newValStr = input.value.trim().replace(/,/g, ".");
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian11.MarkdownView);
+            let info = ctx.getSectionInfo(el2);
+            if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+            if (view && info) {
+              const { parseYaml: parseYaml2, stringifyYaml: stringifyYaml2 } = require("obsidian");
+              const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              try {
+                let yamlObj = parseYaml2(blockText);
+                let valToSave = newValStr;
+                if (inputType === "number") {
+                  const num = parseFloat(newValStr);
+                  valToSave = isNaN(num) ? void 0 : num;
+                } else {
+                  valToSave = newValStr === "" ? void 0 : newValStr;
+                }
+                if (type3 === "root") {
+                  if (valToSave === void 0) delete yamlObj[key];
+                  else yamlObj[key] = valToSave;
+                } else {
+                  if (!yamlObj[type3]) yamlObj[type3] = [];
+                  if (!yamlObj[type3][idx]) yamlObj[type3] = {};
+                  if (valToSave === void 0) delete yamlObj[type3][idx][key];
+                  else yamlObj[type3][idx][key] = valToSave;
+                }
+                yamlObj = OrgHelperCalculator.calculate(yamlObj);
+                const newYaml = stringifyYaml2(yamlObj);
+                view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              } catch (err) {
+                target.innerHTML = originalHTML;
+              }
+            } else {
+              target.innerHTML = originalHTML;
+            }
+          };
+          input.onblur = finishEdit;
+          input.onkeydown = (ev) => {
+            if (ev.key === "Enter") input.blur();
+            else if (ev.key === "Escape") {
+              target.innerHTML = originalHTML;
+            }
+          };
+        }
+      });
+      const actionBar = wrapper2.createDiv();
+      Object.assign(actionBar.style, { position: "absolute", top: "15px", right: "15px", display: "flex", gap: "8px", zIndex: "10" });
+      const createActionBarBtn = (text2, onClick) => {
+        const btn = actionBar.createDiv();
+        btn.innerHTML = text2;
+        btn.style.cursor = "pointer";
+        btn.style.fontSize = "11px";
+        btn.style.padding = "4px 10px";
+        btn.style.fontWeight = "600";
+        btn.style.backgroundColor = "transparent";
+        btn.style.border = "1px solid var(--background-modifier-border)";
+        btn.style.color = "var(--text-muted)";
+        btn.style.borderRadius = "4px";
+        btn.onmouseover = () => {
+          btn.style.borderColor = themeColor;
+          btn.style.color = themeColor;
+        };
+        btn.onmouseout = () => {
+          btn.style.borderColor = "var(--background-modifier-border)";
+          btn.style.color = "var(--text-muted)";
+        };
+        btn.onclick = onClick;
+        return btn;
+      };
+      createActionBarBtn("\u{1F4CB} Copy Data", () => {
+        var _a2, _b, _c, _d, _e2, _f, _g2, _h, _i2;
+        let txt = "";
+        if (data.type === "nmr_yield") {
+          txt = `Parameter	Value
+`;
+          txt += `Internal Standard	${data.standard_name || "-"}
+`;
+          txt += `Standard Mass (mg)	${data.standard_mass_mg}
+`;
+          txt += `Theory (mmol)	${data.theory_mmol}
+`;
+          txt += `Calculated Amount (mmol)	${(_a2 = data.product_mmol) == null ? void 0 : _a2.toFixed(3)}
+`;
+          txt += `Calculated Amount (mg)	${(_b = data.product_mass_mg) == null ? void 0 : _b.toFixed(1)}
+`;
+          txt += `NMR Yield (%)	${(_c = data.yield_percent) == null ? void 0 : _c.toFixed(1)}
+`;
+        } else if (data.type === "faradaic_efficiency") {
+          txt = `Parameter	Value
+`;
+          txt += `Product Formed (mmol)	${data.product_mmol}
+`;
+          txt += `Electrons (z)	${data.electrons_z}
+`;
+          txt += `Current (mA)	${data.current_mA}
+`;
+          txt += `Time (h)	${data.time_hours}
+`;
+          txt += `Total Charge (C)	${(_d = data.total_coulombs) == null ? void 0 : _d.toFixed(1)}
+`;
+          txt += `Theoretical Max (mmol)	${(_e2 = data.theory_max_mmol) == null ? void 0 : _e2.toFixed(3)}
+`;
+          txt += `Faradaic Efficiency (%)	${(_f = data.faradaic_efficiency) == null ? void 0 : _f.toFixed(1)}
+`;
+        } else if (data.type === "reaction_screening") {
+          txt = `Component	MW	Eq	Total mmol	Mass to Weigh (mg)
+`;
+          data.components.forEach((c10) => {
+            var _a3, _b2;
+            return txt += `${c10.name || "-"}	${c10.mw || "-"}	${c10.eq || "-"}	${((_a3 = c10.total_mmol) == null ? void 0 : _a3.toFixed(3)) || "-"}	${((_b2 = c10.total_mass_mg) == null ? void 0 : _b2.toFixed(1)) || "-"}
+`;
+          });
+          txt += `
+Master Mix Total Volume (mL)	${(_g2 = data.total_stock_vol_ml) == null ? void 0 : _g2.toFixed(2)}
+`;
+          txt += `Dispense Volume per Vial (mL)	${data.vol_per_vial_ml}
+`;
+        } else if (data.type === "catalyst_metrics") {
+          txt = `Parameter	Value
+`;
+          txt += `Product (mmol)	${data.product_mmol}
+`;
+          txt += `Catalyst (mmol)	${data.catalyst_mmol}
+`;
+          txt += `Time (h)	${data.time_hours}
+`;
+          txt += `TON	${(_h = data.ton) == null ? void 0 : _h.toFixed(1)}
+`;
+          txt += `TOF (h-1)	${(_i2 = data.tof) == null ? void 0 : _i2.toFixed(2)}
+`;
+        } else {
+          txt = JSON.stringify(data, null, 2);
+        }
+        navigator.clipboard.writeText(txt);
+        new import_obsidian11.Notice("Table copied to clipboard (Excel ready)!");
+      });
+      return wrapper2;
+    } catch (err) {
+      wrapper2.innerHTML = `<div style="padding: 20px; color: var(--text-error); background: var(--background-secondary); border-radius: 8px;"><b>Organic Helper Error:</b><br>${err.message}</div>`;
+      return wrapper2;
+    }
+  }
+};
+
+// PolymerEln.ts
+var import_obsidian12 = require("obsidian");
+init_SharedEln();
+var PolymerCalculator = class {
+  static calculate(data) {
+    var _a, _b, _c;
+    if (!data.monomers) data.monomers = [];
+    if (!data.initiators) data.initiators = [];
+    if (!data.agents) data.agents = [];
+    if (!data.components) data.components = [];
+    if (!data.characterization) data.characterization = {};
+    if (data.type === "formulation") {
+      let totalPhr = 0;
+      data.components.forEach((c10) => {
+        c10.phr = c10.phr || 0;
+        totalPhr += c10.phr;
+      });
+      const targetMassMg2 = data.target_mass_mg || (data.target_mass_g ? data.target_mass_g * 1e3 : 1e5);
+      data.components.forEach((c10) => {
+        c10.wt_frac = totalPhr > 0 ? c10.phr / totalPhr : 0;
+        c10.mass_mg = targetMassMg2 * c10.wt_frac;
+        c10.mass_g = c10.mass_mg / 1e3;
+        if (c10.density) c10.volume_ml = c10.mass_g / c10.density;
+      });
+      data.total_mass_g = targetMassMg2 / 1e3;
+      return data;
+    }
+    let totalMonomerEq = 0;
+    let baseMonomerMw = 0;
+    data.monomers.forEach((m9) => {
+      m9.eq = m9.eq || m9.mol_ratio || 1;
+      totalMonomerEq += m9.eq;
+      if (m9.eq === 1 && m9.mw) baseMonomerMw = m9.mw;
+    });
+    if (baseMonomerMw === 0 && ((_a = data.monomers[0]) == null ? void 0 : _a.mw)) baseMonomerMw = data.monomers[0].mw;
+    const targetDp = data.target_dp || 100;
+    const targetMassMg = data.target_mass_mg || (data.target_mass_g ? data.target_mass_g * 1e3 : null);
+    let totalMonomerMassWeight = 0;
+    if (totalMonomerEq > 0) {
+      data.monomers.forEach((m9) => {
+        totalMonomerMassWeight += m9.eq / totalMonomerEq * (m9.mw || 0);
+      });
+    }
+    data.initiators.forEach((i8) => {
+      if (i8.ratio_to_monomer) i8.eq = totalMonomerEq * i8.ratio_to_monomer;
+      else if (!i8.eq) i8.eq = totalMonomerEq / targetDp;
+    });
+    data.agents.forEach((a9) => {
+      if (a9.ratio_to_monomer) a9.eq = totalMonomerEq * a9.ratio_to_monomer;
+      else if (!a9.eq) a9.eq = totalMonomerEq / targetDp;
+    });
+    const activeChainEq = data.agents.length > 0 ? data.agents[0].eq : data.initiators.length > 0 ? data.initiators[0].eq : 1;
+    const theoryDp = activeChainEq > 0 ? totalMonomerEq / activeChainEq : 0;
+    data.theoretical_mn = theoryDp * totalMonomerMassWeight + (((_b = data.agents[0]) == null ? void 0 : _b.mw) || ((_c = data.initiators[0]) == null ? void 0 : _c.mw) || 0);
+    if (targetMassMg) {
+      let totalRelativeMass = 0;
+      data.monomers.forEach((m9) => totalRelativeMass += m9.eq * (m9.mw || 0));
+      data.initiators.forEach((i8) => totalRelativeMass += i8.eq * (i8.mw || 0));
+      data.agents.forEach((a9) => totalRelativeMass += a9.eq * (a9.mw || 0));
+      const scaleFactor = totalRelativeMass > 0 ? targetMassMg / totalRelativeMass : 0;
+      const applyScale = (arr) => {
+        arr.forEach((item) => {
+          item.mmol = item.eq * scaleFactor;
+          item.mass_mg = item.mmol * (item.mw || 0);
+          item.mass_g = item.mass_mg / 1e3;
+          if (item.density) item.volume_ml = item.mass_g / item.density;
+        });
+      };
+      applyScale(data.monomers);
+      applyScale(data.initiators);
+      applyScale(data.agents);
+    }
+    return data;
+  }
+};
+var PolymerElnRenderer = class {
+  constructor(plugin) {
+    __publicField(this, "plugin");
+    this.plugin = plugin;
+  }
+  async renderPolymerBlock(source, el2, ctx) {
+    const { parseYaml, stringifyYaml } = require("obsidian");
+    const wrapper2 = el2.createDiv();
+    wrapper2.style.position = "relative";
+    wrapper2.style.border = "1px solid var(--interactive-accent)";
+    wrapper2.style.padding = "45px 15px 15px 15px";
+    wrapper2.style.borderRadius = "12px";
+    wrapper2.style.backgroundColor = "var(--background-primary-alt)";
+    wrapper2.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.05)";
+    wrapper2.style.fontFamily = "var(--font-interface)";
+    wrapper2.style.width = "100%";
+    wrapper2.innerHTML = `<h3 class="color-text-muted" style="text-align:center;">\u23F3 Calculating Macromolecules...</h3>`;
+    try {
+      const safeSource = source.replace(/smiles:\s*(.*)$/gm, (match2, p1) => {
+        let s8 = p1.trim();
+        if (!s8) return match2;
+        let comment2 = "";
+        const commentMatch = s8.match(/(\s+#.*)$/);
+        if (commentMatch) {
+          comment2 = commentMatch[1];
+          s8 = s8.substring(0, s8.length - comment2.length).trim();
+        }
+        if (s8.startsWith('"') && s8.endsWith('"') || s8.startsWith("'") && s8.endsWith("'")) s8 = s8.substring(1, s8.length - 1);
+        s8 = s8.replace(/\\"/g, '"');
+        s8 = s8.replace(/'/g, "''");
+        return `smiles: '${s8}'${comment2}`;
+      });
+      let data = parseYaml(safeSource);
+      if (!data) throw new Error("Empty YAML Data.");
+      const fetchMws = async (arr) => {
+        if (!arr) return;
+        for (const item of arr) {
+          if (item.smiles && (!item.mw || item.mw <= 0)) {
+            const p7 = await calculateMwOffline(item.smiles, this.plugin);
+            if (p7 && p7.mw > 0) item.mw = p7.mw;
+          }
+        }
+      };
+      await fetchMws(data.monomers);
+      await fetchMws(data.initiators);
+      await fetchMws(data.agents);
+      await fetchMws(data.components);
+      data = PolymerCalculator.calculate(data);
+      const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian12.MarkdownView);
+      const currentFile = view ? view.file : null;
+      const expCode = data.code || (currentFile ? currentFile.basename : "POLY");
+      wrapper2.innerHTML = "";
+      wrapper2.addEventListener("dblclick", (e6) => {
+        let target = e6.target;
+        while (target && target !== wrapper2 && !target.classList.contains("eln-editable")) {
+          target = target.parentElement;
+        }
+        if (target && target.classList.contains("eln-editable") && !target.querySelector("input")) {
+          e6.stopPropagation();
+          const type3 = target.getAttribute("data-type");
+          const idx = parseInt(target.getAttribute("data-idx") || "0", 10);
+          const key = target.getAttribute("data-key");
+          const inputType = target.getAttribute("data-input-type") || "number";
+          if (!key) return;
+          const originalHTML = target.innerHTML;
+          const currentValText = target.getAttribute("data-raw-value") || "";
+          target.innerHTML = "";
+          target.style.padding = "4px";
+          const input = document.createElement("input");
+          input.type = inputType === "text" ? "text" : "number";
+          if (inputType === "number") input.step = "any";
+          input.value = currentValText;
+          Object.assign(input.style, { width: "100%", boxSizing: "border-box", padding: "4px 6px", border: "1px solid var(--interactive-accent)", borderRadius: "4px", background: "var(--background-primary)" });
+          target.appendChild(input);
+          input.focus();
+          const finishEdit = () => {
+            const newValStr = input.value.trim().replace(/,/g, ".");
+            let info = ctx.getSectionInfo(el2);
+            if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+            if (view && info) {
+              const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              try {
+                let yamlObj = parseYaml(blockText);
+                let valToSave = newValStr;
+                if (inputType === "number") {
+                  const num = parseFloat(newValStr);
+                  valToSave = isNaN(num) ? void 0 : num;
+                } else {
+                  valToSave = newValStr === "" ? void 0 : newValStr;
+                }
+                if (type3 === "root") {
+                  if (valToSave === void 0) delete yamlObj[key];
+                  else yamlObj[key] = valToSave;
+                } else if (type3 === "characterization") {
+                  if (!yamlObj.characterization) yamlObj.characterization = {};
+                  if (valToSave === void 0) delete yamlObj.characterization[key];
+                  else yamlObj.characterization[key] = valToSave;
+                } else {
+                  if (!yamlObj[type3]) yamlObj[type3] = [];
+                  if (!yamlObj[type3][idx]) yamlObj[type3] = {};
+                  if (valToSave === void 0) {
+                    delete yamlObj[type3][idx][key];
+                  } else {
+                    yamlObj[type3][idx][key] = valToSave;
+                  }
+                }
+                yamlObj = PolymerCalculator.calculate(yamlObj);
+                const newYaml = stringifyYaml(yamlObj);
+                view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              } catch (err) {
+                target.innerHTML = originalHTML;
+                target.style.padding = "10px";
+              }
+            } else {
+              target.innerHTML = originalHTML;
+              target.style.padding = "10px";
+            }
+          };
+          input.onblur = finishEdit;
+          input.onkeydown = (ev) => {
+            if (ev.key === "Enter") input.blur();
+            else if (ev.key === "Escape") {
+              target.innerHTML = originalHTML;
+              target.style.padding = "10px";
+            }
+          };
+        }
+      });
+      const actionBar = wrapper2.createDiv();
+      Object.assign(actionBar.style, { position: "absolute", top: "8px", right: "10px", display: "flex", gap: "5px", zIndex: "10", flexWrap: "wrap", justifyContent: "flex-end" });
+      const createBtn = (text2, title, onClick) => {
+        const btn = actionBar.createDiv();
+        btn.innerHTML = text2;
+        btn.title = title;
+        btn.style.cursor = "pointer";
+        btn.style.fontSize = "11px";
+        btn.style.padding = "4px 8px";
+        btn.style.backgroundColor = "var(--background-secondary)";
+        btn.style.border = "1px solid var(--background-modifier-border)";
+        btn.style.color = "var(--text-normal)";
+        btn.style.borderRadius = "4px";
+        btn.onmouseover = () => btn.style.backgroundColor = "var(--background-modifier-hover)";
+        btn.onmouseout = () => btn.style.backgroundColor = "var(--background-secondary)";
+        btn.onclick = onClick;
+        return btn;
+      };
+      const updateYamlState = (mutate) => {
+        if (!view) return;
+        let info = ctx.getSectionInfo(el2);
+        if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+        if (!info) return;
+        const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+        try {
+          const yamlObj = parseYaml(blockText);
+          mutate(yamlObj);
+          const newYaml = stringifyYaml(yamlObj);
+          view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+        } catch (err) {
+        }
+      };
+      createBtn("\u2699\uFE0F Status", "Change Experiment Status", (e6) => {
+        if (!e6) return;
+        const menu = new import_obsidian12.Menu();
+        menu.addItem((item) => item.setTitle("Mark as Planned").setIcon("calendar").onClick(() => updateYamlState((y9) => y9.status = "Planned")));
+        menu.addItem((item) => item.setTitle("Mark as Running").setIcon("play").onClick(() => updateYamlState((y9) => y9.status = "Running")));
+        menu.addItem((item) => item.setTitle("Mark as Completed").setIcon("check").onClick(() => updateYamlState((y9) => y9.status = "Completed")));
+        menu.addItem((item) => item.setTitle("Mark as Failed").setIcon("cross").onClick(() => updateYamlState((y9) => y9.status = "Failed")));
+        menu.showAtMouseEvent(e6);
+      });
+      createBtn("\u{1F4DD} Edit", "Open Visual Polymer Editor", () => {
+        if (!view) return;
+        let info = ctx.getSectionInfo(el2);
+        if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+        if (info) {
+          new PolymerMetaEditorModal(this.plugin.app, this.plugin, data, async (updatedYamlObj) => {
+            const newYaml = stringifyYaml(updatedYamlObj);
+            view.editor.replaceRange(`\`\`\`polymer-eln
+${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: view.editor.getLine(info.lineEnd).length });
+          }).open();
+        }
+      });
+      const thColor = "var(--background-secondary)";
+      const bdColor = "var(--background-modifier-border-hover)";
+      const textColor = "var(--text-normal)";
+      let statusColor = "var(--text-muted)";
+      if (data.status === "Completed") statusColor = "var(--text-success)";
+      else if (data.status === "Running") statusColor = "var(--text-warning)";
+      else if (data.status === "Failed") statusColor = "var(--text-error)";
+      else if (data.status === "Planned") statusColor = "var(--text-accent)";
+      const statusBadge = data.status ? `<span style="font-size: 11px; padding: 2px 8px; border-radius: 12px; background: var(--background-primary); border: 1px solid ${statusColor}; color: ${statusColor}; vertical-align: middle; margin-left: 10px; font-weight: 500;">${data.status}</span>` : "";
+      let html = `<div style="font-size: 14px; color: ${textColor}; margin-top:5px;">`;
+      html += `
+            <div style="border-bottom: 2px solid var(--interactive-accent); padding-bottom: 10px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
+                <div>
+                    <h2 style="margin: 0; font-size: 22px; font-weight: 700; color: var(--interactive-accent);">${expCode} ${statusBadge}</h2>
+                    <div style="font-size: 13px; color: var(--text-muted); margin-top:4px;">${data.title || data.type || "Polymerization"}</div>
+                </div>
+            </div>`;
+      const makeEditableTd = (type3, i8, key, val, inputType = "number", customHtml, extraStyles = "") => {
+        let innerHTML = customHtml !== void 0 ? customHtml : "-";
+        let rawValAttr = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
+        if (customHtml === void 0) {
+          if (inputType === "text") innerHTML = val ? val : "-";
+          else {
+            const numVal = Number(val);
+            innerHTML = !isNaN(numVal) && numVal > 0 ? numVal.toFixed(2) : "-";
+          }
+        }
+        return `<td class="eln-editable" data-type="${type3}" data-idx="${i8}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawValAttr}" title="Double-click to edit" style="padding: 10px; cursor: text; transition: background 0.2s; ${extraStyles}">${innerHTML}</td>`;
+      };
+      const makeEditableRoot = (key, val, type3 = "root", inputType = "number") => {
+        const displayVal = val || "-";
+        const rawVal = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
+        return `<span class="eln-editable" data-type="${type3}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawVal}" title="Double-click to edit" style="cursor: text; border-bottom: 1px dashed var(--interactive-accent); display: inline-block;">${displayVal}</span>`;
+      };
+      if (data.type === "formulation") {
+        html += `
+                <div style="margin-bottom: 15px; font-size: 13px; background: var(--background-secondary); padding: 10px; border-radius: 6px;">
+                    <span style="color:var(--text-muted)">Target Mass [g]:</span> ${makeEditableRoot("target_mass_g", data.target_mass_g)}
+                </div>
+                <h4 style="margin-bottom: 10px; color: var(--text-normal);">Formulation Components (PHR Base)</h4>
+                <div style="overflow-x: auto; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                    <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
+                        <th style="padding: 10px;">Component</th><th style="padding: 10px;">Structure</th><th style="padding: 10px;">PHR</th><th style="padding: 10px;">Wt %</th><th style="padding: 10px;">Mass [g]</th><th style="padding: 10px;">Vol [mL]</th>
+                    </tr>`;
+        data.components.forEach((c10, i8) => {
+          html += `<tr style="border-bottom: 1px solid ${bdColor};">
+                        ${makeEditableTd("components", i8, "name", c10.name, "text", c10.name, "font-weight:600;")}
+                        <td style="padding: 10px;"><div class="poly-struct" data-type="components" data-idx="${i8}" data-smiles="${c10.smiles || ""}"></div></td>
+                        ${makeEditableTd("components", i8, "phr", c10.phr, "number", void 0, "color:var(--text-accent); font-weight:bold;")}
+                        <td style="padding: 10px;">${(c10.wt_frac * 100).toFixed(1)}%</td>
+                        <td style="padding: 10px;">${c10.mass_g ? c10.mass_g.toFixed(3) : "-"}</td>
+                        <td style="padding: 10px;">${c10.volume_ml ? c10.volume_ml.toFixed(2) : "-"}</td>
+                    </tr>`;
+        });
+        html += `</table></div>`;
+      } else {
+        html += `
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; font-size: 13px; background: var(--background-secondary); padding: 10px; border-radius: 6px;">
+                    <div><span style="color:var(--text-muted)">Target DP:</span> ${makeEditableRoot("target_dp", data.target_dp)}</div>
+                    <div><span style="color:var(--text-muted)">Target Mass [g]:</span> ${makeEditableRoot("target_mass_g", data.target_mass_g)}</div>
+                </div>`;
+        const char2 = data.characterization || {};
+        html += `
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 25px;">
+                    <div style="flex: 1; min-width: 120px; background: var(--background-secondary); padding: 10px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Theoretical Mn</div>
+                        <div style="font-size:18px; font-weight:bold; color:var(--interactive-accent);">${data.theoretical_mn ? Math.round(data.theoretical_mn).toLocaleString() : "-"}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 120px; background: var(--background-secondary); padding: 10px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">GPC Actual Mn</div>
+                        <div style="font-size:18px; font-weight:bold; color:var(--text-normal);">${makeEditableRoot("Mn_gpc", char2.Mn_gpc, "characterization")}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 120px; background: var(--background-secondary); padding: 10px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Dispersity (\u0110)</div>
+                        <div style="font-size:18px; font-weight:bold; color:${char2.dispersity < 1.2 ? "var(--text-success)" : "var(--text-warning)"};">${makeEditableRoot("dispersity", char2.dispersity, "characterization")}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 120px; background: var(--background-secondary); padding: 10px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Thermal Tg [\xB0C]</div>
+                        <div style="font-size:18px; font-weight:bold; color:var(--text-normal);">${makeEditableRoot("Tg", char2.Tg, "characterization")}</div>
+                    </div>
+                </div>`;
+        html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Monomers</h4>
+                <div style="overflow-x: auto; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                    <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
+                        <th style="padding: 10px;">Name</th><th style="padding: 10px;">Structure</th><th style="padding: 10px;">Eq (Ratio)</th><th style="padding: 10px;">MW</th><th style="padding: 10px;">n [mmol]</th><th style="padding: 10px;">m [g]</th><th style="padding: 10px;">V [mL]</th>
+                    </tr>`;
+        data.monomers.forEach((m9, i8) => {
+          html += `<tr style="border-bottom: 1px solid ${bdColor};">
+                        ${makeEditableTd("monomers", i8, "name", m9.name, "text", m9.name, "font-weight:600;")}
+                        <td style="padding: 10px;"><div class="poly-struct" data-type="monomers" data-idx="${i8}" data-smiles="${m9.smiles || ""}"></div></td>
+                        ${makeEditableTd("monomers", i8, "eq", m9.eq, "number", void 0, "font-weight:bold;")}
+                        <td style="padding: 10px; color:var(--text-muted);">${m9.mw ? m9.mw.toFixed(1) : "-"}</td>
+                        <td style="padding: 10px;">${m9.mmol ? m9.mmol.toFixed(2) : "-"}</td>
+                        <td style="padding: 10px; color:var(--interactive-accent); font-weight:bold;">${m9.mass_g ? m9.mass_g.toFixed(3) : "-"}</td>
+                        <td style="padding: 10px;">${m9.volume_ml ? m9.volume_ml.toFixed(2) : "-"}</td>
+                    </tr>`;
+        });
+        html += `</table></div>`;
+        if (data.initiators.length > 0 || data.agents.length > 0) {
+          html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Initiators, Catalysts & Agents</h4>
+                    <div style="overflow-x: auto; margin-bottom: 20px;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                        <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
+                            <th style="padding: 10px;">Role</th><th style="padding: 10px;">Name</th><th style="padding: 10px;">Structure</th><th style="padding: 10px;">[M]/[I] Ratio</th><th style="padding: 10px;">n [mmol]</th><th style="padding: 10px;">m [mg]</th>
+                        </tr>`;
+          const renderAgent = (a9, role, type3, idx) => {
+            var _a;
+            const baseEq = ((_a = data.monomers[0]) == null ? void 0 : _a.eq) || 1;
+            const aEq = a9.eq || 1;
+            const mToIRatio = baseEq / aEq;
+            html += `<tr style="border-bottom: 1px solid ${bdColor};">
+                            <td style="padding: 10px; color:var(--text-muted); font-size:11px; text-transform:uppercase;">${role}</td>
+                            ${makeEditableTd(type3, idx, "name", a9.name, "text", a9.name, "font-weight:600;")}
+                            <td style="padding: 10px;"><div class="poly-struct" data-type="${type3}" data-idx="${idx}" data-smiles="${a9.smiles || ""}"></div></td>
+                            <td style="padding: 10px; font-weight:bold; color:var(--text-warning);">${Math.round(mToIRatio)} : 1</td>
+                            <td style="padding: 10px;">${a9.mmol ? a9.mmol.toFixed(3) : "-"}</td>
+                            <td style="padding: 10px; color:var(--text-normal); font-weight:bold;">${a9.mass_mg ? a9.mass_mg.toFixed(1) : "-"}</td>
+                        </tr>`;
+          };
+          data.initiators.forEach((i8, idx) => renderAgent(i8, "Initiator", "initiators", idx));
+          data.agents.forEach((a9, idx) => renderAgent(a9, "CTA/Agent", "agents", idx));
+          html += `</table></div>`;
+        }
+      }
+      html += `</div>`;
+      const styleBlock = document.createElement("style");
+      styleBlock.innerHTML = `.eln-editable:hover { background-color: var(--background-modifier-hover); }`;
+      wrapper2.appendChild(styleBlock);
+      const contentDiv = document.createElement("div");
+      contentDiv.innerHTML = html;
+      wrapper2.appendChild(contentDiv);
+      const nodes = contentDiv.querySelectorAll(".poly-struct");
+      nodes.forEach((node2) => {
+        const elNode = node2;
+        const smiles = elNode.dataset.smiles;
+        const type3 = elNode.dataset.type;
+        const idx = parseInt(elNode.dataset.idx || "0", 10);
+        elNode.style.width = `120px`;
+        elNode.style.height = `80px`;
+        elNode.style.cursor = "pointer";
+        elNode.title = "Double-click to edit structure";
+        elNode.innerHTML = "\u23F3";
+        if (smiles) {
+          requestAnimationFrame(async () => {
+            const renderEl = await this.plugin.api.renderStructure(smiles, 120, 80);
+            elNode.empty();
+            if (renderEl) {
+              renderEl.style.maxWidth = "100%";
+              renderEl.style.maxHeight = "100%";
+              elNode.appendChild(renderEl);
+            } else elNode.innerHTML = "\u274C";
+          });
+        } else {
+          elNode.innerHTML = "Draw...";
+          elNode.style.color = "var(--text-muted)";
+        }
+        elNode.addEventListener("dblclick", (e6) => {
+          e6.stopPropagation();
+          let info = ctx.getSectionInfo(el2);
+          if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+          if (!view || !info) return;
+          this.plugin.api.ketcher.openEditor(smiles || "", "smiles", (newData) => {
+            const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+            try {
+              const yamlObj = parseYaml(blockText);
+              yamlObj[type3][idx].smiles = newData;
+              delete yamlObj[type3][idx].mw;
+              const newYaml = stringifyYaml(yamlObj);
+              view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+            } catch (err) {
+            }
+          });
+        });
+      });
+      return wrapper2;
+    } catch (err) {
+      wrapper2.innerHTML = `<div style="padding: 20px; color: var(--text-error); background: var(--background-secondary); border-radius: 8px;"><b>Polymer ELN Error:</b><br>${err.message}</div>`;
+      return wrapper2;
+    }
+  }
+};
+var PolymerMetaEditorModal = class extends import_obsidian12.Modal {
+  constructor(app, plugin, yamlObj, onSave) {
+    super(app);
+    __publicField(this, "plugin");
+    __publicField(this, "data");
+    __publicField(this, "onSave");
+    this.plugin = plugin;
+    this.data = JSON.parse(JSON.stringify(yamlObj));
+    if (!this.data.monomers) this.data.monomers = [];
+    if (!this.data.initiators) this.data.initiators = [];
+    if (!this.data.agents) this.data.agents = [];
+    if (!this.data.components) this.data.components = [];
+    this.onSave = onSave;
+  }
+  onOpen() {
+    this.render();
+  }
+  render() {
+    const { contentEl } = this;
+    contentEl.empty();
+    const header = contentEl.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--background-modifier-border); padding-bottom: 10px;" } });
+    header.createEl("h2", { text: "Edit Polymer Meta", attr: { style: "margin: 0; font-size: 1.2em;" } });
+    const saveBtn = header.createEl("button", { text: "Save", cls: "mod-cta" });
+    saveBtn.onclick = () => {
+      this.onSave(this.data);
+      this.close();
+    };
+    const metaGrid = contentEl.createDiv({ attr: { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;" } });
+    const addInput = (parent, label, key) => {
+      const wrap = parent.createDiv();
+      wrap.createEl("div", { text: label, cls: "color-text-muted", attr: { style: "font-size:12px; margin-bottom:3px;" } });
+      const inp = wrap.createEl("input", { type: "text", value: this.data[key] || "", attr: { style: "width:100%;" } });
+      inp.onchange = (e6) => this.data[key] = e6.target.value;
+    };
+    addInput(metaGrid, "Experiment Code", "code");
+    addInput(metaGrid, "Title", "title");
+    addInput(metaGrid, "Target Mass (g)", "target_mass_g");
+    if (this.data.type !== "formulation") addInput(metaGrid, "Target DP", "target_dp");
+    const renderChemRow = (item, type3, idx) => {
+      const row = contentEl.createDiv({ attr: { style: "background: var(--background-secondary-alt); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--background-modifier-border); display: flex; flex-direction: column; gap: 10px;" } });
+      const topWrap = row.createDiv({ attr: { style: "display: flex; gap: 10px; align-items: center;" } });
+      const nameInp = topWrap.createEl("input", { type: "text", value: item.name || "", attr: { placeholder: "Chemical Name", style: "width: 100%; font-weight: bold;" } });
+      nameInp.onchange = (e6) => item.name = e6.target.value;
+      const actionRow = row.createDiv({ attr: { style: "display: flex; gap: 6px; justify-content: flex-start; flex-wrap: wrap;" } });
+      const drawBtn = actionRow.createEl("button", { text: "\u270F\uFE0F Draw", attr: { style: "font-size:11px; padding: 4px 8px;" } });
+      drawBtn.onclick = () => {
+        this.plugin.api.ketcher.openEditor(item.smiles || "", "smiles", (newSmiles) => {
+          item.smiles = newSmiles;
+          this.render();
+        });
+      };
+      const libBtn = actionRow.createEl("button", { text: "\u{1F4DA} Lib", attr: { style: "font-size:11px; padding: 4px 8px;" } });
+      libBtn.onclick = async () => {
+        const lib = await getCompoundLibrary(this.plugin);
+        new CompoundSuggestModal(this.plugin.app, lib, (selected6) => {
+          item.name = selected6.name;
+          item.smiles = selected6.smiles;
+          this.render();
+        }).open();
+      };
+      const delBtn = actionRow.createEl("button", { text: "\u{1F5D1}\uFE0F Remove", attr: { style: "color: var(--text-error); font-size:11px; padding: 4px 8px; margin-left:auto;" } });
+      delBtn.onclick = () => {
+        this.data[type3].splice(idx, 1);
+        this.render();
+      };
+      const botRow = row.createDiv({ attr: { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(75px, 1fr)); gap: 8px; margin-top: 5px;" } });
+      const makeNumInp = (key, label) => {
+        const wrap = botRow.createDiv({ attr: { style: "display: flex; flex-direction: column;" } });
+        wrap.createEl("span", { text: label, attr: { style: "font-size: 10px; color: var(--text-muted); margin-bottom: 2px; white-space: nowrap;" } });
+        const inp = wrap.createEl("input", { type: "number", value: item[key] !== void 0 ? item[key] : "", attr: { style: "width: 100%; padding: 4px; box-sizing: border-box;" } });
+        inp.onchange = (e6) => {
+          const val = parseFloat(e6.target.value.replace(/,/g, "."));
+          if (isNaN(val)) delete item[key];
+          else item[key] = val;
+          this.render();
+        };
+      };
+      if (type3 === "monomers") {
+        makeNumInp("eq", "Eq");
+      }
+      if (type3 === "initiators" || type3 === "agents") {
+        makeNumInp("ratio_to_monomer", "Ratio [I]/[M]");
+      }
+      if (type3 === "components") {
+        makeNumInp("phr", "PHR");
+      }
+    };
+    const makeSection = (title, typeKey) => {
+      const h5 = contentEl.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 20px;" } });
+      h5.createEl("h3", { text: title, attr: { style: "margin: 0; font-size: 1.1em;" } });
+      const btn = h5.createEl("button", { text: "+ Add" });
+      btn.onclick = () => {
+        this.data[typeKey].push({ name: "", smiles: "" });
+        this.render();
+      };
+      this.data[typeKey].forEach((x25, idx) => renderChemRow(x25, typeKey, idx));
+    };
+    if (this.data.type === "formulation") {
+      makeSection("Components (Resins, Fillers)", "components");
+    } else {
+      makeSection("Monomers", "monomers");
+      makeSection("Initiators & Catalysts", "initiators");
+      makeSection("RAFT / CTA Agents", "agents");
+    }
+    contentEl.createDiv({ attr: { style: "height: 50px;" } });
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+
+// MatrixEln.ts
+var import_obsidian13 = require("obsidian");
+var MatrixCalculator = class {
+  static calculate(data) {
+    if (!data.variables) data.variables = {};
+    if (!data.fixed_components) data.fixed_components = [];
+    const scaleMmol = data.scale_mmol || 0.05;
+    const volPerVialUl = data.vol_per_vial_ul || 500;
+    const overage = data.overage_percent !== void 0 ? data.overage_percent : 10;
+    const varKeys = Object.keys(data.variables);
+    const combinations = [];
+    const helper = (idx, currentObj) => {
+      if (idx === varKeys.length) {
+        combinations.push({ ...currentObj });
+        return;
+      }
+      const key = varKeys[idx];
+      data.variables[key].forEach((item) => {
+        currentObj[key] = item;
+        helper(idx + 1, currentObj);
+      });
+    };
+    if (varKeys.length > 0) helper(0, {});
+    else combinations.push({});
+    data.matrix = combinations;
+    data.total_reactions = combinations.length;
+    data.calc_reactions = data.total_reactions * (1 + overage / 100);
+    data.total_master_vol_ul = data.calc_reactions * volPerVialUl;
+    data.fixed_components.forEach((c10) => {
+      c10.eq = c10.eq || 1;
+      c10.total_mmol = scaleMmol * c10.eq * data.calc_reactions;
+      if (c10.mw) c10.total_mass_mg = c10.total_mmol * c10.mw;
+    });
+    if (!data.yields) {
+      data.yields = new Array(data.total_reactions).fill(null);
+    }
+    return data;
+  }
+  // Expert System Rules based on current literature
+  static getExpertAdvice(text2) {
+    const lower3 = text2.toLowerCase();
+    if (lower3.includes("ni") && (lower3.includes("deaminative") || lower3.includes("katritzky") || lower3.includes("pyridinium"))) {
+      return `<b>Expert Advice (Roy et al. 2026):</b><br>
+            \u2022 <b>Ligands:</b> For C(sp\xB2)-C(sp\xB3) with <i>primary</i> amines, tridentate ligands (<b>terpy</b>) are crucial. For <i>secondary</i> amines or C(sp\xB3)-C(sp\xB3), bidentate ligands (<b>dtbbpy</b>) work best.<br>
+            \u2022 <b>Reductant:</b> <b>Mn</b> is generally superior to Zn for Katritzky salts to prevent over-reduction.<br>
+            \u2022 <b>Conditions:</b> Optimal solvents are usually DMA or NMP at 60-80\xB0C. Adding NaI or MgCl\u2082 can accelerate the reaction.<br>
+            \u2022 <b>Strategy:</b> Deaminative coupling circumvents the need for alkyl halides, offering excellent late-stage functionalization.`;
+    }
+    if (lower3.includes("bayesian") || lower3.includes("optimization")) {
+      return `<b>Bayesian Optimization (Shey et al. 2026):</b><br>
+            \u2022 Do not use OVAT (One-Variable-At-A-Time).<br>
+            \u2022 <b>Batch Size:</b> For standard organic chemistry, BO batch sizes of 5 to 10 reactions per round are optimal.<br>
+            \u2022 <b>Categorical Variables:</b> Ensure your BO algorithm uses One-Hot-Encoding (OHE) or DFT descriptors for categorical variables like Ligands and Solvents.`;
+    }
+    return null;
+  }
+};
+var MatrixElnRenderer = class {
+  constructor(plugin) {
+    __publicField(this, "plugin");
+    this.plugin = plugin;
+  }
+  async renderBlock(source, el2, ctx) {
+    const { parseYaml, stringifyYaml } = require("obsidian");
+    const wrapper2 = el2.createDiv();
+    const themeColor = "#6366f1";
+    const bgSec = "var(--background-secondary)";
+    const bdColor = "var(--background-modifier-border)";
+    wrapper2.style.position = "relative";
+    wrapper2.style.border = `1px solid ${themeColor}`;
+    wrapper2.style.borderRadius = "12px";
+    wrapper2.style.backgroundColor = "var(--background-primary)";
+    wrapper2.style.padding = "24px";
+    wrapper2.style.boxShadow = "0 4px 12px rgba(99, 102, 241, 0.1)";
+    wrapper2.style.fontFamily = "var(--font-interface)";
+    wrapper2.style.width = "100%";
+    wrapper2.style.marginBottom = "15px";
+    try {
+      let data = parseYaml(source);
+      if (!data) throw new Error("Empty YAML Data.");
+      data = MatrixCalculator.calculate(data);
+      const expertAdvice = MatrixCalculator.getExpertAdvice(source);
+      let html = `
+            <div style="position: relative; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="display:flex; flex-direction:column;">
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${themeColor};">\u{1F4CA} ${data.title || "HTE Optimization Matrix"}</h2>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">${data.strategy || "Design of Experiments (DoE)"}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:28px; font-weight:800; color:var(--text-normal);">${data.total_reactions} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">Rxns</span></div>
+                    </div>
+                </div>
+            </div>`;
+      if (expertAdvice) {
+        html += `
+                <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid ${themeColor}; padding: 12px 15px; border-radius: 4px; margin-bottom: 20px; font-size: 13px; color: var(--text-normal); line-height: 1.5;">
+                    ${expertAdvice}
+                </div>`;
+      }
+      const formatNum = (num, decimals = 2) => {
+        const n8 = Number(num);
+        if (isNaN(n8) || n8 === 0) return "-";
+        return n8 % 1 === 0 ? n8.toString() : n8.toFixed(decimals);
+      };
+      html += `
+            <h4 style="color: var(--text-normal); margin-bottom: 10px;">1. High-Throughput Master Mix</h4>
+            <div style="display: flex; align-items: stretch; background: var(--background-secondary-alt); border-radius: 8px; border: 1px solid ${bdColor}; padding: 20px 10px; gap: 15px; margin-bottom: 24px;">
+                
+                <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <svg stroke="${themeColor}" fill="rgba(99, 102, 241, 0.15)" width="48" height="48" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a2 2 0 0 0 1.8 2.45h10.96a2 2 0 0 0 1.8-2.45L14.21 10.42a2 2 0 0 1-.21-.896V2"/><path d="M8.5 2h7"/><path d="M14 16H5.5"/></svg>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-normal); margin-top: 10px;">Master Vial</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Fill to Total Volume:</div>
+                    <div style="font-size: 20px; font-weight: 800; color: ${themeColor}; margin-top: 4px;">${formatNum(data.total_master_vol_ul / 1e3)} <span style="font-size:12px; font-weight:500;">mL</span></div>
+                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 6px;">(Includes ${data.overage_percent}% overage)</div>
+                </div>
+
+                <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+                    <div style="position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: ${themeColor}; z-index: 0; border-style: dashed; opacity: 0.5;"></div>
+                    <div style="background: var(--background-primary); padding: 15px; z-index: 1; display: flex; flex-direction: column; align-items: center; border-radius: 8px; border: 1px solid ${bdColor}; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <svg stroke="var(--text-muted)" fill="none" width="32" height="32" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/></svg>
+                        <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 10px; text-transform: uppercase;">Dispense</div>
+                        <div style="font-size: 16px; font-weight: 800; color: var(--text-normal); margin-top: 4px;">${data.vol_per_vial_ul} <span style="font-size:11px; font-weight:500;">\xB5L / vial</span></div>
+                    </div>
+                </div>
+
+                <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <svg stroke="var(--text-muted)" fill="none" width="48" height="48" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg>
+                    <div style="font-weight: 700; font-size: 14px; color: var(--text-normal); margin-top: 10px;">HTE Plate</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Reactions:</div>
+                    <div style="font-size: 20px; font-weight: 800; color: var(--text-normal); margin-top: 4px;">${data.total_reactions}</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">Scale: ${data.scale_mmol} mmol</div>
+                </div>
+            </div>`;
+      html += `
+            <div style="overflow-x: auto; margin-bottom: 25px;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                <tr style="background-color: ${bgSec}; border-bottom: 2px solid ${bdColor};">
+                    <th style="padding: 8px;">Fixed Component</th><th style="padding: 8px;">MW</th><th style="padding: 8px;">Equiv</th><th style="padding: 8px; color:${themeColor};">Mass to Weigh (mg)</th>
+                </tr>`;
+      data.fixed_components.forEach((c10) => {
+        html += `<tr style="border-bottom: 1px solid var(--background-modifier-border-hover);">
+                    <td style="padding: 8px; font-weight:600;">${c10.name}</td>
+                    <td style="padding: 8px;">${c10.mw || "-"}</td>
+                    <td style="padding: 8px;">${c10.eq || 1}</td>
+                    <td style="padding: 8px; font-weight:bold; color:var(--text-normal); font-size:14px;">${c10.total_mass_mg ? c10.total_mass_mg.toFixed(1) : "-"}</td>
+                </tr>`;
+      });
+      html += `</table></div>`;
+      const varKeys = Object.keys(data.variables);
+      html += `<h4 style="color: var(--text-normal); margin-bottom: 10px;">2. Experimental Matrix & Results</h4>
+            <div style="overflow-x: auto; margin-bottom: 10px;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; border: 1px solid ${bdColor};">
+                <tr style="background-color: ${bgSec}; border-bottom: 2px solid ${bdColor};">
+                    <th style="padding: 8px; text-align:center;">Vial</th>`;
+      varKeys.forEach((k7) => html += `<th style="padding: 8px;">${k7}</th>`);
+      html += `<th style="padding: 8px; color:${themeColor}; text-align:right;">Yield (%)</th></tr>`;
+      data.matrix.forEach((combo, i8) => {
+        const currentYield = data.yields[i8] !== null ? data.yields[i8] : "";
+        const displayYield = currentYield !== "" ? currentYield : "-";
+        let yColor = "var(--text-muted)";
+        if (currentYield !== "") {
+          const y9 = parseFloat(currentYield);
+          if (y9 >= 80) yColor = "var(--text-success)";
+          else if (y9 >= 40) yColor = "var(--text-warning)";
+          else yColor = "var(--text-error)";
+        }
+        html += `<tr style="border-bottom: 1px solid var(--background-modifier-border-hover);">
+                    <td style="padding: 8px; font-weight:bold; color:${themeColor}; background:var(--background-secondary-alt); text-align:center; width: 40px;">${i8 + 1}</td>`;
+        varKeys.forEach((k7) => {
+          const item = combo[k7];
+          const name = typeof item === "object" ? item.name : item;
+          html += `<td style="padding: 8px; font-weight:600; color:var(--text-normal);">${name}</td>`;
+        });
+        html += `<td class="matrix-yield-cell" data-idx="${i8}" data-raw-value="${currentYield}" title="Double-click to enter yield" style="padding: 8px; text-align:right; font-weight:bold; font-size:14px; color:${yColor}; cursor:text; transition: background 0.2s;">${displayYield}</td></tr>`;
+      });
+      html += `</table></div>`;
+      const actionBar = wrapper2.createDiv();
+      Object.assign(actionBar.style, { display: "flex", gap: "10px", marginTop: "15px", flexWrap: "wrap", justifyContent: "flex-end" });
+      const createBtn = (text2, onClick) => {
+        const btn = actionBar.createDiv();
+        btn.innerHTML = text2;
+        btn.style.cursor = "pointer";
+        btn.style.fontSize = "11px";
+        btn.style.padding = "6px 12px";
+        btn.style.fontWeight = "600";
+        btn.style.backgroundColor = "var(--background-secondary)";
+        btn.style.border = "1px solid var(--background-modifier-border)";
+        btn.style.color = "var(--text-normal)";
+        btn.style.borderRadius = "6px";
+        btn.onmouseover = () => {
+          btn.style.borderColor = themeColor;
+          btn.style.color = themeColor;
+        };
+        btn.onmouseout = () => {
+          btn.style.borderColor = "var(--background-modifier-border)";
+          btn.style.color = "var(--text-normal)";
+        };
+        btn.onclick = onClick;
+        return btn;
+      };
+      createBtn("\u{1F4CA} Export to Excel", () => {
+        let csv = `Vial	${varKeys.join("	")}	Yield_Percent
+`;
+        data.matrix.forEach((combo, i8) => {
+          let row = `${i8 + 1}`;
+          varKeys.forEach((k7) => {
+            row += `	${typeof combo[k7] === "object" ? combo[k7].name : combo[k7]}`;
+          });
+          row += `	${data.yields[i8] !== null ? data.yields[i8] : ""}`;
+          csv += row + "\n";
+        });
+        navigator.clipboard.writeText(csv);
+        new import_obsidian13.Notice("Excel-ready Data copied to clipboard!");
+      });
+      createBtn("\u{1F916} Export BO Dataset (EDBO+)", () => {
+        let csv = `${varKeys.join(",")},Yield
+`;
+        data.matrix.forEach((combo, i8) => {
+          let row = [];
+          varKeys.forEach((k7) => {
+            row.push(`"${typeof combo[k7] === "object" ? combo[k7].name : combo[k7]}"`);
+          });
+          row.push(data.yields[i8] !== null ? data.yields[i8] : "");
+          csv += row.join(",") + "\n";
+        });
+        navigator.clipboard.writeText(csv);
+        new import_obsidian13.Notice("Machine-Learning ready CSV copied to clipboard!");
+      });
+      const styleBlock = document.createElement("style");
+      styleBlock.innerHTML = `.matrix-yield-cell:hover { background-color: rgba(99, 102, 241, 0.1); }`;
+      wrapper2.appendChild(styleBlock);
+      const contentDiv = document.createElement("div");
+      contentDiv.innerHTML = html;
+      wrapper2.appendChild(contentDiv);
+      wrapper2.appendChild(actionBar);
+      wrapper2.addEventListener("dblclick", (e6) => {
+        let target = e6.target;
+        while (target && target !== wrapper2 && !target.classList.contains("matrix-yield-cell")) {
+          target = target.parentElement;
+        }
+        if (target && target.classList.contains("matrix-yield-cell") && !target.querySelector("input")) {
+          e6.stopPropagation();
+          const idx = parseInt(target.getAttribute("data-idx") || "0", 10);
+          const currentValText = target.getAttribute("data-raw-value") || "";
+          target.innerHTML = "";
+          target.style.padding = "4px";
+          const input = document.createElement("input");
+          input.type = "number";
+          input.step = "any";
+          input.value = currentValText;
+          Object.assign(input.style, { width: "100%", boxSizing: "border-box", padding: "4px 6px", border: `2px solid ${themeColor}`, borderRadius: "4px", background: "var(--background-primary)", fontSize: "14px", fontWeight: "bold", color: "var(--text-normal)", textAlign: "right" });
+          target.appendChild(input);
+          input.focus();
+          const finishEdit = () => {
+            const newValStr = input.value.trim().replace(/,/g, ".");
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian13.MarkdownView);
+            let info = ctx.getSectionInfo(el2);
+            if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+            if (view && info) {
+              const { parseYaml: parseYaml2, stringifyYaml: stringifyYaml2 } = require("obsidian");
+              const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              try {
+                let yamlObj = parseYaml2(blockText);
+                if (!yamlObj.yields) yamlObj.yields = new Array(yamlObj.total_reactions).fill(null);
+                const num = parseFloat(newValStr);
+                yamlObj.yields[idx] = isNaN(num) ? null : num;
+                const newYaml = stringifyYaml2(yamlObj);
+                view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              } catch (err) {
+              }
+            }
+          };
+          input.onblur = finishEdit;
+          input.onkeydown = (ev) => {
+            if (ev.key === "Enter") input.blur();
+          };
+        }
+      });
+      return wrapper2;
+    } catch (err) {
+      wrapper2.innerHTML = `<div style="padding: 20px; color: var(--text-error); background: var(--background-secondary); border-radius: 8px;"><b>Matrix ELN Error:</b><br>${err.message}</div>`;
+      return wrapper2;
+    }
+  }
+};
+
+// main.ts
 init_SharedMedia();
 
 // SharedGallery.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian14 = require("obsidian");
 var SharedGalleryRenderer = class {
   constructor(plugin) {
     __publicField(this, "plugin");
@@ -570323,7 +572715,7 @@ var SharedGalleryRenderer = class {
       return;
     }
     const validExts = ["mol", "cdxml", "sdf", "rxn", "ket", "smi", "smiles", "md"];
-    const files = folder.children.filter((f9) => f9 instanceof import_obsidian9.TFile && validExts.includes(f9.extension.toLowerCase()));
+    const files = folder.children.filter((f9) => f9 instanceof import_obsidian14.TFile && validExts.includes(f9.extension.toLowerCase()));
     if (files.length === 0) {
       el2.createEl("div", { text: "No supported files found in this folder.", cls: "color-text-muted" });
       return;
@@ -570486,13 +572878,12 @@ function extractDataFromSvg(svgStr) {
   }
   return null;
 }
-var ChemEditPlugin = class extends import_obsidian10.Plugin {
+var ChemEditPlugin = class extends import_obsidian15.Plugin {
   constructor() {
     super(...arguments);
     __publicField(this, "settings");
     __publicField(this, "api");
     __publicField(this, "scriptEngine", null);
-    // Stubbed until ScriptEngine module is added
     __publicField(this, "hiddenKetcherContainer");
     __publicField(this, "headlessKetcher", null);
     __publicField(this, "headlessRoot", null);
@@ -570507,7 +572898,6 @@ var ChemEditPlugin = class extends import_obsidian10.Plugin {
   getSupportedExts() {
     return this.settings.supportedEmbedExtensions.split(",").map((s8) => s8.trim().toLowerCase()).filter((s8) => s8.length > 0);
   }
-  // --- API BRIDGE FOR KETCHER ---
   openKetcherModal(initialData, format3, onSave) {
     new KetcherModal(this, initialData, format3, (newData, isFile, newFormat) => {
       onSave(newData, isFile, newFormat);
@@ -570522,17 +572912,17 @@ var ChemEditPlugin = class extends import_obsidian10.Plugin {
         openData = ex.data;
         openFormat = "svg";
       } else {
-        new import_obsidian10.Notice("Not a Ketcher SVG");
+        new import_obsidian15.Notice("Not a Ketcher SVG");
         return;
       }
     }
     new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
       if (isFile) {
-        new import_obsidian10.Notice(`Saved as new file: ${newData}. Please update the link.`);
+        new import_obsidian15.Notice(`Saved as new file: ${newData}. Please update the link.`);
         return;
       }
       if (newFormat && newFormat !== format3 && format3 !== "svg") {
-        new import_obsidian10.Notice(`Format upgraded to ${newFormat}. Remember to rename your file.`);
+        new import_obsidian15.Notice(`Format upgraded to ${newFormat}. Remember to rename your file.`);
       }
       await this.app.vault.modify(file, newData);
       wrapper2.innerHTML = `<span class="color-text-muted">Updating...</span>`;
@@ -570565,9 +572955,9 @@ var ChemEditPlugin = class extends import_obsidian10.Plugin {
     if (this.settings.showMediaRibbonIcons) {
       if (!this.cameraRibbonEl) {
         this.cameraRibbonEl = this.addRibbonIcon("camera", "Take Lab Photo", () => {
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
           if (!view) {
-            new import_obsidian10.Notice("Place cursor in a Markdown file first.");
+            new import_obsidian15.Notice("Place cursor in a Markdown file first.");
             return;
           }
           takeStandardPhoto(async (buffer, ext) => {
@@ -570582,9 +572972,9 @@ var ChemEditPlugin = class extends import_obsidian10.Plugin {
       }
       if (!this.tlcRibbonEl) {
         this.tlcRibbonEl = this.addRibbonIcon("image-file", "Add TLC Plate", () => {
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
           if (!view) {
-            new import_obsidian10.Notice("Place cursor in a Markdown file first.");
+            new import_obsidian15.Notice("Place cursor in a Markdown file first.");
             return;
           }
           new TlcModal(this.app, async (pngData, rfData) => {
@@ -570611,7 +573001,7 @@ var ChemEditPlugin = class extends import_obsidian10.Plugin {
       if (!this.elnRibbonEl) {
         this.elnRibbonEl = this.addRibbonIcon("flask-round", "Create Blank ELN Experiment", () => {
           var _a, _b;
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
           const currentFolder = this.settings.elnDirectory ? this.settings.elnDirectory : ((_b = (_a = view == null ? void 0 : view.file) == null ? void 0 : _a.parent) == null ? void 0 : _b.path) || "";
           new CreateExperimentModal(this.app, this, this.settings.elnPrefix, currentFolder, async (expCode) => {
             await createNewElnExperiment(this.app, expCode, currentFolder, this.settings.elnSections);
@@ -570623,7 +573013,7 @@ var ChemEditPlugin = class extends import_obsidian10.Plugin {
     } else {
       if (this.elnRibbonEl) this.elnRibbonEl.style.display = "none";
     }
-    if (this.settings.showDashboardRibbonIcon && this.settings.enableEln) {
+    if (this.settings.showDashboardRibbonIcon && this.settings.enableElnDashboard) {
       if (!this.dashboardRibbonEl) {
         this.dashboardRibbonEl = this.addRibbonIcon("chem-dashboard", "Open LIMS Dashboard", () => {
           this.activateElnDashboard();
@@ -570647,12 +573037,12 @@ var ChemEditPlugin = class extends import_obsidian10.Plugin {
     }
   }
   async onload() {
-    (0, import_obsidian10.addIcon)("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
+    (0, import_obsidian15.addIcon)("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
     const compassIcon = `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,82 36,50" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,50" fill="currentColor"/><polygon points="50,82 36,50 50,50" fill="currentColor"/>`;
-    (0, import_obsidian10.addIcon)("chem-navigator", compassIcon);
-    (0, import_obsidian10.addIcon)("flask-conical", compassIcon);
+    (0, import_obsidian15.addIcon)("chem-navigator", compassIcon);
+    (0, import_obsidian15.addIcon)("flask-conical", compassIcon);
     const dashboardIcon = `<path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 20 85 A 10 10 0 0 1 30 75 L 85 75" /><path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 30 15 L 85 15 L 85 85 L 30 85 A 10 10 0 0 1 20 75 L 20 25 A 10 10 0 0 1 30 15 Z" /><polygon fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" points="57,32 72,40 72,58 57,66 42,58 42,40" />`;
-    (0, import_obsidian10.addIcon)("chem-dashboard", dashboardIcon);
+    (0, import_obsidian15.addIcon)("chem-dashboard", dashboardIcon);
     await this.loadSettings();
     this.api = buildChemEditAPI(this);
     this.addSettingTab(new ChemEditSettingTab(this.app, this));
@@ -570670,75 +573060,532 @@ var ChemEditPlugin = class extends import_obsidian10.Plugin {
     this.addRibbonIcon("hexagon", "Draw New Molecule", () => {
       this.openNewDrawingModal();
     });
-    this.refreshRibbonIcons();
     if (this.settings.enableNavigator) {
       this.registerView(CHEM_NAVIGATOR_VIEW_TYPE, (leaf) => new ChemNavigatorView(leaf, this));
       this.addCommand({ id: "open-chem-navigator", name: "Open Chem Navigator", callback: () => {
         this.activateNavigator();
       } });
     }
+    if (this.settings.enableElnDashboard) {
+      this.registerView(ELN_DASHBOARD_VIEW_TYPE, (leaf) => new ElnDashboardView(leaf, this));
+      this.addCommand({ id: "open-eln-dashboard", name: "Open ELN Dashboard", callback: () => {
+        this.activateElnDashboard();
+      } });
+    }
+    this.refreshRibbonIcons();
     if (this.settings.enableContextMenu) {
-      this.registerEvent(this.app.workspace.on("file-menu", (menu, file) => {
-        if (file instanceof import_obsidian10.TFile) {
-          const ext = file.extension.toLowerCase();
-          if (ext === "svg") {
-            menu.addItem((item) => {
-              item.setTitle("Edit SVG in Ketcher").setIcon("hexagon").onClick(async () => {
-                const data = await this.app.vault.read(file);
-                const extracted = extractDataFromSvg(data);
-                if (extracted) {
-                  new KetcherModal(this, data, "svg", async (newData) => {
-                    await this.app.vault.modify(file, newData);
-                    new import_obsidian10.Notice(`Saved ${file.name}`);
-                  }).open();
-                } else {
-                  new import_obsidian10.Notice("This SVG does not contain editable Ketcher metadata.");
-                }
+      this.registerEvent(
+        this.app.workspace.on("file-menu", (menu, file) => {
+          if (file instanceof import_obsidian15.TFile) {
+            const ext = file.extension.toLowerCase();
+            if (ext === "svg") {
+              menu.addItem((item) => {
+                item.setTitle("Edit SVG in Ketcher").setIcon("hexagon").onClick(async () => {
+                  const data = await this.app.vault.read(file);
+                  const extracted = extractDataFromSvg(data);
+                  if (extracted) {
+                    new KetcherModal(this, data, "svg", async (newData) => {
+                      await this.app.vault.modify(file, newData);
+                      new import_obsidian15.Notice(`Saved ${file.name}`);
+                    }).open();
+                  } else {
+                    new import_obsidian15.Notice("This SVG does not contain editable Ketcher metadata.");
+                  }
+                });
               });
-            });
+            }
+            const activeExts = this.getSupportedExts();
+            if (activeExts.includes(ext) && ext !== "svg") {
+              menu.addSeparator();
+              menu.addItem((item) => {
+                item.setTitle("\u2795 Add to Compound Database").setIcon("flask-round").onClick(async () => {
+                  const data = await this.app.vault.read(file);
+                  const targetFolder = this.settings.elnDirectory || "Library";
+                  addCompoundToLibrary(this.app, this, targetFolder, () => {
+                  }, data);
+                });
+              });
+              menu.addItem((item) => {
+                item.setTitle("\u{1F4C8} Predict 1H NMR").setIcon("activity").onClick(async () => {
+                  const data = await this.app.vault.read(file);
+                  const smiles = ext === "mol" || ext === "sdf" ? ChemDataEngine.molToSmiles(data) : data.trim();
+                  if (smiles) window.open(`https://www.nmrdb.org/simulator/?smiles=${encodeURIComponent(smiles)}`);
+                  else new import_obsidian15.Notice("Could not extract SMILES for NMR prediction.");
+                });
+              });
+            }
           }
-          const activeExts = this.getSupportedExts();
-          if (activeExts.includes(ext) && ext !== "svg") {
+        })
+      );
+      this.registerEvent(
+        this.app.workspace.on("editor-menu", (menu, editor4, view) => {
+          const selection3 = editor4.getSelection().trim();
+          if (selection3 && selection3.length < 500 && !selection3.includes("\n")) {
             menu.addSeparator();
-            menu.addItem((item) => {
-              item.setTitle("\u2795 Add to Compound Database").setIcon("flask-round").onClick(async () => {
-                const data = await this.app.vault.read(file);
-                const targetFolder = this.settings.elnDirectory || "Library";
-                addCompoundToLibrary(this.app, this, targetFolder, () => {
-                }, data);
-              });
-            });
-            menu.addItem((item) => {
-              item.setTitle("\u{1F4C8} Predict 1H NMR").setIcon("activity").onClick(async () => {
-                const data = await this.app.vault.read(file);
-                const smiles = ext === "mol" || ext === "sdf" ? ChemDataEngine.molToSmiles(data) : data.trim();
-                if (smiles) window.open(`https://www.nmrdb.org/simulator/?smiles=${encodeURIComponent(smiles)}`);
-                else new import_obsidian10.Notice("Could not extract SMILES for NMR prediction.");
-              });
-            });
+            populateChemicalMenu(menu, this, selection3);
           }
-        }
-      }));
-      this.registerEvent(this.app.workspace.on("editor-menu", (menu, editor4) => {
-        const selection3 = editor4.getSelection().trim();
-        if (selection3 && selection3.length < 500 && !selection3.includes("\n")) {
-          menu.addSeparator();
-          populateChemicalMenu(menu, this, selection3);
-        }
-      }));
+        })
+      );
     }
-    if (this.settings.enableScripting) {
-      this.addCommand({
-        id: "reload-chemedit-scripts",
-        name: "Reload Custom Scripts",
-        callback: () => new import_obsidian10.Notice("Script Engine coming soon!")
-      });
-      this.addCommand({
-        id: "open-chemedit-script-store",
-        name: "Open Script Store",
-        callback: () => new import_obsidian10.Notice("Script Store coming soon!")
-      });
-    }
+    this.addCommand({
+      id: "bio-insert-pcr",
+      name: "ChemEdit Bio: Insert PCR Master Mix Template",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`bio-eln
+type: pcr
+title: Genotyping PCR
+reactions: 10
+overage_percent: 10
+total_volume_ul: 25
+
+components:
+  - name: 2X Taq Master Mix
+    stock: 2X
+    final: 1X
+  - name: Forward Primer
+    stock: 10 uM
+    final: 0.5 uM
+  - name: Reverse Primer
+    stock: 10 uM
+    final: 0.5 uM
+  - name: Template DNA
+    volume_ul: 1.0
+    add_to_mm_separately: true
+  - name: Nuclease-Free Water
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "bio-insert-ligation",
+      name: "ChemEdit Bio: Insert Ligation / Cloning Calculator",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`bio-eln
+type: ligation
+title: pET28a + Insert Ligation
+
+vector_kb: 5.3
+vector_ng: 50
+insert_kb: 1.2
+ratio: 3
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "bio-insert-protocol",
+      name: "ChemEdit Bio: Insert Interactive Protocol Checklist",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`bio-eln
+type: protocol
+title: Plasmid Miniprep
+date: 2026-10-14
+
+steps:
+  - text: "Pellet 1-5 mL bacterial overnight culture at 10,000 x g for 3 min."
+    done: false
+  - text: "Resuspend pelleted bacterial cells in 250 uL Buffer P1."
+    done: false
+  - text: "Add 250 uL Buffer P2 and mix thoroughly by inverting the tube 4-6 times."
+    done: false
+  - text: "Add 350 uL Buffer N3 and mix immediately and thoroughly by inverting."
+    done: false
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "bio-insert-oligo",
+      name: "ChemEdit Bio: Insert Oligo Analyzer",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`bio-eln
+type: oligo_analyzer
+title: T7 Promoter Primer
+sequence: "TAATACGACTCACTATAGGG"
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "bio-insert-cell-seeding",
+      name: "ChemEdit Bio: Insert Cell Seeding Calculator",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`bio-eln
+type: cell_seeding
+title: 96-well Plate Seeding
+
+current_cells_per_ml: 1.5e6
+target_cells_per_well: 50000
+wells: 96
+vol_per_well_ml: 0.1
+overage_percent: 10
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "polymer-insert-raft",
+      name: "ChemEdit Polymer: Insert Synthesis Template (RAFT, ATRP)",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`polymer-eln
+code: POLY-001
+type: polymerization
+title: RAFT Polymerization of Styrene
+
+target_mass_g: 5
+target_dp: 100
+
+monomers:
+  - name: Styrene
+    smiles: C=CC1=CC=CC=C1
+    mol_ratio: 1.0
+
+initiators:
+  - name: AIBN
+    smiles: CC(C)(C#N)/N=N/C(C)(C)C#N
+    ratio_to_monomer: 0.1
+
+agents:
+  - name: CPDB (RAFT Agent)
+    ratio_to_monomer: 0.01
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "polymer-insert-formulation",
+      name: "ChemEdit Polymer: Insert Resin Formulation (PHR)",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`polymer-eln
+code: FORM-001
+type: formulation
+title: Epoxy Resin Blend
+
+target_mass_g: 10
+
+components:
+  - name: Bisphenol A Diglycidyl Ether
+    smiles: CC(C)(C1=CC=C(OCC2CO2)C=C1)C3=CC=C(OCC4CO4)C=C3
+    phr: 100
+  - name: Amine Hardener
+    phr: 25
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "org-insert-faradaic",
+      name: "ChemEdit Org: Insert Faradaic Efficiency Calculator",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`org-helpers
+type: faradaic_efficiency
+title: Ni-Catalyzed CD3-Methylation
+
+product_mmol: 0.376
+electrons_z: 2
+current_mA: 10
+time_hours: 5
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "org-insert-screening",
+      name: "ChemEdit Org: Insert Optimization / Master Mix Calculator",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`org-helpers
+type: reaction_screening
+title: Ni/Ligand Optimization Matrix
+
+reactions: 10
+overage_percent: 10
+scale_mmol: 0.2
+vol_per_vial_ml: 4.0
+
+components:
+  - name: t-butyl 4-bromopiperidine-1-carboxylate
+    mw: 264.12
+    eq: 1.0
+  - name: CD3OTs
+    mw: 189.23
+    eq: 2.0
+  - name: NiCl2(dme)
+    mw: 219.66
+    eq: 0.1
+  - name: TBAB
+    mw: 322.37
+    eq: 0.5
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "org-insert-catalyst",
+      name: "ChemEdit Org: Insert Catalyst TON/TOF Metrics",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`org-helpers
+type: catalyst_metrics
+title: Catalyst Performance
+
+product_mmol: 0.376
+catalyst_mmol: 0.04
+time_hours: 5
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "org-insert-nmr-yield",
+      name: "ChemEdit Org: Insert NMR Yield Calculator",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`org-helpers
+type: nmr_yield
+title: NMR Yield (vs Mesitylene)
+
+theory_mmol: 0.2
+product_mw: 250.2
+product_protons: 2
+product_integral: 1.0
+
+standard_name: Mesitylene
+standard_mw: 120.19
+standard_mass_mg: 12.0
+standard_protons: 3
+standard_integral: 0.85
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "insert-matrix-eln",
+      name: "ChemEdit Org: Insert High-Throughput Optimization Matrix (DoE)",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`matrix-eln
+title: Ni/Ligand Cross-Coupling Screen
+scale_mmol: 0.1
+vol_per_vial_ml: 1.0
+overage_percent: 10
+
+fixed_components:
+  - name: Aryl Bromide
+    mw: 157.01
+    eq: 1.0
+  - name: NiCl2(dme)
+    mw: 219.66
+    eq: 0.1
+
+variables:
+  Ligand:
+    - name: L1 (dtbbpy)
+      mw: 268.4
+      eq: 0.1
+    - name: L2 (phen)
+      mw: 180.2
+      eq: 0.1
+  Base:
+    - name: K2CO3
+      mw: 138.2
+      eq: 2.0
+    - name: Cs2CO3
+      mw: 325.8
+      eq: 2.0
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "analytical-insert-calibration",
+      name: "ChemEdit Analytics: Insert Calibration Curve (Linear Reg.)",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`analytical-eln
+type: calibration
+title: HPLC Quantification of Caffeine
+smiles: CN1C=NC2=C1C(=O)N(C(=O)N2C)C
+units: "\xB5g/mL"
+
+standards:
+  - name: Std 1
+    conc: 5
+    area: 12500
+  - name: Std 2
+    conc: 10
+    area: 25400
+  - name: Std 3
+    conc: 50
+    area: 126000
+  - name: Std 4
+    conc: 100
+    area: 258000
+
+samples:
+  - name: Energy Drink A
+    dilution_factor: 10
+    area: 45000
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({ id: "db-insert-library", name: "ChemEdit DB: Insert Compound Library", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
+type: library
+path: Library/
+layout: table
+\`\`\`
+`) });
+    this.addCommand({ id: "db-insert-inventory", name: "ChemEdit DB: Insert Chemical Inventory", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
+type: inventory
+path: Inventory/
+layout: table
+\`\`\`
+`) });
+    this.addCommand({ id: "db-insert-equipment", name: "ChemEdit DB: Insert Lab Equipment Tracker", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
+type: equipment
+path: Equipment/
+layout: table
+\`\`\`
+`) });
+    this.addCommand({
+      id: "insert-calibration-eln",
+      name: "Insert Calibration Curve / Quantification",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`analytical-eln
+type: calibration
+title: HPLC Quantification of Caffeine
+smiles: CN1C=NC2=C1C(=O)N(C(=O)N2C)C
+units: "\xB5g/mL"
+
+standards:
+  - name: Std 1
+    conc: 5
+    area: 12500
+  - name: Std 2
+    conc: 10
+    area: 25400
+  - name: Std 3
+    conc: 50
+    area: 126000
+  - name: Std 4
+    conc: 100
+    area: 258000
+
+samples:
+  - name: Energy Drink A
+    dilution_factor: 10
+    area: 45000
+  - name: Energy Drink B
+    dilution_factor: 5
+    area: 88000
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "insert-dilution-eln",
+      name: "Insert Serial Dilution Calculator",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`analytical-eln
+type: serial_dilution
+title: Standard Prep
+stock_conc: 1000
+stock_units: "mg/L"
+diluent: "Methanol"
+
+targets:
+  - target_conc: 100
+    target_vol: 1000
+  - target_conc: 50
+    target_vol: 1000
+  - target_conc: 10
+    target_vol: 1000
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "insert-hplc-method-eln",
+      name: "Insert HPLC/GC Method Parameters",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`analytical-eln
+type: hplc_method
+title: Method A (Purity)
+instrument: Agilent 1260
+column: "C18, 50x2.1mm, 1.8\xB5m"
+flow_rate: "0.5 mL/min"
+temp: "40 \xB0C"
+detection: "UV 254 nm"
+solvent_a: "Water + 0.1% FA"
+solvent_b: "Acetonitrile + 0.1% FA"
+
+gradient:
+  - time: 0.0
+    b_percent: 5
+  - time: 5.0
+    b_percent: 95
+  - time: 6.0
+    b_percent: 95
+  - time: 6.1
+    b_percent: 5
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "insert-polymer-eln",
+      name: "Insert Polymer Synthesis / RAFT Template",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`polymer-eln
+code: POLY-001
+type: polymerization
+title: RAFT Polymerization of Styrene
+
+target_mass_g: 5
+target_dp: 100
+
+monomers:
+  - name: Styrene
+    smiles: C=CC1=CC=CC=C1
+    mol_ratio: 1.0
+
+initiators:
+  - name: AIBN
+    smiles: CC(C)(C#N)/N=N/C(C)(C)C#N
+    ratio_to_monomer: 0.1
+
+agents:
+  - name: CPDB (RAFT Agent)
+    ratio_to_monomer: 0.01
+
+characterization:
+  conversion: 85%
+  Mn_gpc: 10500
+  dispersity: 1.06
+  Tg: 105 \xB0C
+\`\`\`
+`);
+      }
+    });
+    this.addCommand({
+      id: "insert-formulation-eln",
+      name: "Insert Resin Formulation (PHR) Template",
+      editorCallback: (editor4) => {
+        editor4.replaceSelection(`\`\`\`polymer-eln
+code: FORM-001
+type: formulation
+title: Epoxy Resin Blend
+
+target_mass_g: 10
+
+components:
+  - name: Bisphenol A Diglycidyl Ether
+    smiles: CC(C)(C1=CC=C(OCC2CO2)C=C1)C3=CC=C(OCC4CO4)C=C3
+    phr: 100
+  - name: Amine Hardener
+    phr: 25
+  - name: Silica Nanoparticles
+    phr: 5
+\`\`\`
+`);
+      }
+    });
     if (this.settings.enableEln) {
       this.addCommand({ id: "insert-compound-library", name: "Insert Compound Library Database", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
 type: library
@@ -570788,31 +573635,26 @@ path: Experiments/
         const elnRenderer = new SharedElnRenderer(this);
         await elnRenderer.renderElnBlock(source, el2, ctx);
       });
-      if (this.settings.enableElnDashboard) {
-        this.registerView(ELN_DASHBOARD_VIEW_TYPE, (leaf) => new ElnDashboardView(leaf, this));
-        this.addCommand({ id: "open-eln-dashboard", name: "Open ELN Dashboard", callback: () => this.activateElnDashboard() });
-      }
-      if (this.settings.enableInventoryDashboard) {
-        this.addCommand({ id: "open-inventory-dashboard", name: "Open Chemical Inventory Dashboard", callback: () => this.activateInventoryDashboard() });
-      }
-      if (this.settings.enableEquipmentDashboard) {
-        this.addCommand({ id: "open-equipment-dashboard", name: "Open Lab Equipment Dashboard", callback: () => this.activateEquipmentDashboard() });
-      }
-      if (this.settings.enableProtocolsDashboard) {
-        this.addCommand({ id: "open-protocols-dashboard", name: "Open Lab Protocols Dashboard", callback: () => this.activateProtocolsDashboard() });
-      }
-      if (this.settings.enableLibraryDashboard) {
-        this.addCommand({ id: "open-library-dashboard", name: "Open Compounds Library Dashboard", callback: () => this.activateLibraryDashboard() });
-      }
-      if (this.settings.enableGalleryDashboard) {
-        this.addCommand({ id: "open-gallery-dashboard", name: "Open Drawings Gallery Dashboard", callback: () => this.activateGalleryDashboard() });
-      }
-      if (this.settings.enableCharacterizationDashboard) {
-        this.addCommand({ id: "open-characterization-dashboard", name: "Open Compound Data Organizer", callback: () => this.activateCharacterizationDashboard() });
-      }
-      if (this.settings.enableOrdersDashboard) {
-        this.addCommand({ id: "open-orders-dashboard", name: "Open Orders Dashboard", callback: () => this.activateOrdersDashboard() });
-      }
+      this.registerMarkdownCodeBlockProcessor("org-helpers", async (source, el2, ctx) => {
+        const r12 = new OrganicHelpersRenderer(this);
+        await r12.renderBlock(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("matrix-eln", async (source, el2, ctx) => {
+        const r12 = new MatrixElnRenderer(this);
+        await r12.renderBlock(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("polymer-eln", async (source, el2, ctx) => {
+        const r12 = new PolymerElnRenderer(this);
+        await r12.renderPolymerBlock(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("bio-eln", async (source, el2, ctx) => {
+        const r12 = new BioElnRenderer(this);
+        await r12.renderBioBlock(source, el2, ctx);
+      });
+      this.registerMarkdownCodeBlockProcessor("analytical-eln", async (source, el2, ctx) => {
+        const r12 = new AnalyticalElnRenderer(this);
+        await r12.renderAnalyticalBlock(source, el2, ctx);
+      });
     }
     if (this.settings.enablePathways) {
       this.addCommand({ id: "insert-synthesis-map", name: "Insert Synthesis Map (Auto-Graph)", editorCallback: (editor4) => {
@@ -570862,7 +573704,7 @@ path: Experiments/
             editor4.setCursor({ line: cursor2.line, ch: cursor2.ch + newData.length + 2 });
           } else {
             if (newFormat === "ket") {
-              new import_obsidian10.Notice("Cannot save inline reaction. Inserting as block.");
+              new import_obsidian15.Notice("Cannot save inline reaction. Inserting as block.");
               this.insertSmilesAtCursor(editor4, newData, "ket");
               return;
             }
@@ -570893,7 +573735,7 @@ path: Experiments/
                 return;
               }
               if (newFormat === "ket") {
-                new import_obsidian10.Notice("Inline reactions not supported. Replaced with codeblock.");
+                new import_obsidian15.Notice("Inline reactions not supported. Replaced with codeblock.");
                 editor4.replaceRange(`
 \`\`\`ket
 ${newData}
@@ -570906,7 +573748,7 @@ ${newData}
             return;
           }
         }
-        new import_obsidian10.Notice("Place your cursor inside an inline $smiles= string first!");
+        new import_obsidian15.Notice("Place your cursor inside an inline $smiles= string first!");
       }
     });
     this.registerMarkdownPostProcessor(async (el2, ctx) => {
@@ -570980,7 +573822,7 @@ ${cleanText}
       if (filenameToSearch) {
         const cleanLink = decodeURIComponent(filenameToSearch).split("#")[0].split("?")[0].trim();
         const file = this.app.metadataCache.getFirstLinkpathDest(cleanLink, ctx.sourcePath);
-        if (file && file instanceof import_obsidian10.TFile) {
+        if (file && file instanceof import_obsidian15.TFile) {
           const format3 = file.extension.toLowerCase();
           const fileData = await this.app.vault.read(file);
           if (format3 === "svg") {
@@ -571018,13 +573860,13 @@ ${cleanText}
                 openData = ex.data;
                 openFormat = "svg";
               } else {
-                new import_obsidian10.Notice("Not a Ketcher SVG");
+                new import_obsidian15.Notice("Not a Ketcher SVG");
                 return;
               }
             }
             new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
               if (isFile) {
-                new import_obsidian10.Notice(`Saved as new file: ${newData}. Please update the link.`);
+                new import_obsidian15.Notice(`Saved as new file: ${newData}. Please update the link.`);
                 return;
               }
               await this.app.vault.modify(file, newData);
@@ -571068,7 +573910,7 @@ ${cleanText}
       });
       wrapper2.addEventListener("dblclick", async (e6) => {
         e6.stopPropagation();
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+        const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
         if (!view) return;
         const info = ctx.getSectionInfo(el2);
         new KetcherModal(this, source, defaultFormat, (newData, isFile, newFormat) => {
@@ -571142,30 +573984,30 @@ ${newData}
     workspace.revealLeaf(leaf);
   }
   activateOrdersDashboard() {
-    new import_obsidian10.Notice("Orders Dashboard coming soon!");
+    new import_obsidian15.Notice("Orders Dashboard coming soon!");
   }
   activateInventoryDashboard() {
-    new import_obsidian10.Notice("Inventory Dashboard coming soon!");
+    new import_obsidian15.Notice("Inventory Dashboard coming soon!");
   }
   activateEquipmentDashboard() {
-    new import_obsidian10.Notice("Equipment Dashboard coming soon!");
+    new import_obsidian15.Notice("Equipment Dashboard coming soon!");
   }
   activateProtocolsDashboard() {
-    new import_obsidian10.Notice("Protocols Dashboard coming soon!");
+    new import_obsidian15.Notice("Protocols Dashboard coming soon!");
   }
   activateLibraryDashboard() {
-    new import_obsidian10.Notice("Library Dashboard coming soon!");
+    new import_obsidian15.Notice("Library Dashboard coming soon!");
   }
   activateGalleryDashboard() {
-    new import_obsidian10.Notice("Gallery Dashboard coming soon!");
+    new import_obsidian15.Notice("Gallery Dashboard coming soon!");
   }
   activateCharacterizationDashboard() {
-    new import_obsidian10.Notice("Characterization Dashboard coming soon!");
+    new import_obsidian15.Notice("Characterization Dashboard coming soon!");
   }
   openNewDrawingModal() {
-    const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+    const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
     if (!view) {
-      new import_obsidian10.Notice("Please open a Markdown file first to insert a drawing.");
+      new import_obsidian15.Notice("Please open a Markdown file first to insert a drawing.");
       return;
     }
     new KetcherModal(this, "", "smiles", (newData, isFile, newFormat) => {
@@ -571250,10 +574092,10 @@ ${data}
     wrapper2.addEventListener("dblclick", (e6) => {
       e6.stopPropagation();
       if (isGridItem) {
-        new import_obsidian10.Notice("Cannot inline-edit grids yet. Edit code block manually.");
+        new import_obsidian15.Notice("Cannot inline-edit grids yet. Edit code block manually.");
         return;
       }
-      const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+      const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
       if (!view) return;
       const info = ctx.getSectionInfo(el2.parentElement || el2);
       new KetcherModal(this, smiles, "smiles", (newData, isFile, newFormat) => {
@@ -571410,7 +574252,7 @@ ${newData}
       });
       wrapper2.addEventListener("dblclick", (e6) => {
         e6.stopPropagation();
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView);
+        const view = this.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
         if (!view) return;
         new KetcherModal(this, rawData, "smiles", (newData, isFile, newFormat) => {
           const editor4 = view.editor;
@@ -571421,7 +574263,7 @@ ${newData}
             return;
           }
           if (newFormat === "ket") {
-            new import_obsidian10.Notice("Inline reactions not supported. Inserted as block.");
+            new import_obsidian15.Notice("Inline reactions not supported. Inserted as block.");
             const updatedContent2 = content4.replace(prefix2 + rawData, `
 \`\`\`ket
 ${newData}
@@ -571437,7 +574279,7 @@ ${newData}
     } else if (type3 === "file") {
       const cleanFileName = rawData.replace("[[", "").replace("]]", "");
       const file = this.app.metadataCache.getFirstLinkpathDest(cleanFileName, sourcePath);
-      if (file && file instanceof import_obsidian10.TFile) {
+      if (file && file instanceof import_obsidian15.TFile) {
         const format3 = file.extension.toLowerCase();
         const fileData = await this.app.vault.read(file);
         requestAnimationFrame(async () => {
@@ -571477,17 +574319,17 @@ ${newData}
               openData = ex.data;
               openFormat = "svg";
             } else {
-              new import_obsidian10.Notice("Not a Ketcher SVG");
+              new import_obsidian15.Notice("Not a Ketcher SVG");
               return;
             }
           }
           new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
             if (isFile) {
-              new import_obsidian10.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
+              new import_obsidian15.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
               return;
             }
             if (newFormat && newFormat !== format3 && format3 !== "svg") {
-              new import_obsidian10.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
+              new import_obsidian15.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
             }
             await this.app.vault.modify(file, newData);
             wrapper2.innerHTML = `\u23F3`;
@@ -571676,7 +574518,7 @@ ${newData}
   }
   async injectNativeEmbed(embed, src2, sourcePath) {
     const file = this.app.metadataCache.getFirstLinkpathDest(src2, sourcePath);
-    if (!(file instanceof import_obsidian10.TFile)) {
+    if (!(file instanceof import_obsidian15.TFile)) {
       embed.innerHTML = `<div class="chem-native-embed-wrapper color-red">File not found: ${src2}</div>`;
       return;
     }
@@ -571748,11 +574590,11 @@ ${newData}
       }
       new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
         if (isFile) {
-          new import_obsidian10.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
+          new import_obsidian15.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
           return;
         }
         if (newFormat && newFormat !== format3 && format3 !== "svg") {
-          new import_obsidian10.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
+          new import_obsidian15.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
         }
         await this.app.vault.modify(file, newData);
         wrapper2.innerHTML = `<div class="color-text-muted" style="padding:15px; border:1px solid var(--background-modifier-border); border-radius:8px;">\u23F3 Updating...</div>`;
@@ -571813,7 +574655,7 @@ ${newData}
           } else {
             const cleanName = this.data.replace("[[", "").replace("]]", "");
             const file = plugin.app.metadataCache.getFirstLinkpathDest(cleanName, "");
-            if (file && file instanceof import_obsidian10.TFile) {
+            if (file && file instanceof import_obsidian15.TFile) {
               const format3 = file.extension.toLowerCase();
               const fileData = await plugin.app.vault.read(file);
               if (format3 === "svg") {
@@ -571902,7 +574744,7 @@ ${newData}
     }, { decorations: (v8) => v8.decorations });
   }
 };
-var ChemFileView = class extends import_obsidian10.TextFileView {
+var ChemFileView = class extends import_obsidian15.TextFileView {
   constructor(leaf, plugin) {
     super(leaf);
     __publicField(this, "plugin");
@@ -571947,11 +574789,11 @@ var ChemFileView = class extends import_obsidian10.TextFileView {
     wrapper2.ondblclick = () => {
       new KetcherModal(this.plugin, this.data, format3, async (newData, isFile, newFormat) => {
         if (isFile) {
-          new import_obsidian10.Notice(`Saved as new file: ${newData}`);
+          new import_obsidian15.Notice(`Saved as new file: ${newData}`);
           return;
         }
         if (newFormat && newFormat !== format3) {
-          new import_obsidian10.Notice(`Format was upgraded to ${newFormat}. Please rename the file extension!`);
+          new import_obsidian15.Notice(`Format was upgraded to ${newFormat}. Please rename the file extension!`);
         }
         this.data = newData;
         this.requestSave();
@@ -571964,7 +574806,7 @@ var ChemFileView = class extends import_obsidian10.TextFileView {
     this.contentEl.empty();
   }
 };
-var KetcherModal = class extends import_obsidian10.Modal {
+var KetcherModal = class extends import_obsidian15.Modal {
   constructor(plugin, initialData, format3, onSave) {
     super(plugin.app);
     __publicField(this, "plugin");
@@ -572030,7 +574872,7 @@ var KetcherModal = class extends import_obsidian10.Modal {
     const cancelBtn = btnContainer.createEl("button", { text: "Cancel" });
     const doSave = async (formatToGet) => {
       if (!this.ketcherInstance || !this.ketcherInstance.editor && !this.ketcherInstance.server) {
-        new import_obsidian10.Notice("Ketcher is still initializing...");
+        new import_obsidian15.Notice("Ketcher is still initializing...");
         return;
       }
       try {
@@ -572105,7 +574947,7 @@ var KetcherModal = class extends import_obsidian10.Modal {
           if (err.message && err.message.toLowerCase().includes("reaction")) {
             resultData = await this.ketcherInstance.getKet();
             finalFormat = "ket";
-            new import_obsidian10.Notice("Reactions cannot be saved in this format. Automatically upgraded to .KET format.");
+            new import_obsidian15.Notice("Reactions cannot be saved in this format. Automatically upgraded to .KET format.");
             if (this.isSavingAsFile) {
               this.isSavingAsFile = this.isSavingAsFile.replace(/\.[a-zA-Z0-9]+$/i, ".ket");
             }
@@ -572113,14 +574955,14 @@ var KetcherModal = class extends import_obsidian10.Modal {
             console.warn("Primary save failed, forcing fallback to .ket", err);
             resultData = await this.ketcherInstance.getKet();
             finalFormat = "ket";
-            new import_obsidian10.Notice(`Export to requested format failed. Saved as .ket instead to prevent data loss.`);
+            new import_obsidian15.Notice(`Export to requested format failed. Saved as .ket instead to prevent data loss.`);
             if (this.isSavingAsFile) {
               this.isSavingAsFile = this.isSavingAsFile.replace(/\.[a-zA-Z0-9]+$/i, ".ket");
             }
           }
         }
         if (!resultData) {
-          new import_obsidian10.Notice("Failed to generate structure data. Format may not be supported by this structure.");
+          new import_obsidian15.Notice("Failed to generate structure data. Format may not be supported by this structure.");
           return;
         }
         if (this.isSavingAsFile) {
@@ -572142,7 +574984,7 @@ var KetcherModal = class extends import_obsidian10.Modal {
         this.close();
       } catch (e6) {
         console.error(e6);
-        new import_obsidian10.Notice("Error saving from Ketcher: " + (e6.message || e6));
+        new import_obsidian15.Notice("Error saving from Ketcher: " + (e6.message || e6));
       }
     };
     saveBtn.onclick = () => doSave(this.format);
@@ -572188,7 +575030,7 @@ var KetcherModal = class extends import_obsidian10.Modal {
     this.plugin.bootHeadlessKetcher();
   }
 };
-var SaveFileModal = class extends import_obsidian10.Modal {
+var SaveFileModal = class extends import_obsidian15.Modal {
   constructor(app, onSubmit) {
     super(app);
     __publicField(this, "onSubmit");
@@ -572199,17 +575041,17 @@ var SaveFileModal = class extends import_obsidian10.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.createEl("h3", { text: "Save as File..." });
-    new import_obsidian10.Setting(contentEl).setName("Filename").setDesc("Enter a name for the new chemical file.").addText((text2) => text2.setPlaceholder("molecule").onChange((value) => {
+    new import_obsidian15.Setting(contentEl).setName("Filename").setDesc("Enter a name for the new chemical file.").addText((text2) => text2.setPlaceholder("molecule").onChange((value) => {
       this.filename = value;
     }).inputEl.addEventListener("keypress", (e6) => {
       if (e6.key === "Enter" && this.filename) {
         this.submit();
       }
     }));
-    new import_obsidian10.Setting(contentEl).setName("Format").setDesc("Select the file format to save as.").addDropdown((drop) => drop.addOption("mol", ".mol (MDL Molfile)").addOption("cdxml", ".cdxml (ChemDraw)").addOption("ket", ".ket (Ketcher Native)").addOption("rxn", ".rxn (MDL Rxnfile)").addOption("sdf", ".sdf (Structure Data)").addOption("fasta", ".fasta (FASTA Sequence)").addOption("sequence", ".sequence (Raw Sequence)").addOption("idt", ".idt (IDT Sequence)").addOption("helm", ".helm (HELM Macromolecule)").addOption("biln", ".biln (BILN Macromolecule)").addOption("ketcher.svg", ".svg (Ketcher SVG)").setValue("mol").onChange((value) => {
+    new import_obsidian15.Setting(contentEl).setName("Format").setDesc("Select the file format to save as.").addDropdown((drop) => drop.addOption("mol", ".mol (MDL Molfile)").addOption("cdxml", ".cdxml (ChemDraw)").addOption("ket", ".ket (Ketcher Native)").addOption("rxn", ".rxn (MDL Rxnfile)").addOption("sdf", ".sdf (Structure Data)").addOption("fasta", ".fasta (FASTA Sequence)").addOption("sequence", ".sequence (Raw Sequence)").addOption("idt", ".idt (IDT Sequence)").addOption("helm", ".helm (HELM Macromolecule)").addOption("biln", ".biln (BILN Macromolecule)").addOption("ketcher.svg", ".svg (Ketcher SVG)").setValue("mol").onChange((value) => {
       this.format = value;
     }));
-    new import_obsidian10.Setting(contentEl).addButton((btn) => btn.setButtonText("Save File").setCta().onClick(() => this.submit()));
+    new import_obsidian15.Setting(contentEl).addButton((btn) => btn.setButtonText("Save File").setCta().onClick(() => this.submit()));
     setTimeout(() => {
       const input = contentEl.querySelector('input[type="text"]');
       if (input) input.focus();
@@ -572220,7 +575062,7 @@ var SaveFileModal = class extends import_obsidian10.Modal {
       this.onSubmit(this.filename, this.format);
       this.close();
     } else {
-      new import_obsidian10.Notice("Please enter a filename.");
+      new import_obsidian15.Notice("Please enter a filename.");
     }
   }
   onClose() {

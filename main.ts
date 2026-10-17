@@ -14,6 +14,14 @@ import { CHEM_NAVIGATOR_VIEW_TYPE, ChemNavigatorView } from './ChemNavigator';
 import { ELN_DASHBOARD_VIEW_TYPE, ElnDashboardView } from './ElnDashboard';
 import { SynthesisMapRenderer } from './SharedPathway';
 import { SharedElnRenderer, createNewElnExperiment, CreateExperimentModal, ElnGalleryRenderer, getCompoundLibrary, CompoundSuggestModal, AddToLibraryModal, addCompoundToLibrary, calculateMwOffline } from './SharedEln';
+
+// --> NEW ELN IMPORT <--
+import { BioElnRenderer } from './BioEln';
+import { AnalyticalElnRenderer } from './AnalyticalEln';
+import { OrganicHelpersRenderer } from './OrganicHelpers';
+import { PolymerElnRenderer } from './PolymerEln';
+import { MatrixElnRenderer } from './MatrixEln';
+
 import { takeStandardPhoto, saveMediaFile, TlcModal } from './SharedMedia';
 import { SharedGalleryRenderer } from './SharedGallery';
 import { ChemDatabaseRenderer, addCompoundToLibrary as addCompoundToDatabase } from './SharedBase';
@@ -41,7 +49,7 @@ export function extractDataFromSvg(svgStr: string): { format: string, data: stri
 export default class ChemEditPlugin extends Plugin {
     settings: ChemEditSettings;
     public api: ChemEditAPI; 
-    public scriptEngine: any = null; // Stubbed until ScriptEngine module is added
+    public scriptEngine: any = null; 
     
     hiddenKetcherContainer: HTMLDivElement;
     headlessKetcher: any = null;
@@ -57,7 +65,6 @@ export default class ChemEditPlugin extends Plugin {
 
     getSupportedExts(): string[] { return this.settings.supportedEmbedExtensions.split(',').map(s => s.trim().toLowerCase()).filter(s => s.length > 0); }
 
-    // --- API BRIDGE FOR KETCHER ---
     public openKetcherModal(initialData: string, format: string, onSave: (data: string, isFile: boolean, newFormat?: string) => void) {
         new KetcherModal(this, initialData, format, (newData: string, isFile: boolean, newFormat?: string) => {
             onSave(newData, isFile, newFormat);
@@ -152,10 +159,11 @@ export default class ChemEditPlugin extends Plugin {
             if (this.elnRibbonEl) this.elnRibbonEl.style.display = 'none';
         }
 
-        // LIMS Dashboard Icon Addition
-        if (this.settings.showDashboardRibbonIcon && this.settings.enableEln) {
+        if (this.settings.showDashboardRibbonIcon && this.settings.enableElnDashboard) {
             if (!this.dashboardRibbonEl) {
-                this.dashboardRibbonEl = this.addRibbonIcon('chem-dashboard', 'Open LIMS Dashboard', () => { this.activateElnDashboard(); });
+                this.dashboardRibbonEl = this.addRibbonIcon('chem-dashboard', 'Open LIMS Dashboard', () => {
+                    this.activateElnDashboard();
+                });
             } else { this.dashboardRibbonEl.style.display = ''; }
         } else {
             if (this.dashboardRibbonEl) this.dashboardRibbonEl.style.display = 'none';
@@ -174,9 +182,7 @@ export default class ChemEditPlugin extends Plugin {
         addIcon('flask-round', `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
         const compassIcon = `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,82 36,50" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,50" fill="currentColor"/><polygon points="50,82 36,50 50,50" fill="currentColor"/>`;
         addIcon('chem-navigator', compassIcon);
-        addIcon('flask-conical', compassIcon);
-        
-        // New LIMS Dashboard Icon
+        addIcon('flask-conical', compassIcon); 
         const dashboardIcon = `<path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 20 85 A 10 10 0 0 1 30 75 L 85 75" /><path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 30 15 L 85 15 L 85 85 L 30 85 A 10 10 0 0 1 20 75 L 20 25 A 10 10 0 0 1 30 15 Z" /><polygon fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" points="57,32 72,40 72,58 57,66 42,58 42,40" />`;
         addIcon('chem-dashboard', dashboardIcon);
         
@@ -191,7 +197,6 @@ export default class ChemEditPlugin extends Plugin {
         
         this.app.workspace.onLayoutReady(() => { 
             this.bootHeadlessKetcher(); 
-            // ScriptEngine loading would happen here when module is added
         });
 
         const extsForView = this.getSupportedExts().filter(ext => ext !== 'svg');
@@ -201,83 +206,533 @@ export default class ChemEditPlugin extends Plugin {
         this.registerEditorExtension(this.buildLivePreviewPlugin());
         this.addRibbonIcon('hexagon', 'Draw New Molecule', () => { this.openNewDrawingModal(); });
 
-        this.refreshRibbonIcons();
-
-        // --- OPTIONAL MODULES ---
-
         if (this.settings.enableNavigator) {
             this.registerView(CHEM_NAVIGATOR_VIEW_TYPE, (leaf) => new ChemNavigatorView(leaf, this));
             this.addCommand({ id: 'open-chem-navigator', name: 'Open Chem Navigator', callback: () => { this.activateNavigator(); } });
         }
 
+        if (this.settings.enableElnDashboard) {
+            this.registerView(ELN_DASHBOARD_VIEW_TYPE, (leaf) => new ElnDashboardView(leaf, this));
+            this.addCommand({ id: 'open-eln-dashboard', name: 'Open ELN Dashboard', callback: () => { this.activateElnDashboard(); } });
+        }
+
+        this.refreshRibbonIcons();
+
         if (this.settings.enableContextMenu) {
-            this.registerEvent(this.app.workspace.on('file-menu', (menu, file) => {
-                if (file instanceof TFile) {
-                    const ext = file.extension.toLowerCase();
-                    if (ext === 'svg') {
-                        menu.addItem((item) => {
-                            item.setTitle("Edit SVG in Ketcher").setIcon("hexagon").onClick(async () => {
-                                const data = await this.app.vault.read(file);
-                                const extracted = extractDataFromSvg(data);
-                                if (extracted) {
-                                    new KetcherModal(this, data, "svg", async (newData) => {
-                                        await this.app.vault.modify(file, newData); new Notice(`Saved ${file.name}`);
-                                    }).open();
-                                } else { new Notice("This SVG does not contain editable Ketcher metadata."); }
+            this.registerEvent(
+                this.app.workspace.on('file-menu', (menu, file) => {
+                    if (file instanceof TFile) {
+                        const ext = file.extension.toLowerCase();
+                        if (ext === 'svg') {
+                            menu.addItem((item) => {
+                                item.setTitle("Edit SVG in Ketcher").setIcon("hexagon").onClick(async () => {
+                                    const data = await this.app.vault.read(file);
+                                    const extracted = extractDataFromSvg(data);
+                                    if (extracted) {
+                                        new KetcherModal(this, data, "svg", async (newData) => {
+                                            await this.app.vault.modify(file, newData); new Notice(`Saved ${file.name}`);
+                                        }).open();
+                                    } else { new Notice("This SVG does not contain editable Ketcher metadata."); }
+                                });
                             });
-                        });
+                        }
+                        const activeExts = this.getSupportedExts();
+                        if (activeExts.includes(ext) && ext !== 'svg') {
+                            menu.addSeparator();
+                            menu.addItem((item) => {
+                                item.setTitle("➕ Add to Compound Database").setIcon("flask-round").onClick(async () => {
+                                    const data = await this.app.vault.read(file);
+                                    const targetFolder = this.settings.elnDirectory || "Library";
+                                    addCompoundToDatabase(this.app, this, targetFolder, () => {}, data);
+                                });
+                            });
+                            menu.addItem((item) => {
+                                item.setTitle("📈 Predict 1H NMR").setIcon("activity").onClick(async () => {
+                                    const data = await this.app.vault.read(file);
+                                    const smiles = (ext === 'mol' || ext === 'sdf') ? ChemDataEngine.molToSmiles(data) : data.trim();
+                                    if (smiles) window.open(`https://www.nmrdb.org/simulator/?smiles=${encodeURIComponent(smiles)}`);
+                                    else new Notice("Could not extract SMILES for NMR prediction.");
+                                });
+                            });
+                        }
                     }
-                    const activeExts = this.getSupportedExts();
-                    if (activeExts.includes(ext) && ext !== 'svg') {
+                })
+            );
+
+            this.registerEvent(
+                this.app.workspace.on('editor-menu', (menu, editor, view) => {
+                    const selection = editor.getSelection().trim();
+                    if (selection && selection.length < 500 && !selection.includes('\n')) {
                         menu.addSeparator();
-                        menu.addItem((item) => {
-                            item.setTitle("➕ Add to Compound Database").setIcon("flask-round").onClick(async () => {
-                                const data = await this.app.vault.read(file);
-                                const targetFolder = this.settings.elnDirectory || "Library";
-                                addCompoundToDatabase(this.app, this, targetFolder, () => {}, data);
-                            });
-                        });
-                        menu.addItem((item) => {
-                            item.setTitle("📈 Predict 1H NMR").setIcon("activity").onClick(async () => {
-                                const data = await this.app.vault.read(file);
-                                const smiles = (ext === 'mol' || ext === 'sdf') ? ChemDataEngine.molToSmiles(data) : data.trim();
-                                if (smiles) window.open(`https://www.nmrdb.org/simulator/?smiles=${encodeURIComponent(smiles)}`);
-                                else new Notice("Could not extract SMILES for NMR prediction.");
-                            });
-                        });
+                        populateChemicalMenu(menu, this, selection);
                     }
-                }
-            }));
-
-            this.registerEvent(this.app.workspace.on('editor-menu', (menu, editor) => {
-                const selection = editor.getSelection().trim();
-                if (selection && selection.length < 500 && !selection.includes('\n')) {
-                    menu.addSeparator();
-                    populateChemicalMenu(menu, this, selection);
-                }
-            }));
+                })
+            );
         }
 
-        // Scripting engine stubs (prevents command palette crashes until module is fully implemented)
-        if (this.settings.enableScripting) {
-            this.addCommand({
-                id: 'reload-chemedit-scripts',
-                name: 'Reload Custom Scripts',
-                callback: () => new Notice("Script Engine coming soon!")
-            });
-            this.addCommand({
-                id: 'open-chemedit-script-store',
-                name: 'Open Script Store',
-                callback: () => new Notice("Script Store coming soon!")
-            });
-        }
+        
+		// --- BIO ELN COMMANDS ---
+        this.addCommand({
+            id: 'bio-insert-pcr', 
+            name: 'ChemEdit Bio: Insert PCR Master Mix Template', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`bio-eln
+type: pcr
+title: Genotyping PCR
+reactions: 10
+overage_percent: 10
+total_volume_ul: 25
+
+components:
+  - name: 2X Taq Master Mix
+    stock: 2X
+    final: 1X
+  - name: Forward Primer
+    stock: 10 uM
+    final: 0.5 uM
+  - name: Reverse Primer
+    stock: 10 uM
+    final: 0.5 uM
+  - name: Template DNA
+    volume_ul: 1.0
+    add_to_mm_separately: true
+  - name: Nuclease-Free Water
+\`\`\`\n`);
+            }
+        });
+
+        this.addCommand({
+            id: 'bio-insert-ligation', 
+            name: 'ChemEdit Bio: Insert Ligation / Cloning Calculator', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`bio-eln
+type: ligation
+title: pET28a + Insert Ligation
+
+vector_kb: 5.3
+vector_ng: 50
+insert_kb: 1.2
+ratio: 3
+\`\`\`\n`);
+            }
+        });
+
+        this.addCommand({
+            id: 'bio-insert-protocol', 
+            name: 'ChemEdit Bio: Insert Interactive Protocol Checklist', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`bio-eln
+type: protocol
+title: Plasmid Miniprep
+date: 2026-10-14
+
+steps:
+  - text: "Pellet 1-5 mL bacterial overnight culture at 10,000 x g for 3 min."
+    done: false
+  - text: "Resuspend pelleted bacterial cells in 250 uL Buffer P1."
+    done: false
+  - text: "Add 250 uL Buffer P2 and mix thoroughly by inverting the tube 4-6 times."
+    done: false
+  - text: "Add 350 uL Buffer N3 and mix immediately and thoroughly by inverting."
+    done: false
+\`\`\`\n`);
+            }
+        });
+
+        this.addCommand({
+            id: 'bio-insert-oligo', 
+            name: 'ChemEdit Bio: Insert Oligo Analyzer', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`bio-eln
+type: oligo_analyzer
+title: T7 Promoter Primer
+sequence: "TAATACGACTCACTATAGGG"
+\`\`\`\n`);
+            }
+        });
+
+        this.addCommand({
+            id: 'bio-insert-cell-seeding', 
+            name: 'ChemEdit Bio: Insert Cell Seeding Calculator', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`bio-eln
+type: cell_seeding
+title: 96-well Plate Seeding
+
+current_cells_per_ml: 1.5e6
+target_cells_per_well: 50000
+wells: 96
+vol_per_well_ml: 0.1
+overage_percent: 10
+\`\`\`\n`);
+            }
+        });
+
+        // --- POLYMER ELN COMMANDS ---
+        this.addCommand({
+            id: 'polymer-insert-raft', 
+            name: 'ChemEdit Polymer: Insert Synthesis Template (RAFT, ATRP)', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`polymer-eln
+code: POLY-001
+type: polymerization
+title: RAFT Polymerization of Styrene
+
+target_mass_g: 5
+target_dp: 100
+
+monomers:
+  - name: Styrene
+    smiles: C=CC1=CC=CC=C1
+    mol_ratio: 1.0
+
+initiators:
+  - name: AIBN
+    smiles: CC(C)(C#N)/N=N/C(C)(C)C#N
+    ratio_to_monomer: 0.1
+
+agents:
+  - name: CPDB (RAFT Agent)
+    ratio_to_monomer: 0.01
+\`\`\`\n`);
+            }
+        });
+
+        this.addCommand({
+            id: 'polymer-insert-formulation', 
+            name: 'ChemEdit Polymer: Insert Resin Formulation (PHR)', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`polymer-eln
+code: FORM-001
+type: formulation
+title: Epoxy Resin Blend
+
+target_mass_g: 10
+
+components:
+  - name: Bisphenol A Diglycidyl Ether
+    smiles: CC(C)(C1=CC=C(OCC2CO2)C=C1)C3=CC=C(OCC4CO4)C=C3
+    phr: 100
+  - name: Amine Hardener
+    phr: 25
+\`\`\`\n`);
+            }
+        });
+		
+		// --- ORGANIC CHEM HELPERS ---
+        this.addCommand({
+            id: 'org-insert-faradaic', 
+            name: 'ChemEdit Org: Insert Faradaic Efficiency Calculator', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`org-helpers
+type: faradaic_efficiency
+title: Ni-Catalyzed CD3-Methylation
+
+product_mmol: 0.376
+electrons_z: 2
+current_mA: 10
+time_hours: 5
+\`\`\`\n`);
+            }
+        });
+
+        this.addCommand({
+            id: 'org-insert-screening', 
+            name: 'ChemEdit Org: Insert Optimization / Master Mix Calculator', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`org-helpers
+type: reaction_screening
+title: Ni/Ligand Optimization Matrix
+
+reactions: 10
+overage_percent: 10
+scale_mmol: 0.2
+vol_per_vial_ml: 4.0
+
+components:
+  - name: t-butyl 4-bromopiperidine-1-carboxylate
+    mw: 264.12
+    eq: 1.0
+  - name: CD3OTs
+    mw: 189.23
+    eq: 2.0
+  - name: NiCl2(dme)
+    mw: 219.66
+    eq: 0.1
+  - name: TBAB
+    mw: 322.37
+    eq: 0.5
+\`\`\`\n`);
+            }
+        });
+
+        this.addCommand({
+            id: 'org-insert-catalyst', 
+            name: 'ChemEdit Org: Insert Catalyst TON/TOF Metrics', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`org-helpers
+type: catalyst_metrics
+title: Catalyst Performance
+
+product_mmol: 0.376
+catalyst_mmol: 0.04
+time_hours: 5
+\`\`\`\n`);
+            }
+        });
+
+        this.addCommand({
+            id: 'org-insert-nmr-yield', 
+            name: 'ChemEdit Org: Insert NMR Yield Calculator', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`org-helpers
+type: nmr_yield
+title: NMR Yield (vs Mesitylene)
+
+theory_mmol: 0.2
+product_mw: 250.2
+product_protons: 2
+product_integral: 1.0
+
+standard_name: Mesitylene
+standard_mw: 120.19
+standard_mass_mg: 12.0
+standard_protons: 3
+standard_integral: 0.85
+\`\`\`\n`);
+            }
+        });
+
+        // --- Extra ELN COMMANDS ---
+		
+		this.addCommand({
+            id: 'insert-matrix-eln', 
+            name: 'ChemEdit Org: Insert High-Throughput Optimization Matrix (DoE)', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`matrix-eln
+title: Ni/Ligand Cross-Coupling Screen
+scale_mmol: 0.1
+vol_per_vial_ml: 1.0
+overage_percent: 10
+
+fixed_components:
+  - name: Aryl Bromide
+    mw: 157.01
+    eq: 1.0
+  - name: NiCl2(dme)
+    mw: 219.66
+    eq: 0.1
+
+variables:
+  Ligand:
+    - name: L1 (dtbbpy)
+      mw: 268.4
+      eq: 0.1
+    - name: L2 (phen)
+      mw: 180.2
+      eq: 0.1
+  Base:
+    - name: K2CO3
+      mw: 138.2
+      eq: 2.0
+    - name: Cs2CO3
+      mw: 325.8
+      eq: 2.0
+\`\`\`\n`);
+            }
+        });
+
+
+        // --- ANALYTICAL ELN COMMANDS ---
+        this.addCommand({
+            id: 'analytical-insert-calibration', 
+            name: 'ChemEdit Analytics: Insert Calibration Curve (Linear Reg.)', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`analytical-eln
+type: calibration
+title: HPLC Quantification of Caffeine
+smiles: CN1C=NC2=C1C(=O)N(C(=O)N2C)C
+units: "µg/mL"
+
+standards:
+  - name: Std 1
+    conc: 5
+    area: 12500
+  - name: Std 2
+    conc: 10
+    area: 25400
+  - name: Std 3
+    conc: 50
+    area: 126000
+  - name: Std 4
+    conc: 100
+    area: 258000
+
+samples:
+  - name: Energy Drink A
+    dilution_factor: 10
+    area: 45000
+\`\`\`\n`);
+            }
+        });
+
+        // --- DATABASE COMMANDS ---
+        this.addCommand({ id: 'db-insert-library', name: 'ChemEdit DB: Insert Compound Library', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: library\npath: Library/\nlayout: table\n\`\`\`\n`) });
+        this.addCommand({ id: 'db-insert-inventory', name: 'ChemEdit DB: Insert Chemical Inventory', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: inventory\npath: Inventory/\nlayout: table\n\`\`\`\n`) });
+        this.addCommand({ id: 'db-insert-equipment', name: 'ChemEdit DB: Insert Lab Equipment Tracker', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: equipment\npath: Equipment/\nlayout: table\n\`\`\`\n`) });
+		
+		
+		// --- ANALYTICAL ELN COMMANDS ---
+        this.addCommand({
+            id: 'insert-calibration-eln', 
+            name: 'Insert Calibration Curve / Quantification', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`analytical-eln
+type: calibration
+title: HPLC Quantification of Caffeine
+smiles: CN1C=NC2=C1C(=O)N(C(=O)N2C)C
+units: "µg/mL"
+
+standards:
+  - name: Std 1
+    conc: 5
+    area: 12500
+  - name: Std 2
+    conc: 10
+    area: 25400
+  - name: Std 3
+    conc: 50
+    area: 126000
+  - name: Std 4
+    conc: 100
+    area: 258000
+
+samples:
+  - name: Energy Drink A
+    dilution_factor: 10
+    area: 45000
+  - name: Energy Drink B
+    dilution_factor: 5
+    area: 88000
+\`\`\`\n`);
+            }
+        });
+
+        this.addCommand({
+            id: 'insert-dilution-eln', 
+            name: 'Insert Serial Dilution Calculator', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`analytical-eln
+type: serial_dilution
+title: Standard Prep
+stock_conc: 1000
+stock_units: "mg/L"
+diluent: "Methanol"
+
+targets:
+  - target_conc: 100
+    target_vol: 1000
+  - target_conc: 50
+    target_vol: 1000
+  - target_conc: 10
+    target_vol: 1000
+\`\`\`\n`);
+            }
+        });
+
+        this.addCommand({
+            id: 'insert-hplc-method-eln', 
+            name: 'Insert HPLC/GC Method Parameters', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`analytical-eln
+type: hplc_method
+title: Method A (Purity)
+instrument: Agilent 1260
+column: "C18, 50x2.1mm, 1.8µm"
+flow_rate: "0.5 mL/min"
+temp: "40 °C"
+detection: "UV 254 nm"
+solvent_a: "Water + 0.1% FA"
+solvent_b: "Acetonitrile + 0.1% FA"
+
+gradient:
+  - time: 0.0
+    b_percent: 5
+  - time: 5.0
+    b_percent: 95
+  - time: 6.0
+    b_percent: 95
+  - time: 6.1
+    b_percent: 5
+\`\`\`\n`);
+            }
+        });
+		
+		// --- POLYMER ELN & MACROMOLECULE COMMANDS ---
+        this.addCommand({
+            id: 'insert-polymer-eln', 
+            name: 'Insert Polymer Synthesis / RAFT Template', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`polymer-eln
+code: POLY-001
+type: polymerization
+title: RAFT Polymerization of Styrene
+
+target_mass_g: 5
+target_dp: 100
+
+monomers:
+  - name: Styrene
+    smiles: C=CC1=CC=CC=C1
+    mol_ratio: 1.0
+
+initiators:
+  - name: AIBN
+    smiles: CC(C)(C#N)/N=N/C(C)(C)C#N
+    ratio_to_monomer: 0.1
+
+agents:
+  - name: CPDB (RAFT Agent)
+    ratio_to_monomer: 0.01
+
+characterization:
+  conversion: 85%
+  Mn_gpc: 10500
+  dispersity: 1.06
+  Tg: 105 °C
+\`\`\`\n`);
+            }
+        });
+
+        this.addCommand({
+            id: 'insert-formulation-eln', 
+            name: 'Insert Resin Formulation (PHR) Template', 
+            editorCallback: (editor: Editor) => {
+                editor.replaceSelection(`\`\`\`polymer-eln
+code: FORM-001
+type: formulation
+title: Epoxy Resin Blend
+
+target_mass_g: 10
+
+components:
+  - name: Bisphenol A Diglycidyl Ether
+    smiles: CC(C)(C1=CC=C(OCC2CO2)C=C1)C3=CC=C(OCC4CO4)C=C3
+    phr: 100
+  - name: Amine Hardener
+    phr: 25
+  - name: Silica Nanoparticles
+    phr: 5
+\`\`\`\n`);
+            }
+        });
+
 
         if (this.settings.enableEln) {
             this.addCommand({ id: 'insert-compound-library', name: 'Insert Compound Library Database', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: library\npath: Library/\nlayout: table\n\`\`\`\n`) });
             this.addCommand({ id: 'insert-inventory-database', name: 'Insert Chemical Inventory Database', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: inventory\npath: Inventory/\nlayout: table\n\`\`\`\n`) });
             this.addCommand({ id: 'insert-equipment-database', name: 'Insert Lab Equipment / Instrument Tracker', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: equipment\npath: Equipment/\nlayout: table\n\`\`\`\n`) });
             this.addCommand({ id: 'insert-eln-gallery', name: 'Insert ELN Experiment Gallery', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`eln-gallery\npath: Experiments/\n\`\`\`\n`) });
-            
             this.addCommand({
                 id: 'insert-from-library', name: 'Insert SMILES from Library',
                 editorCallback: async (editor: Editor) => {
@@ -291,32 +746,35 @@ export default class ChemEditPlugin extends Plugin {
             this.registerMarkdownCodeBlockProcessor("eln-gallery", async (source, el, ctx) => { const r = new ElnGalleryRenderer(this); await r.renderGalleryBlock(source, el, ctx); });
             this.registerMarkdownCodeBlockProcessor("eln", async (source, el, ctx) => { const elnRenderer = new SharedElnRenderer(this); await elnRenderer.renderElnBlock(source, el, ctx); });
 
-            // Dashboards Registration
-            if (this.settings.enableElnDashboard) {
-                this.registerView(ELN_DASHBOARD_VIEW_TYPE, (leaf) => new ElnDashboardView(leaf, this));
-                this.addCommand({ id: 'open-eln-dashboard', name: 'Open ELN Dashboard', callback: () => this.activateElnDashboard() });
-            }
-            if (this.settings.enableInventoryDashboard) {
-                this.addCommand({ id: 'open-inventory-dashboard', name: 'Open Chemical Inventory Dashboard', callback: () => this.activateInventoryDashboard() });
-            }
-            if (this.settings.enableEquipmentDashboard) {
-                this.addCommand({ id: 'open-equipment-dashboard', name: 'Open Lab Equipment Dashboard', callback: () => this.activateEquipmentDashboard() });
-            }
-            if (this.settings.enableProtocolsDashboard) {
-                this.addCommand({ id: 'open-protocols-dashboard', name: 'Open Lab Protocols Dashboard', callback: () => this.activateProtocolsDashboard() });
-            }
-            if (this.settings.enableLibraryDashboard) {
-                this.addCommand({ id: 'open-library-dashboard', name: 'Open Compounds Library Dashboard', callback: () => this.activateLibraryDashboard() });
-            }
-            if (this.settings.enableGalleryDashboard) {
-                this.addCommand({ id: 'open-gallery-dashboard', name: 'Open Drawings Gallery Dashboard', callback: () => this.activateGalleryDashboard() });
-            }
-            if (this.settings.enableCharacterizationDashboard) {
-                this.addCommand({ id: 'open-characterization-dashboard', name: 'Open Compound Data Organizer', callback: () => this.activateCharacterizationDashboard() });
-            }
-            if (this.settings.enableOrdersDashboard) {
-                this.addCommand({ id: 'open-orders-dashboard', name: 'Open Orders Dashboard', callback: () => this.activateOrdersDashboard() });
-            }
+            // --> REGISTER NEW ORGANIC RENDERER <--
+			this.registerMarkdownCodeBlockProcessor("org-helpers", async (source, el, ctx) => { 
+				const r = new OrganicHelpersRenderer(this); 
+				await r.renderBlock(source, el, ctx); 
+			});
+			
+			
+            // --> REGISTER NEW ELN RENDERER <--
+			
+			this.registerMarkdownCodeBlockProcessor("matrix-eln", async (source, el, ctx) => { 
+				const r = new MatrixElnRenderer(this); 
+				await r.renderBlock(source, el, ctx); 
+			});
+
+			
+			// --> REGISTER NEW POLYMER RENDERER <--
+            this.registerMarkdownCodeBlockProcessor("polymer-eln", async (source, el, ctx) => { const r = new PolymerElnRenderer(this); await r.renderPolymerBlock(source, el, ctx); });
+			
+            // --> REGISTER NEW BIO RENDERER <--
+			this.registerMarkdownCodeBlockProcessor("bio-eln", async (source, el, ctx) => { 
+				const r = new BioElnRenderer(this); 
+				await r.renderBioBlock(source, el, ctx); 
+			});
+
+            // --> REGISTER NEW ANALYTICAL ELN RENDERER <--
+			this.registerMarkdownCodeBlockProcessor("analytical-eln", async (source, el, ctx) => { 
+				const r = new AnalyticalElnRenderer(this); 
+				await r.renderAnalyticalBlock(source, el, ctx); 
+			});
         }
 
         if (this.settings.enablePathways) {
