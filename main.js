@@ -562244,6 +562244,7 @@ ${currentSections}`;
 // main.ts
 var main_exports = {};
 __export(main_exports, {
+  CHEM_FILE_VIEW_TYPE: () => CHEM_FILE_VIEW_TYPE,
   default: () => ChemEditPlugin,
   embedDataInSvg: () => embedDataInSvg,
   extractDataFromSvg: () => extractDataFromSvg
@@ -573040,8 +573041,7 @@ var AnalyticalCalculator = class {
     if (data.type === "calibration") {
       if (!data.standards) data.standards = [];
       if (!data.samples) data.samples = [];
-      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, sumYY = 0;
-      let n8 = 0;
+      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, sumYY = 0, n8 = 0;
       data.standards.forEach((std) => {
         if (std.conc !== void 0 && std.area !== void 0 && std.exclude !== true) {
           sumX += std.conc;
@@ -573095,6 +573095,47 @@ var AnalyticalCalculator = class {
         });
       }
     }
+    if (data.type === "acid_base_prep") {
+      const density = data.density || 0;
+      const mw = data.mw || 0;
+      const ww = data.w_w_percent || 0;
+      const tVol = data.target_volume_ml || 0;
+      const tMol = data.target_molarity || 0;
+      if (mw > 0 && density > 0 && ww > 0) {
+        data.stock_molarity = density * 10 * ww / mw;
+        if (data.stock_molarity > 0 && tVol > 0 && tMol > 0) {
+          data.volume_to_dispense_ml = tMol * tVol / data.stock_molarity;
+        } else {
+          data.volume_to_dispense_ml = 0;
+        }
+      } else {
+        data.stock_molarity = 0;
+        data.volume_to_dispense_ml = 0;
+      }
+    }
+    if (data.type === "standard_addition") {
+      if (!data.standards) data.standards = [];
+      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0, n8 = 0;
+      data.standards.forEach((std) => {
+        if (std.added_conc !== void 0 && std.area !== void 0 && std.exclude !== true) {
+          sumX += std.added_conc;
+          sumY += std.area;
+          sumXY += std.added_conc * std.area;
+          sumXX += std.added_conc * std.added_conc;
+          n8++;
+        }
+      });
+      if (n8 > 1) {
+        const denominator = n8 * sumXX - sumX * sumX;
+        if (denominator !== 0) {
+          data.slope = (n8 * sumXY - sumX * sumY) / denominator;
+          data.intercept = (sumY - data.slope * sumX) / n8;
+          data.calculated_unknown_conc = Math.abs(data.intercept / data.slope);
+        }
+      } else {
+        data.calculated_unknown_conc = null;
+      }
+    }
     return data;
   }
 };
@@ -573106,15 +573147,17 @@ var AnalyticalElnRenderer = class {
   async renderAnalyticalBlock(source, el2, ctx) {
     const { parseYaml, stringifyYaml } = require("obsidian");
     const wrapper2 = el2.createDiv();
+    const themeColor = "#3b82f6";
+    const bdColor = "var(--background-modifier-border)";
     wrapper2.style.position = "relative";
-    wrapper2.style.border = "1px solid #3b82f6";
-    wrapper2.style.padding = "45px 15px 15px 15px";
+    wrapper2.style.border = `1px solid ${bdColor}`;
     wrapper2.style.borderRadius = "12px";
-    wrapper2.style.backgroundColor = "var(--background-primary-alt)";
+    wrapper2.style.backgroundColor = "var(--background-primary)";
+    wrapper2.style.padding = "20px";
     wrapper2.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.05)";
     wrapper2.style.fontFamily = "var(--font-interface)";
     wrapper2.style.width = "100%";
-    wrapper2.innerHTML = `<h3 class="color-text-muted" style="text-align:center;">\u23F3 Processing Analytical Data...</h3>`;
+    wrapper2.style.marginBottom = "15px";
     try {
       const safeSource = source.replace(/smiles:\s*(.*)$/gm, (match2, p1) => {
         let s8 = p1.trim();
@@ -573133,88 +573176,68 @@ var AnalyticalElnRenderer = class {
       let data = parseYaml(safeSource);
       if (!data) throw new Error("Empty YAML Data.");
       data = AnalyticalCalculator.calculate(data);
-      wrapper2.innerHTML = "";
-      const thColor = "var(--background-secondary)";
-      const bdColor = "var(--background-modifier-border-hover)";
-      const textColor = "var(--text-normal)";
-      let html = `<div style="font-size: 14px; color: ${textColor}; margin-top:5px;">`;
-      html += `
-            <div style="border-bottom: 2px solid #3b82f6; padding-bottom: 10px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:flex-end;">
-                <div>
-                    <h2 style="margin: 0; font-size: 22px; font-weight: 700; color: #3b82f6;">${data.title || data.code || "Analytical Assay"}</h2>
-                    <div style="font-size: 13px; color: var(--text-muted); margin-top:4px; text-transform: uppercase;">${data.type.replace("_", " ")}</div>
-                </div>
-                <div style="text-align:right; font-size:12px; color:var(--text-muted);">
-                    ${data.date ? `<b>Date:</b> ${data.date}<br>` : ""}
-                    ${data.instrument ? `<b>Instrument:</b> ${data.instrument}` : ""}
-                </div>
+      let html = `
+            <div style="margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: ${themeColor};">${data.title || "Analytical Assay"}</h2>
+                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">${data.type.replace(/_/g, " ")}</div>
             </div>`;
       const formatNum = (num, dec = 2) => {
         const n8 = Number(num);
         if (isNaN(n8)) return "-";
         if (n8 === 0) return "0";
-        if (n8 > 1e7) return n8.toExponential(2);
+        if (n8 > 1e6) return n8.toExponential(2);
         return n8 % 1 === 0 && dec !== 0 ? n8.toString() : n8.toFixed(dec);
       };
       const makeEditableTd = (type3, i8, key, val, inputType = "number", customHtml, extraStyle = "") => {
         let innerHTML = customHtml !== void 0 ? customHtml : inputType === "number" ? formatNum(val) : val || "-";
         let rawValAttr = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
-        return `<td class="ana-editable" data-type="${type3}" data-idx="${i8}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawValAttr}" title="Double-click to edit" style="padding: 8px 10px; cursor: text; transition: background 0.2s; ${extraStyle}">${innerHTML}</td>`;
+        return `<td class="ana-editable" data-type="${type3}" data-idx="${i8}" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawValAttr}" title="Double-click to edit" style="padding: 6px 10px; cursor: text; border-bottom: 1px solid ${bdColor}; ${extraStyle}">${innerHTML}</td>`;
       };
       const makeEditableRoot = (key, val, inputType = "number", unit2 = "") => {
-        const displayVal = val !== void 0 ? (inputType === "number" ? formatNum(val) : val) + unit2 : "-";
+        const displayVal = val !== void 0 ? inputType === "number" ? formatNum(val) : val : "-";
         const rawVal = val !== void 0 && val !== null ? String(val).replace(/"/g, "&quot;") : "";
-        return `<span class="ana-editable" data-type="root" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawVal}" title="Double-click to edit" style="cursor: text; border-bottom: 1px dashed #3b82f6; display: inline-block; font-weight: bold; color: var(--text-normal);">${displayVal}</span>`;
+        return `<span class="ana-editable" data-type="root" data-key="${key}" data-input-type="${inputType}" data-raw-value="${rawVal}" title="Double-click to edit" style="cursor: text; border-bottom: 2px dotted ${themeColor}; font-weight: bold; color: var(--text-normal); padding: 0 2px;">${displayVal}${unit2}</span>`;
       };
       if (data.type === "calibration") {
         const u8 = data.units || "\xB5g/mL";
         html += `
-                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 25px;">
-                    <div style="flex: 1; min-width: 140px; background: var(--background-secondary); padding: 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
-                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">Linear Equation</div>
-                        <div style="font-size:16px; font-weight:bold; color:#3b82f6; font-family: monospace;">y = ${formatNum(data.slope, 4)}x ${data.intercept >= 0 ? "+" : "-"} ${formatNum(Math.abs(data.intercept), 4)}</div>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <div style="flex: 1; background: var(--background-secondary-alt); padding: 10px; border-radius: 6px; text-align:center; border: 1px solid ${bdColor};">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Linear Equation</div>
+                        <div style="font-size:14px; font-weight:bold; color:#3b82f6;">y = ${formatNum(data.slope, 4)}x ${data.intercept >= 0 ? "+" : "-"} ${formatNum(Math.abs(data.intercept), 4)}</div>
                     </div>
-                    <div style="flex: 1; min-width: 100px; background: var(--background-secondary); padding: 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); text-align:center;">
-                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px;">R-Squared (R\xB2)</div>
-                        <div style="font-size:18px; font-weight:bold; color:${data.r_squared >= 0.99 ? "var(--text-success)" : "var(--text-warning)"};">${formatNum(data.r_squared, 4)}</div>
+                    <div style="flex: 1; background: var(--background-secondary-alt); padding: 10px; border-radius: 6px; text-align:center; border: 1px solid ${bdColor};">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">R-Squared (R\xB2)</div>
+                        <div style="font-size:16px; font-weight:bold; color:${data.r_squared >= 0.99 ? "var(--text-success)" : "var(--text-warning)"};">${formatNum(data.r_squared, 4)}</div>
                     </div>
                 </div>`;
-        if (data.smiles) {
-          html += `<div style="display:flex; justify-content:center; margin-bottom:20px;">
-                        <div class="ana-struct" data-smiles="${data.smiles}"></div>
-                    </div>`;
-        }
-        html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Calibration Standards</h4>
-                <div style="overflow-x: auto; margin-bottom: 20px;">
+        html += `<div style="overflow-x: auto; margin-bottom: 20px;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
-                    <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
-                        <th style="padding: 10px;">Standard Name</th><th style="padding: 10px;">Conc [${u8}]</th><th style="padding: 10px;">Response (Area)</th><th style="padding: 10px; text-align:center;">Include</th>
+                    <tr style="background-color: var(--background-secondary); border-bottom: 2px solid ${bdColor};">
+                        <th style="padding: 8px;">Standard</th><th style="padding: 8px;">Conc [${u8}]</th><th style="padding: 8px;">Response</th><th style="padding: 8px; text-align:center;">Use</th>
                     </tr>`;
         data.standards.forEach((std, i8) => {
-          const isEx = std.exclude ? `<span style="color:var(--text-error); font-size:10px; font-weight:bold;">EXCLUDED</span>` : `<span style="color:var(--text-success);">\u2705</span>`;
-          const rowStyle = std.exclude ? "opacity: 0.5;" : "";
-          html += `<tr style="border-bottom: 1px solid ${bdColor}; ${rowStyle}">
+          const isEx = std.exclude ? `<span style="color:var(--text-error); font-size:10px; font-weight:bold;">EXCLUDED</span>` : `\u2705`;
+          html += `<tr style="border-bottom: 1px solid var(--background-modifier-border-hover); ${std.exclude ? "opacity: 0.5;" : ""}">
                         ${makeEditableTd("standards", i8, "name", std.name, "text", std.name, "font-weight:600;")}
                         ${makeEditableTd("standards", i8, "conc", std.conc, "number")}
                         ${makeEditableTd("standards", i8, "area", std.area, "number", void 0, "font-weight:bold; color:var(--interactive-accent);")}
-                        <td class="ana-exclude-toggle" data-idx="${i8}" data-state="${std.exclude ? "true" : "false"}" style="padding: 10px; text-align:center; cursor:pointer;" title="Click to toggle inclusion">${isEx}</td>
+                        <td class="ana-exclude-toggle" data-idx="${i8}" data-state="${std.exclude ? "true" : "false"}" style="padding: 8px; text-align:center; cursor:pointer;" title="Toggle"> ${isEx}</td>
                     </tr>`;
         });
         html += `</table></div>`;
         if (data.samples && data.samples.length > 0) {
-          html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Quantified Samples</h4>
-                    <div style="overflow-x: auto; margin-bottom: 20px;">
+          html += `<div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
-                        <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
-                            <th style="padding: 10px;">Sample Name</th><th style="padding: 10px;">Dilution Factor</th><th style="padding: 10px;">Response (Area)</th><th style="padding: 10px; color:#3b82f6;">Vial Conc [${u8}]</th><th style="padding: 10px; color:#3b82f6;">Original Conc [${u8}]</th>
+                        <tr style="background-color: var(--background-secondary); border-bottom: 2px solid ${bdColor};">
+                            <th style="padding: 8px;">Sample</th><th style="padding: 8px;">Dil. Factor</th><th style="padding: 8px;">Response</th><th style="padding: 8px; color:#3b82f6;">Original Conc [${u8}]</th>
                         </tr>`;
           data.samples.forEach((samp, i8) => {
-            html += `<tr style="border-bottom: 1px solid ${bdColor};">
+            html += `<tr>
                             ${makeEditableTd("samples", i8, "name", samp.name, "text", samp.name, "font-weight:600;")}
                             ${makeEditableTd("samples", i8, "dilution_factor", samp.dilution_factor || 1, "number")}
-                            ${makeEditableTd("samples", i8, "area", samp.area, "number", void 0, "font-weight:bold; color:var(--interactive-accent);")}
-                            <td style="padding: 10px; color:var(--text-muted);">${formatNum(samp.vial_conc, 3)}</td>
-                            <td style="padding: 10px; font-weight:bold; color:var(--text-normal); font-size:14px;">${formatNum(samp.original_conc, 3)}</td>
+                            ${makeEditableTd("samples", i8, "area", samp.area, "number")}
+                            <td style="padding: 8px; font-weight:bold; color:var(--text-normal); font-size:14px; border-bottom: 1px solid ${bdColor};">${formatNum(samp.original_conc, 3)}</td>
                         </tr>`;
           });
           html += `</table></div>`;
@@ -573222,206 +573245,204 @@ var AnalyticalElnRenderer = class {
       } else if (data.type === "serial_dilution") {
         const u8 = data.stock_units || "";
         html += `
-                <div style="display: flex; gap: 15px; margin-bottom: 20px; font-size: 13px; background: var(--background-secondary); padding: 10px; border-radius: 6px;">
-                    <div><span style="color:var(--text-muted)">Stock Concentration:</span> ${makeEditableRoot("stock_conc", data.stock_conc)} ${u8}</div>
+                <div style="display: flex; gap: 15px; margin-bottom: 15px; font-size: 13px; background: var(--background-secondary-alt); padding: 10px; border-radius: 6px; border: 1px solid ${bdColor};">
+                    <div><span style="color:var(--text-muted)">Stock:</span> ${makeEditableRoot("stock_conc", data.stock_conc)} ${u8}</div>
                     <div><span style="color:var(--text-muted)">Diluent:</span> ${makeEditableRoot("diluent", data.diluent, "text")}</div>
-                </div>`;
-        html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Dilution Scheme</h4>
-                <div style="overflow-x: auto; margin-bottom: 20px;">
+                </div>
+                <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
-                    <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
-                        <th style="padding: 10px;">Target Conc [${u8}]</th><th style="padding: 10px;">Target Volume</th><th style="padding: 10px; color:#3b82f6;">Vol of Stock Needed</th><th style="padding: 10px; color:#3b82f6;">Vol of Diluent Needed</th>
+                    <tr style="background-color: var(--background-secondary); border-bottom: 2px solid ${bdColor};">
+                        <th style="padding: 8px;">Target Conc [${u8}]</th><th style="padding: 8px;">Target Vol</th><th style="padding: 8px; color:#3b82f6;">Stock to Add</th><th style="padding: 8px; color:#3b82f6;">Diluent to Add</th>
                     </tr>`;
         data.targets.forEach((t8, i8) => {
-          html += `<tr style="border-bottom: 1px solid ${bdColor};">
+          html += `<tr>
                         ${makeEditableTd("targets", i8, "target_conc", t8.target_conc, "number", void 0, "font-weight:bold; color:var(--text-normal);")}
                         ${makeEditableTd("targets", i8, "target_vol", t8.target_vol, "number")}
-                        <td style="padding: 10px; font-weight:bold; color:var(--text-accent);">${formatNum(t8.stock_vol)}</td>
-                        <td style="padding: 10px; font-weight:bold; color:var(--text-normal);">${formatNum(t8.diluent_vol)}</td>
+                        <td style="padding: 8px; font-weight:bold; color:var(--text-accent); border-bottom: 1px solid ${bdColor};">${formatNum(t8.stock_vol)}</td>
+                        <td style="padding: 8px; font-weight:bold; color:var(--text-normal); border-bottom: 1px solid ${bdColor};">${formatNum(t8.diluent_vol)}</td>
+                    </tr>`;
+        });
+        html += `</table></div>`;
+      } else if (data.type === "acid_base_prep") {
+        html += `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
+                    <div style="background: var(--background-secondary-alt); border: 1px solid ${bdColor}; border-radius: 6px; padding: 10px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 4px;">Density (g/mL)</div>
+                        <div style="font-size:18px;">${makeEditableRoot("density", data.density)}</div>
+                    </div>
+                    <div style="background: var(--background-secondary-alt); border: 1px solid ${bdColor}; border-radius: 6px; padding: 10px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 4px;">Formula Wt (g/mol)</div>
+                        <div style="font-size:18px;">${makeEditableRoot("mw", data.mw)}</div>
+                    </div>
+                    <div style="background: var(--background-secondary-alt); border: 1px solid ${bdColor}; border-radius: 6px; padding: 10px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 4px;">Weight % (w/w)</div>
+                        <div style="font-size:18px;">${makeEditableRoot("w_w_percent", data.w_w_percent)}</div>
+                    </div>
+                    <div style="background: var(--background-secondary-alt); border: 1px solid ${bdColor}; border-radius: 6px; padding: 10px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 4px;">Target Vol (mL)</div>
+                        <div style="font-size:18px;">${makeEditableRoot("target_volume_ml", data.target_volume_ml)}</div>
+                    </div>
+                    <div style="background: var(--background-secondary-alt); border: 1px solid ${bdColor}; border-radius: 6px; padding: 10px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 4px;">Target Molarity</div>
+                        <div style="font-size:18px;">${makeEditableRoot("target_molarity", data.target_molarity)}</div>
+                    </div>
+                    <div style="background: var(--background-primary); border: 1px solid ${themeColor}; border-radius: 6px; padding: 10px; text-align: center;">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 4px;">Stock Molarity</div>
+                        <div style="font-size:18px; color:${themeColor}; font-weight:bold;">${data.stock_molarity ? data.stock_molarity.toFixed(2) : "-"} M</div>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(59, 130, 246, 0.1); border-left: 4px solid ${themeColor}; padding: 12px; border-radius: 4px; font-size: 14px; color: var(--text-normal);">
+                    Take <b>${data.volume_to_dispense_ml ? data.volume_to_dispense_ml.toFixed(1) : "-"} mL</b> of concentrated ${data.reagent || "solution"} and slowly add it to a flask containing water. Dilute to a final volume of <b>${data.target_volume_ml || "-"} mL</b>.
+                </div>`;
+      } else if (data.type === "standard_addition") {
+        const u8 = data.units || "ppm";
+        html += `
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <div style="flex: 1; background: var(--background-secondary-alt); padding: 10px; border-radius: 6px; text-align:center; border: 1px solid ${bdColor};">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Regression Line</div>
+                        <div style="font-size:14px; font-weight:bold; color:#3b82f6;">y = ${formatNum(data.slope, 4)}x ${data.intercept >= 0 ? "+" : "-"} ${formatNum(Math.abs(data.intercept), 4)}</div>
+                    </div>
+                    <div style="flex: 1; background: var(--background-primary); padding: 10px; border-radius: 6px; text-align:center; border: 2px solid ${themeColor};">
+                        <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase;">Calculated Unknown Conc.</div>
+                        <div style="font-size:18px; font-weight:bold; color:var(--text-normal);">${data.calculated_unknown_conc ? formatNum(data.calculated_unknown_conc, 3) : "-"} <span style="font-size:12px; color:var(--text-muted);">${u8}</span></div>
+                    </div>
+                </div>
+
+                <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                    <tr style="background-color: var(--background-secondary); border-bottom: 2px solid ${bdColor};">
+                        <th style="padding: 8px;">Added Conc [${u8}]</th><th style="padding: 8px;">Response (Area)</th><th style="padding: 8px; text-align:center;">Use</th>
+                    </tr>`;
+        data.standards.forEach((std, i8) => {
+          const isEx = std.exclude ? `<span style="color:var(--text-error); font-size:10px; font-weight:bold;">EXCLUDED</span>` : `\u2705`;
+          html += `<tr style="border-bottom: 1px solid var(--background-modifier-border-hover); ${std.exclude ? "opacity: 0.5;" : ""}">
+                        ${makeEditableTd("standards", i8, "added_conc", std.added_conc, "number")}
+                        ${makeEditableTd("standards", i8, "area", std.area, "number", void 0, "font-weight:bold; color:var(--interactive-accent);")}
+                        <td class="ana-exclude-toggle" data-idx="${i8}" data-state="${std.exclude ? "true" : "false"}" style="padding: 8px; text-align:center; cursor:pointer;"> ${isEx}</td>
                     </tr>`;
         });
         html += `</table></div>`;
       } else if (data.type === "hplc_method" || data.type === "gc_method") {
         html += `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: var(--background-secondary-alt); padding: 15px; border-radius: 8px; border: 1px solid #3b82f6; margin-bottom: 20px;">
-                    <div><b style="color:var(--text-muted); font-size:11px; text-transform:uppercase;">Column</b><br><span style="font-weight:600;">${makeEditableRoot("column", data.column, "text")}</span></div>
-                    <div><b style="color:var(--text-muted); font-size:11px; text-transform:uppercase;">Flow Rate / Carrier</b><br><span style="font-weight:600;">${makeEditableRoot("flow_rate", data.flow_rate, "text")}</span></div>
-                    <div><b style="color:var(--text-muted); font-size:11px; text-transform:uppercase;">Temperature</b><br><span style="font-weight:600;">${makeEditableRoot("temp", data.temp, "text")}</span></div>
-                    <div><b style="color:var(--text-muted); font-size:11px; text-transform:uppercase;">Detection (UV/MS)</b><br><span style="font-weight:600;">${makeEditableRoot("detection", data.detection, "text")}</span></div>
-                </div>
-                
-                <div style="display:flex; gap:20px; margin-bottom: 15px; padding: 10px; background: var(--background-primary); border-radius:6px; border: 1px solid var(--background-modifier-border);">
-                    <div style="flex:1"><b style="color:var(--text-muted);">Solvent A:</b> ${makeEditableRoot("solvent_a", data.solvent_a, "text")}</div>
-                    <div style="flex:1"><b style="color:var(--text-muted);">Solvent B:</b> ${makeEditableRoot("solvent_b", data.solvent_b, "text")}</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: var(--background-secondary-alt); padding: 12px; border-radius: 8px; border: 1px solid ${bdColor}; margin-bottom: 15px;">
+                    <div><b style="color:var(--text-muted); font-size:10px; text-transform:uppercase;">Column</b><br><span style="font-weight:600; font-size:13px;">${makeEditableRoot("column", data.column, "text")}</span></div>
+                    <div><b style="color:var(--text-muted); font-size:10px; text-transform:uppercase;">Flow / Carrier</b><br><span style="font-weight:600; font-size:13px;">${makeEditableRoot("flow_rate", data.flow_rate, "text")}</span></div>
+                    <div><b style="color:var(--text-muted); font-size:10px; text-transform:uppercase;">Temp</b><br><span style="font-weight:600; font-size:13px;">${makeEditableRoot("temp", data.temp, "text")}</span></div>
+                    <div><b style="color:var(--text-muted); font-size:10px; text-transform:uppercase;">Detection</b><br><span style="font-weight:600; font-size:13px;">${makeEditableRoot("detection", data.detection, "text")}</span></div>
                 </div>`;
         if (data.gradient) {
-          html += `<h4 style="margin-bottom: 10px; color: var(--text-normal);">Gradient / Oven Program</h4>
-                    <div style="overflow-x: auto; margin-bottom: 20px;">
-                    <table style="width: 50%; min-width:300px; border-collapse: collapse; text-align: left; font-size: 13px;">
-                        <tr style="background-color: ${thColor}; border-bottom: 2px solid var(--background-modifier-border);">
+          html += `
+                    <div style="overflow-x: auto;">
+                    <table style="width: 50%; min-width:250px; border-collapse: collapse; text-align: left; font-size: 13px;">
+                        <tr style="background-color: var(--background-secondary); border-bottom: 2px solid ${bdColor};">
                             <th style="padding: 8px;">Time (min)</th><th style="padding: 8px;">% B (or \xB0C)</th>
                         </tr>`;
           data.gradient.forEach((g9, i8) => {
-            html += `<tr style="border-bottom: 1px solid ${bdColor};">
-                            ${makeEditableTd("gradient", i8, "time", g9.time, "number", void 0, "font-weight:bold;")}
-                            ${makeEditableTd("gradient", i8, "b_percent", g9.b_percent, "number")}
+            html += `<tr>
+                            ${makeEditableTd("gradient", i8, "time", g9.time, "number", void 0, "font-weight:bold; border-bottom: 1px solid " + bdColor + ";")}
+                            ${makeEditableTd("gradient", i8, "b_percent", g9.b_percent, "number", void 0, "border-bottom: 1px solid " + bdColor + ";")}
                         </tr>`;
           });
           html += `</table></div>`;
         }
       }
       html += `</div>`;
-      const attachEditListeners = () => {
-        wrapper2.addEventListener("dblclick", (e6) => {
-          let target = e6.target;
-          while (target && target !== wrapper2 && !target.classList.contains("ana-editable")) {
-            target = target.parentElement;
-          }
-          if (target && target.classList.contains("ana-editable") && !target.querySelector("input")) {
-            e6.stopPropagation();
-            const type3 = target.getAttribute("data-type");
-            const idx = parseInt(target.getAttribute("data-idx") || "0", 10);
-            const key = target.getAttribute("data-key");
-            const inputType = target.getAttribute("data-input-type") || "number";
-            if (!key) return;
-            const originalHTML = target.innerHTML;
-            const currentValText = target.getAttribute("data-raw-value") || "";
-            target.innerHTML = "";
-            target.style.padding = "4px";
-            const input = document.createElement("input");
-            input.type = inputType === "text" ? "text" : "number";
-            if (inputType === "number") input.step = "any";
-            input.value = currentValText;
-            Object.assign(input.style, { width: "100%", boxSizing: "border-box", padding: "4px 6px", border: "1px solid #3b82f6", borderRadius: "4px", background: "var(--background-primary)" });
-            target.appendChild(input);
-            input.focus();
-            const finishEdit = () => {
-              const newValStr = input.value.trim().replace(/,/g, ".");
-              const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian18.MarkdownView);
-              let info = ctx.getSectionInfo(el2);
-              if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
-              if (view && info) {
-                const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
-                try {
-                  let yamlObj = parseYaml(blockText);
-                  let valToSave = newValStr;
-                  if (inputType === "number") {
-                    const num = parseFloat(newValStr);
-                    valToSave = isNaN(num) ? void 0 : num;
-                  } else {
-                    valToSave = newValStr === "" ? void 0 : newValStr;
-                  }
-                  if (type3 === "root") {
-                    if (valToSave === void 0) delete yamlObj[key];
-                    else yamlObj[key] = valToSave;
-                  } else {
-                    if (!yamlObj[type3]) yamlObj[type3] = [];
-                    if (!yamlObj[type3][idx]) yamlObj[type3] = {};
-                    if (valToSave === void 0) delete yamlObj[type3][idx][key];
-                    else yamlObj[type3][idx][key] = valToSave;
-                  }
-                  yamlObj = AnalyticalCalculator.calculate(yamlObj);
-                  const newYaml = stringifyYaml(yamlObj);
-                  view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
-                } catch (err) {
-                  target.innerHTML = originalHTML;
-                  target.style.padding = "8px 10px";
-                }
-              } else {
-                target.innerHTML = originalHTML;
-                target.style.padding = "8px 10px";
-              }
-            };
-            input.onblur = finishEdit;
-            input.onkeydown = (ev) => {
-              if (ev.key === "Enter") input.blur();
-              else if (ev.key === "Escape") {
-                target.innerHTML = originalHTML;
-                target.style.padding = "8px 10px";
-              }
-            };
-          }
-        });
-        const toggles = contentDiv.querySelectorAll(".ana-exclude-toggle");
-        toggles.forEach((node2) => {
-          node2.addEventListener("click", (e6) => {
-            const elNode = node2;
-            const idx = parseInt(elNode.dataset.idx || "0", 10);
-            const currentState = elNode.dataset.state === "true";
-            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian18.MarkdownView);
-            let info = ctx.getSectionInfo(el2);
-            if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
-            if (view && info) {
-              const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
-              try {
-                let yamlObj = parseYaml(blockText);
-                yamlObj.standards[idx].exclude = !currentState;
-                yamlObj = AnalyticalCalculator.calculate(yamlObj);
-                const newYaml = stringifyYaml(yamlObj);
-                view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
-              } catch (err) {
-              }
-            }
-          });
-        });
-      };
-      const actionBar = wrapper2.createDiv();
-      Object.assign(actionBar.style, { position: "absolute", top: "8px", right: "10px", display: "flex", gap: "5px", zIndex: "10" });
-      const copyBtn = actionBar.createDiv();
-      copyBtn.innerHTML = "\u{1F4CB} Copy Data";
-      copyBtn.style.cursor = "pointer";
-      copyBtn.style.fontSize = "11px";
-      copyBtn.style.padding = "4px 8px";
-      copyBtn.style.backgroundColor = "var(--background-secondary)";
-      copyBtn.style.border = "1px solid var(--background-modifier-border)";
-      copyBtn.style.color = "var(--text-normal)";
-      copyBtn.style.borderRadius = "4px";
-      copyBtn.onclick = () => {
-        let txt = "";
-        if (data.type === "calibration") {
-          txt = "Type	Name	Conc	Area	Calc Conc\n";
-          data.standards.forEach((s8) => txt += `Standard	${s8.name || "-"}	${s8.conc || "-"}	${s8.area || "-"}	-
-`);
-          data.samples.forEach((s8) => {
-            var _a;
-            return txt += `Sample	${s8.name || "-"}	-	${s8.area || "-"}	${((_a = s8.original_conc) == null ? void 0 : _a.toFixed(3)) || "-"}
-`;
-          });
-        } else if (data.type === "serial_dilution") {
-          txt = "Target Conc	Target Vol	Stock Vol	Diluent Vol\n";
-          data.targets.forEach((t8) => {
-            var _a, _b;
-            return txt += `${t8.target_conc || "-"}	${t8.target_vol || "-"}	${((_a = t8.stock_vol) == null ? void 0 : _a.toFixed(2)) || "-"}	${((_b = t8.diluent_vol) == null ? void 0 : _b.toFixed(2)) || "-"}
-`;
-          });
-        }
-        navigator.clipboard.writeText(txt);
-        new import_obsidian18.Notice("Data copied to clipboard!");
-      };
       const styleBlock = document.createElement("style");
-      styleBlock.innerHTML = `.ana-editable:hover { background-color: var(--background-modifier-hover); }`;
+      styleBlock.innerHTML = `.ana-editable:hover { background-color: rgba(59, 130, 246, 0.1); border-radius: 4px; }`;
       wrapper2.appendChild(styleBlock);
       const contentDiv = document.createElement("div");
       contentDiv.innerHTML = html;
       wrapper2.appendChild(contentDiv);
-      attachEditListeners();
-      if (data.smiles) {
-        const structEl = contentDiv.querySelector(".ana-struct");
-        if (structEl) {
-          structEl.style.width = `180px`;
-          structEl.style.height = `120px`;
-          structEl.innerHTML = "\u23F3";
-          requestAnimationFrame(async () => {
-            const renderEl = await this.plugin.api.renderStructure(data.smiles, 180, 120);
-            structEl.empty();
-            if (renderEl) {
-              renderEl.style.maxWidth = "100%";
-              renderEl.style.maxHeight = "100%";
-              structEl.appendChild(renderEl);
-            } else structEl.innerHTML = "\u274C";
-          });
+      wrapper2.addEventListener("dblclick", (e6) => {
+        let target = e6.target;
+        while (target && target !== wrapper2 && !target.classList.contains("ana-editable")) {
+          target = target.parentElement;
         }
-      }
+        if (target && target.classList.contains("ana-editable") && !target.querySelector("input")) {
+          e6.stopPropagation();
+          const type3 = target.getAttribute("data-type");
+          const idx = parseInt(target.getAttribute("data-idx") || "0", 10);
+          const key = target.getAttribute("data-key");
+          const inputType = target.getAttribute("data-input-type") || "number";
+          if (!key) return;
+          const originalHTML = target.innerHTML;
+          const currentValText = target.getAttribute("data-raw-value") || "";
+          target.innerHTML = "";
+          const input = document.createElement("input");
+          input.type = inputType === "text" ? "text" : "number";
+          if (inputType === "number") input.step = "any";
+          input.value = currentValText;
+          Object.assign(input.style, { width: "100%", boxSizing: "border-box", padding: "4px 6px", border: `2px solid ${themeColor}`, borderRadius: "4px", background: "var(--background-primary)", fontSize: "inherit", fontWeight: "inherit", color: "var(--text-normal)" });
+          target.appendChild(input);
+          input.focus();
+          const finishEdit = () => {
+            const newValStr = input.value.trim().replace(/,/g, ".");
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian18.MarkdownView);
+            let info = ctx.getSectionInfo(el2);
+            if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+            if (view && info) {
+              const { parseYaml: parseYaml2, stringifyYaml: stringifyYaml2 } = require("obsidian");
+              const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              try {
+                let yamlObj = parseYaml2(blockText);
+                let valToSave = newValStr;
+                if (inputType === "number") {
+                  const num = parseFloat(newValStr);
+                  valToSave = isNaN(num) ? void 0 : num;
+                } else {
+                  valToSave = newValStr === "" ? void 0 : newValStr;
+                }
+                if (type3 === "root") {
+                  if (valToSave === void 0) delete yamlObj[key];
+                  else yamlObj[key] = valToSave;
+                } else {
+                  if (!yamlObj[type3]) yamlObj[type3] = [];
+                  if (!yamlObj[type3][idx]) yamlObj[type3] = {};
+                  if (valToSave === void 0) delete yamlObj[type3][idx][key];
+                  else yamlObj[type3][idx][key] = valToSave;
+                }
+                yamlObj = AnalyticalCalculator.calculate(yamlObj);
+                const newYaml = stringifyYaml2(yamlObj);
+                view.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+              } catch (err) {
+                target.innerHTML = originalHTML;
+              }
+            } else {
+              target.innerHTML = originalHTML;
+            }
+          };
+          input.onblur = finishEdit;
+          input.onkeydown = (ev) => {
+            if (ev.key === "Enter") input.blur();
+            else if (ev.key === "Escape") {
+              target.innerHTML = originalHTML;
+            }
+          };
+        }
+      });
+      const toggles = contentDiv.querySelectorAll(".ana-exclude-toggle");
+      toggles.forEach((node2) => {
+        node2.addEventListener("click", (e6) => {
+          const elNode = node2;
+          const idx = parseInt(elNode.dataset.idx || "0", 10);
+          const currentState = elNode.dataset.state === "true";
+          const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian18.MarkdownView);
+          let info = ctx.getSectionInfo(el2);
+          if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
+          if (view && info) {
+            const { parseYaml: parseYaml2, stringifyYaml: stringifyYaml2 } = require("obsidian");
+            const blockText = view.editor.getRange({ line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+            try {
+              let yamlObj = parseYaml2(blockText);
+              yamlObj.standards[idx].exclude = !currentState;
+              yamlObj = AnalyticalCalculator.calculate(yamlObj);
+              view.editor.replaceRange(stringifyYaml2(yamlObj), { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
+            } catch (err) {
+            }
+          }
+        });
+      });
       return wrapper2;
     } catch (err) {
       wrapper2.innerHTML = `<div style="padding: 20px; color: var(--text-error); background: var(--background-secondary); border-radius: 8px;"><b>Analytical ELN Error:</b><br>${err.message}</div>`;
@@ -573531,7 +573552,7 @@ var OrganicHelpersRenderer = class {
     const { parseYaml, stringifyYaml } = require("obsidian");
     const wrapper2 = el2.createDiv();
     const themeColor = "#f59e0b";
-    const bgSec2 = "var(--background-secondary)";
+    const bgSec = "var(--background-secondary)";
     const bdColor = "var(--background-modifier-border)";
     wrapper2.style.position = "relative";
     wrapper2.style.border = `1px solid ${bdColor}`;
@@ -573578,7 +573599,7 @@ var OrganicHelpersRenderer = class {
       if (data.type === "nmr_yield") {
         html += `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
                         <h4 style="margin: 0 0 15px 0; color: var(--text-normal); font-size: 14px; display:flex; align-items:center; gap:6px;">${icons.nmrTube} Internal Standard</h4>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
                             <span style="color:var(--text-muted); font-weight:600;">Name:</span> ${makeEditableRoot("standard_name", data.standard_name, "text")}
@@ -573597,7 +573618,7 @@ var OrganicHelpersRenderer = class {
                         </div>
                     </div>
 
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
                         <h4 style="margin: 0 0 15px 0; color: var(--text-normal); font-size: 14px; display:flex; align-items:center; gap:6px;">${icons.nmrTube} Target Product</h4>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
                             <span style="color:var(--text-muted); font-weight:600;">Theory Scale (mmol):</span> ${makeEditableRoot("theory_mmol", data.theory_mmol)}
@@ -573630,21 +573651,21 @@ var OrganicHelpersRenderer = class {
       } else if (data.type === "faradaic_efficiency") {
         html += `
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Product Formed</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("product_mmol", data.product_mmol)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mmol</span></div>
                     </div>
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
                         <div style="position:absolute; top:10px; left:10px; opacity:0.5;">${icons.zap}</div>
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Electrons (z)</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("electrons_z", data.electrons_z)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">e\u207B</span></div>
                     </div>
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
                         <div style="position:absolute; top:10px; left:10px; opacity:0.5;">${icons.current}</div>
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Current</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("current_mA", data.current_mA)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mA</span></div>
                     </div>
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center; position:relative;">
                         <div style="position:absolute; top:10px; left:10px; opacity:0.5;">${icons.clock}</div>
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Time</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("time_hours", data.time_hours)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">h</span></div>
@@ -573671,26 +573692,26 @@ var OrganicHelpersRenderer = class {
       } else if (data.type === "green_metrics") {
         html += `
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Total Reagents Mass</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("total_reagents_mass_g", data.total_reagents_mass_g)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g</span></div>
                     </div>
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Total Solvent Mass</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("total_solvent_mass_g", data.total_solvent_mass_g)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g</span></div>
                     </div>
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Product Mass</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("product_mass_g", data.product_mass_g)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g</span></div>
                     </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Total Reactants MW</div>
                         <div style="font-size:20px; font-weight:bold;">${makeEditableRoot("total_reactants_mw", data.total_reactants_mw)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g/mol</span></div>
                     </div>
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Target Product MW</div>
                         <div style="font-size:20px; font-weight:bold;">${makeEditableRoot("target_product_mw", data.target_product_mw)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">g/mol</span></div>
                     </div>
@@ -573714,16 +573735,16 @@ var OrganicHelpersRenderer = class {
       } else if (data.type === "recrystallization") {
         html += `
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Crude Mass</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("crude_mass_mg", data.crude_mass_mg)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mg</span></div>
                     </div>
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Solvent Volume</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("solvent_vol_ml", data.solvent_vol_ml)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mL</span></div>
                         <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">${makeEditableRoot("solvent_name", data.solvent_name, "text")}</div>
                     </div>
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Recovered Mass</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("recovered_mass_mg", data.recovered_mass_mg)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mg</span></div>
                     </div>
@@ -573743,15 +573764,15 @@ var OrganicHelpersRenderer = class {
       } else if (data.type === "catalyst_metrics") {
         html += `
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Product Formed</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("product_mmol", data.product_mmol)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mmol</span></div>
                     </div>
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Catalyst Loading</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("catalyst_mmol", data.catalyst_mmol)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">mmol</span></div>
                     </div>
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px; text-align: center;">
                         <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom: 8px; font-weight:600;">Time</div>
                         <div style="font-size:24px; font-weight:bold;">${makeEditableRoot("time_hours", data.time_hours)} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">h</span></div>
                     </div>
@@ -573770,7 +573791,7 @@ var OrganicHelpersRenderer = class {
       } else if (data.type === "titration") {
         html += `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
                         <h4 style="margin: 0 0 10px 0; color: var(--text-normal); font-size: 13px;">Titration Standard</h4>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
                             <span style="color:var(--text-muted); font-weight:600;">Name:</span> ${makeEditableRoot("standard_name", data.standard_name, "text")}
@@ -573783,7 +573804,7 @@ var OrganicHelpersRenderer = class {
                         </div>
                     </div>
 
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
                         <h4 style="margin: 0 0 10px 0; color: var(--text-normal); font-size: 13px;">Titrant</h4>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
                             <span style="color:var(--text-muted); font-weight:600;">Reagent:</span> ${makeEditableRoot("titrant_name", data.titrant_name, "text")}
@@ -573804,7 +573825,7 @@ var OrganicHelpersRenderer = class {
       } else if (data.type === "chromatography") {
         html += `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
                         <h4 style="margin: 0 0 15px 0; color: var(--text-normal); font-size: 14px;">TLC Retention Factors</h4>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
                             <span style="color:var(--text-muted); font-weight:600;">Product Rf:</span> ${makeEditableRoot("rf_product", data.rf_product)}
@@ -573814,7 +573835,7 @@ var OrganicHelpersRenderer = class {
                         </div>
                     </div>
 
-                    <div style="background: ${bgSec2}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
+                    <div style="background: ${bgSec}; border: 1px solid ${bdColor}; border-radius: 8px; padding: 15px;">
                         <h4 style="margin: 0 0 15px 0; color: var(--text-normal); font-size: 14px; display:flex; align-items:center; gap:6px;">${icons.column} Column Dimensions</h4>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
                             <span style="color:var(--text-muted); font-weight:600;">Diameter (cm):</span> ${makeEditableRoot("column_diameter_cm", data.column_diameter_cm)}
@@ -574058,6 +574079,7 @@ var MatrixElnRenderer = class {
     const wrapper2 = el2.createDiv();
     const themeColor = "#6366f1";
     const bdColor = "var(--background-modifier-border)";
+    const bgSec = "var(--background-secondary)";
     wrapper2.style.position = "relative";
     wrapper2.style.border = `1px solid ${bdColor}`;
     wrapper2.style.borderRadius = "12px";
@@ -574076,7 +574098,7 @@ var MatrixElnRenderer = class {
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="display:flex; flex-direction:column;">
                         <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${themeColor};">\u2697\uFE0F ${data.title || "HTE Reaction Array"}</h2>
-                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">High-Throughput Experimentation Matrix</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">${data.strategy || "High-Throughput Experimentation Matrix"}</div>
                     </div>
                     <div style="text-align:right;">
                         <div style="font-size:28px; font-weight:800; color:var(--text-normal);">${data.total_reactions} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">Rxns</span></div>
@@ -574123,14 +574145,16 @@ var MatrixElnRenderer = class {
                 <tr style="background-color: ${bgSec}; border-bottom: 2px solid ${bdColor};">
                     <th style="padding: 8px;">Fixed Component</th><th style="padding: 8px;">MW</th><th style="padding: 8px;">Equiv</th><th style="padding: 8px; color:${themeColor};">Mass to Weigh (mg)</th>
                 </tr>`;
-      data.fixed_components.forEach((c10) => {
-        html += `<tr style="border-bottom: 1px solid var(--background-modifier-border-hover);">
-                    <td style="padding: 8px; font-weight:600;">${c10.name}</td>
-                    <td style="padding: 8px;">${c10.mw || "-"}</td>
-                    <td style="padding: 8px;">${c10.eq || 1}</td>
-                    <td style="padding: 8px; font-weight:bold; color:var(--text-normal); font-size:14px;">${c10.total_mass_mg ? c10.total_mass_mg.toFixed(1) : "-"}</td>
-                </tr>`;
-      });
+      if (data.fixed_components) {
+        data.fixed_components.forEach((c10) => {
+          html += `<tr style="border-bottom: 1px solid var(--background-modifier-border-hover);">
+                        <td style="padding: 8px; font-weight:600;">${c10.name}</td>
+                        <td style="padding: 8px;">${c10.mw || "-"}</td>
+                        <td style="padding: 8px;">${c10.eq || 1}</td>
+                        <td style="padding: 8px; font-weight:bold; color:var(--text-normal); font-size:14px;">${c10.total_mass_mg ? c10.total_mass_mg.toFixed(1) : "-"}</td>
+                    </tr>`;
+        });
+      }
       html += `</table></div>`;
       const varKeys = Object.keys(data.variables);
       html += `<h4 style="color: var(--text-normal); margin-bottom: 10px; font-size: 14px;">2. Experimental Array</h4>
@@ -574196,7 +574220,7 @@ var MatrixElnRenderer = class {
           csv += row + "\n";
         });
         navigator.clipboard.writeText(csv);
-        new import_obsidian20.Notice("Excel-ready Array copied to clipboard!");
+        new import_obsidian20.Notice("Excel-ready Data copied to clipboard!");
       });
       createBtn("\u{1F916} Export CSV (ML-Ready)", () => {
         let csv = `${varKeys.join(",")},Yield
@@ -574426,6 +574450,7 @@ var SharedGalleryRenderer = class {
 init_SharedBase();
 init_ChemDataEngine();
 init_SharedContextMenu();
+var CHEM_FILE_VIEW_TYPE = "chem-file-view";
 var createRoot2 = null;
 try {
   const ReactDomClient = require_client();
@@ -574467,6 +574492,7 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
     __publicField(this, "headlessRoot", null);
     __publicField(this, "isProcessingHeadless", false);
     __publicField(this, "headlessQueue", []);
+    __publicField(this, "headlessTimeout", null);
     __publicField(this, "cameraRibbonEl", null);
     __publicField(this, "tlcRibbonEl", null);
     __publicField(this, "elnRibbonEl", null);
@@ -574628,12 +574654,9 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
     this.hiddenKetcherContainer.className = "chemedit-headless-ketcher";
     Object.assign(this.hiddenKetcherContainer.style, { position: "absolute", top: "-10000px", left: "-10000px", width: "800px", height: "600px", opacity: "0", pointerEvents: "none", zIndex: "-1" });
     document.body.appendChild(this.hiddenKetcherContainer);
-    this.app.workspace.onLayoutReady(() => {
-      this.bootHeadlessKetcher();
-    });
     const extsForView = this.getSupportedExts().filter((ext) => ext !== "svg");
-    this.registerView("chem-file-view", (leaf) => new ChemFileView(leaf, this));
-    this.registerExtensions(extsForView, "chem-file-view");
+    this.registerView(CHEM_FILE_VIEW_TYPE, (leaf) => new ChemFileView(leaf, this));
+    this.registerExtensions(extsForView, CHEM_FILE_VIEW_TYPE);
     this.registerEditorExtension(this.buildLivePreviewPlugin());
     this.addRibbonIcon("hexagon", "Draw New Molecule", () => {
       this.openNewDrawingModal();
@@ -574698,6 +574721,18 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
           }
         })
       );
+    }
+    if (this.settings.enableScripting) {
+      this.addCommand({
+        id: "reload-chemedit-scripts",
+        name: "Reload Custom Scripts",
+        callback: () => new import_obsidian22.Notice("Script Engine coming soon!")
+      });
+      this.addCommand({
+        id: "open-chemedit-script-store",
+        name: "Open Script Store",
+        callback: () => new import_obsidian22.Notice("Script Store coming soon!")
+      });
     }
     if (this.settings.enableEln) {
       if (this.settings.enableElnDashboard) {
@@ -574767,14 +574802,6 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
       this.registerMarkdownCodeBlockProcessor("matrix-eln", async (source, el2, ctx) => {
         const r12 = new MatrixElnRenderer(this);
         await r12.renderBlock(source, el2, ctx);
-      });
-      this.registerMarkdownCodeBlockProcessor("chem-3d", async (source, el2, ctx) => {
-        const r12 = new Chem3DRenderer(this);
-        await r12.render3DBlock(source, el2, ctx);
-      });
-      this.registerMarkdownCodeBlockProcessor("plate-map", async (source, el2, ctx) => {
-        const r12 = new PlateMapRenderer(this);
-        await r12.renderPlateBlock(source, el2, ctx);
       });
       this.addCommand({ id: "db-insert-library", name: "ChemEdit DB: Insert Compound Library", editorCallback: (editor4) => editor4.replaceSelection(`\`\`\`chem-db
 type: library
@@ -574987,149 +575014,102 @@ samples:
         }
       });
       this.addCommand({
+        id: "analytical-insert-acid-base",
+        name: "ChemEdit Analytics: Insert Acid & Base Prep Calculator",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`analytical-eln
+type: acid_base_prep
+title: 1M HCl Preparation
+reagent: Hydrochloric Acid (HCl)
+
+density: 1.19
+mw: 36.46
+w_w_percent: 37
+
+target_volume_ml: 1000
+target_molarity: 1.0
+\`\`\`
+`);
+        }
+      });
+      this.addCommand({
+        id: "analytical-insert-std-addition",
+        name: "ChemEdit Analytics: Insert Standard Addition Calculator",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`analytical-eln
+type: standard_addition
+title: Lead (Pb) in Water via AAS
+units: "ppb"
+unknown_volume_ml: 10
+
+standards:
+  - added_conc: 0
+    area: 0.150
+  - added_conc: 5
+    area: 0.280
+  - added_conc: 10
+    area: 0.410
+\`\`\`
+`);
+        }
+      });
+      this.addCommand({
+        id: "analytical-insert-dilution",
+        name: "ChemEdit Analytics: Insert Serial Dilution Calculator",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`analytical-eln
+type: serial_dilution
+title: Standard Prep
+stock_conc: 1000
+stock_units: "mg/L"
+diluent: "Methanol"
+
+targets:
+  - target_conc: 100
+    target_vol: 1000
+  - target_conc: 50
+    target_vol: 1000
+  - target_conc: 10
+    target_vol: 1000
+\`\`\`
+`);
+        }
+      });
+      this.addCommand({
+        id: "analytical-insert-hplc-method",
+        name: "ChemEdit Analytics: Insert HPLC/GC Method Parameters",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`analytical-eln
+type: hplc_method
+title: Method A (Purity)
+instrument: Agilent 1260
+column: "C18, 50x2.1mm, 1.8\xB5m"
+flow_rate: "0.5 mL/min"
+temp: "40 \xB0C"
+detection: "UV 254 nm"
+solvent_a: "Water + 0.1% FA"
+solvent_b: "Acetonitrile + 0.1% FA"
+
+gradient:
+  - time: 0.0
+    b_percent: 5
+  - time: 5.0
+    b_percent: 95
+  - time: 6.0
+    b_percent: 95
+  - time: 6.1
+    b_percent: 5
+\`\`\`
+`);
+        }
+      });
+      this.addCommand({
         id: "org-insert-faradaic",
         name: "ChemEdit Org: Insert Faradaic Efficiency Calculator",
         editorCallback: (editor4) => {
           editor4.replaceSelection(`\`\`\`org-helpers
 type: faradaic_efficiency
 title: Ni-Catalyzed CD3-Methylation
-
-product_mmol: 0.376
-electrons_z: 2
-current_mA: 10
-time_hours: 5
-\`\`\`
-`);
-        }
-      });
-      this.addCommand({
-        id: "org-insert-catalyst",
-        name: "ChemEdit Org: Insert Catalyst TON/TOF Metrics",
-        editorCallback: (editor4) => {
-          editor4.replaceSelection(`\`\`\`org-helpers
-type: catalyst_metrics
-title: Catalyst Performance
-
-product_mmol: 0.376
-catalyst_mmol: 0.04
-time_hours: 5
-\`\`\`
-`);
-        }
-      });
-      this.addCommand({
-        id: "org-insert-nmr-yield",
-        name: "ChemEdit Org: Insert NMR Yield Calculator",
-        editorCallback: (editor4) => {
-          editor4.replaceSelection(`\`\`\`org-helpers
-type: nmr_yield
-title: NMR Yield (vs Mesitylene)
-
-theory_mmol: 0.2
-product_mw: 250.2
-product_protons: 2
-product_integral: 1.0
-
-standard_name: Mesitylene
-standard_mw: 120.19
-standard_mass_mg: 12.0
-standard_protons: 3
-standard_integral: 0.85
-\`\`\`
-`);
-        }
-      });
-      this.addCommand({
-        id: "org-insert-titration",
-        name: "ChemEdit Org: Insert Organometallic Titration Calculator",
-        editorCallback: (editor4) => {
-          editor4.replaceSelection(`\`\`\`org-helpers
-type: titration
-title: n-BuLi Titration
-
-standard_name: Diphenylacetic Acid
-standard_mw: 212.25
-standard_mass_mg: 200
-
-titrant_name: n-BuLi
-titrant_vol_ml: 0.65
-stoichiometry_ratio: 1
-\`\`\`
-`);
-        }
-      });
-      this.addCommand({
-        id: "org-insert-chromatography",
-        name: "ChemEdit Org: Insert Chromatography (Column) Calculator",
-        editorCallback: (editor4) => {
-          editor4.replaceSelection(`\`\`\`org-helpers
-type: chromatography
-title: Column Separation Planning
-
-rf_product: 0.35
-rf_impurity: 0.45
-
-column_diameter_cm: 2.0
-silica_height_cm: 15.0
-\`\`\`
-`);
-        }
-      });
-      this.addCommand({
-        id: "org-insert-matrix",
-        name: "ChemEdit Org: Insert High-Throughput Experimentation Matrix",
-        editorCallback: (editor4) => {
-          editor4.replaceSelection(`\`\`\`matrix-eln
-title: Ni-Catalyzed Deaminative Cross-Coupling Screen
-strategy: Catalyst & Ligand Screen
-scale_mmol: 0.1
-vol_per_vial_ul: 500
-overage_percent: 10
-
-fixed_components:
-  - name: Katritzky Salt
-    mw: 350.2
-    eq: 1.0
-  - name: Aryl Bromide
-    mw: 157.01
-    eq: 1.5
-
-variables:
-  Catalyst:
-    - name: NiCl2(dme)
-      mw: 219.66
-      eq: 0.1
-    - name: NiBr2(diglyme)
-      mw: 351.6
-      eq: 0.1
-  Ligand:
-    - name: dtbbpy
-      mw: 268.4
-      eq: 0.12
-    - name: terpy
-      mw: 233.3
-      eq: 0.12
-  Reductant:
-    - name: Mn dust
-      mw: 54.9
-      eq: 2.0
-    - name: Zn dust
-      mw: 65.4
-      eq: 2.0
-  Solvent:
-    - DMA
-    - NMP
-\`\`\`
-`);
-        }
-      });
-      this.addCommand({
-        id: "org-insert-faradaic",
-        name: "ChemEdit Org: Insert Faradaic Efficiency Calculator",
-        editorCallback: (editor4) => {
-          editor4.replaceSelection(`\`\`\`org-helpers
-type: faradaic_efficiency
-title: Ni-Catalyzed Electroreduction
 
 product_mmol: 0.376
 electrons_z: 2
@@ -575243,6 +575223,54 @@ solvent_name: "EtOH / H2O"
 solvent_vol_ml: 15.0
 
 recovered_mass_mg: 1150
+\`\`\`
+`);
+        }
+      });
+      this.addCommand({
+        id: "org-insert-matrix",
+        name: "ChemEdit Org: Insert High-Throughput Experimentation Matrix",
+        editorCallback: (editor4) => {
+          editor4.replaceSelection(`\`\`\`matrix-eln
+title: Ni-Catalyzed Deaminative Cross-Coupling Screen
+strategy: Catalyst & Ligand Screen
+scale_mmol: 0.1
+vol_per_vial_ul: 500
+overage_percent: 10
+
+fixed_components:
+  - name: Katritzky Salt
+    mw: 350.2
+    eq: 1.0
+  - name: Aryl Bromide
+    mw: 157.01
+    eq: 1.5
+
+variables:
+  Catalyst:
+    - name: NiCl2(dme)
+      mw: 219.66
+      eq: 0.1
+    - name: NiBr2(diglyme)
+      mw: 351.6
+      eq: 0.1
+  Ligand:
+    - name: dtbbpy
+      mw: 268.4
+      eq: 0.12
+    - name: terpy
+      mw: 233.3
+      eq: 0.12
+  Reductant:
+    - name: Mn dust
+      mw: 54.9
+      eq: 2.0
+    - name: Zn dust
+      mw: 65.4
+      eq: 2.0
+  Solvent:
+    - DMA
+    - NMP
 \`\`\`
 `);
         }
@@ -575769,6 +575797,7 @@ ${newData}
     wrapper2.innerHTML = `<span class="color-text-muted">Loading preview...</span>`;
     return wrapper2;
   }
+  // --- MEMORY OPTIMIZATION ---
   destroyHeadlessKetcher() {
     this.isProcessingHeadless = false;
     if (this.hiddenKetcherContainer) {
@@ -576068,7 +576097,21 @@ ${newData}
     }
   }
   async processHeadlessQueue() {
-    if (this.isProcessingHeadless || !this.headlessKetcher || this.headlessQueue.length === 0) return;
+    if (this.headlessTimeout) {
+      clearTimeout(this.headlessTimeout);
+      this.headlessTimeout = null;
+    }
+    if (!this.headlessKetcher) {
+      this.bootHeadlessKetcher();
+      return;
+    }
+    if (this.headlessQueue.length === 0) {
+      this.headlessTimeout = setTimeout(() => {
+        this.destroyHeadlessKetcher();
+      }, 3e4);
+      return;
+    }
+    if (this.isProcessingHeadless) return;
     this.isProcessingHeadless = true;
     const task = this.headlessQueue.shift();
     if (!task) {
@@ -576392,7 +576435,7 @@ var ChemFileView = class extends import_obsidian22.TextFileView {
     this.plugin = plugin;
   }
   getViewType() {
-    return "chem-file-view";
+    return CHEM_FILE_VIEW_TYPE;
   }
   getDisplayText() {
     return this.file ? this.file.name : "Molecule View";

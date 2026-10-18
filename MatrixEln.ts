@@ -56,6 +56,7 @@ export class MatrixElnRenderer {
         const wrapper = el.createDiv();
         const themeColor = "#6366f1"; 
         const bdColor = "var(--background-modifier-border)";
+        const bgSec = "var(--background-secondary)"; // <-- FIXED: Added missing variable
 
         wrapper.style.position = "relative"; 
         wrapper.style.border = `1px solid ${bdColor}`; 
@@ -77,7 +78,7 @@ export class MatrixElnRenderer {
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="display:flex; flex-direction:column;">
                         <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: ${themeColor};">⚗️ ${data.title || 'HTE Reaction Array'}</h2>
-                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">High-Throughput Experimentation Matrix</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">${data.strategy || 'High-Throughput Experimentation Matrix'}</div>
                     </div>
                     <div style="text-align:right;">
                         <div style="font-size:28px; font-weight:800; color:var(--text-normal);">${data.total_reactions} <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">Rxns</span></div>
@@ -129,14 +130,16 @@ export class MatrixElnRenderer {
                 <tr style="background-color: ${bgSec}; border-bottom: 2px solid ${bdColor};">
                     <th style="padding: 8px;">Fixed Component</th><th style="padding: 8px;">MW</th><th style="padding: 8px;">Equiv</th><th style="padding: 8px; color:${themeColor};">Mass to Weigh (mg)</th>
                 </tr>`;
-            data.fixed_components.forEach((c: any) => {
-                html += `<tr style="border-bottom: 1px solid var(--background-modifier-border-hover);">
-                    <td style="padding: 8px; font-weight:600;">${c.name}</td>
-                    <td style="padding: 8px;">${c.mw || '-'}</td>
-                    <td style="padding: 8px;">${c.eq || 1}</td>
-                    <td style="padding: 8px; font-weight:bold; color:var(--text-normal); font-size:14px;">${c.total_mass_mg ? c.total_mass_mg.toFixed(1) : '-'}</td>
-                </tr>`;
-            });
+            if (data.fixed_components) {
+                data.fixed_components.forEach((c: any) => {
+                    html += `<tr style="border-bottom: 1px solid var(--background-modifier-border-hover);">
+                        <td style="padding: 8px; font-weight:600;">${c.name}</td>
+                        <td style="padding: 8px;">${c.mw || '-'}</td>
+                        <td style="padding: 8px;">${c.eq || 1}</td>
+                        <td style="padding: 8px; font-weight:bold; color:var(--text-normal); font-size:14px;">${c.total_mass_mg ? c.total_mass_mg.toFixed(1) : '-'}</td>
+                    </tr>`;
+                });
+            }
             html += `</table></div>`;
 
             // 2. ARRAY MATRIX
@@ -200,7 +203,7 @@ export class MatrixElnRenderer {
                     csv += row + '\n';
                 });
                 navigator.clipboard.writeText(csv);
-                new Notice("Excel-ready Array copied to clipboard!");
+                new Notice("Excel-ready Data copied to clipboard!");
             });
 
             createBtn("🤖 Export CSV (ML-Ready)", () => {
@@ -224,6 +227,7 @@ export class MatrixElnRenderer {
             wrapper.appendChild(contentDiv);
             wrapper.appendChild(actionBar);
 
+            // Double-Click Inline Editing for Yields
             wrapper.addEventListener('dblclick', (e) => {
                 let target = e.target as HTMLElement;
                 while (target && target !== wrapper && !target.classList.contains('matrix-yield-cell')) { target = target.parentElement as HTMLElement; }

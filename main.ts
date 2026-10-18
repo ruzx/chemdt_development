@@ -37,6 +37,8 @@ import { ChemDatabaseRenderer, addCompoundToLibrary as addCompoundToDatabase } f
 import { ChemDataEngine } from './ChemDataEngine';
 import { showChemicalContextMenu, populateChemicalMenu } from './SharedContextMenu';
 
+export const CHEM_FILE_VIEW_TYPE = "chem-file-view";
+
 let createRoot: any = null;
 try { const ReactDomClient = require('react-dom/client'); if (ReactDomClient && ReactDomClient.createRoot) createRoot = ReactDomClient.createRoot; } catch (e) { createRoot = null; }
 
@@ -64,7 +66,8 @@ export default class ChemEditPlugin extends Plugin {
     headlessKetcher: any = null;
     headlessRoot: any = null; 
     isProcessingHeadless = false;
-    headlessQueue: { data: string, isInline: boolean, resolve: (el: HTMLElement | null) => void }[] = [];
+    headlessQueue: { data: string, isInline: boolean, resolve: (el: HTMLElement | null) => void, w?: number, h?: number }[] = [];
+    headlessTimeout: any = null; 
 
     cameraRibbonEl: HTMLElement | null = null;
     tlcRibbonEl: HTMLElement | null = null;
@@ -199,18 +202,15 @@ export default class ChemEditPlugin extends Plugin {
         this.api = buildChemEditAPI(this);
         this.addSettingTab(new ChemEditSettingTab(this.app, this));
 
+        // Memory-optimized hidden Ketcher container (Loads only when called)
         this.hiddenKetcherContainer = document.createElement('div');
         this.hiddenKetcherContainer.className = 'chemedit-headless-ketcher';
         Object.assign(this.hiddenKetcherContainer.style, { position: 'absolute', top: '-10000px', left: '-10000px', width: '800px', height: '600px', opacity: '0', pointerEvents: 'none', zIndex: '-1' });
         document.body.appendChild(this.hiddenKetcherContainer);
         
-        this.app.workspace.onLayoutReady(() => { 
-            this.bootHeadlessKetcher(); 
-        });
-
         const extsForView = this.getSupportedExts().filter(ext => ext !== 'svg');
-        this.registerView("chem-file-view", (leaf) => new ChemFileView(leaf, this));
-        this.registerExtensions(extsForView, "chem-file-view");
+        this.registerView(CHEM_FILE_VIEW_TYPE, (leaf) => new ChemFileView(leaf, this));
+        this.registerExtensions(extsForView, CHEM_FILE_VIEW_TYPE);
         
         this.registerEditorExtension(this.buildLivePreviewPlugin());
         this.addRibbonIcon('hexagon', 'Draw New Molecule', () => { this.openNewDrawingModal(); });
@@ -218,7 +218,6 @@ export default class ChemEditPlugin extends Plugin {
         this.refreshRibbonIcons();
 
         // --- OPTIONAL MODULES ---
-
         if (this.settings.enableNavigator) {
             this.registerView(CHEM_NAVIGATOR_VIEW_TYPE, (leaf) => new ChemNavigatorView(leaf, this));
             this.addCommand({ id: 'open-chem-navigator', name: 'Open Chem Navigator', callback: () => { this.activateNavigator(); } });
@@ -276,6 +275,20 @@ export default class ChemEditPlugin extends Plugin {
             );
         }
 
+        // Scripting engine stubs (prevents command palette crashes until module is fully implemented)
+        if (this.settings.enableScripting) {
+            this.addCommand({
+                id: 'reload-chemedit-scripts',
+                name: 'Reload Custom Scripts',
+                callback: () => new Notice("Script Engine coming soon!")
+            });
+            this.addCommand({
+                id: 'open-chemedit-script-store',
+                name: 'Open Script Store',
+                callback: () => new Notice("Script Store coming soon!")
+            });
+        }
+
         // --- ELN AND DASHBOARD REGISTRATIONS ---
         if (this.settings.enableEln) {
             
@@ -323,8 +336,6 @@ export default class ChemEditPlugin extends Plugin {
             this.registerMarkdownCodeBlockProcessor("analytical-eln", async (source, el, ctx) => { const r = new AnalyticalElnRenderer(this); await r.renderAnalyticalBlock(source, el, ctx); });
             this.registerMarkdownCodeBlockProcessor("org-helpers", async (source, el, ctx) => { const r = new OrganicHelpersRenderer(this); await r.renderBlock(source, el, ctx); });
             this.registerMarkdownCodeBlockProcessor("matrix-eln", async (source, el, ctx) => { const r = new MatrixElnRenderer(this); await r.renderBlock(source, el, ctx); });
-            this.registerMarkdownCodeBlockProcessor("chem-3d", async (source, el, ctx) => { const r = new Chem3DRenderer(this); await r.render3DBlock(source, el, ctx); });
-            this.registerMarkdownCodeBlockProcessor("plate-map", async (source, el, ctx) => { const r = new PlateMapRenderer(this); await r.renderPlateBlock(source, el, ctx); });
 
             // 3. Register DB Commands
             this.addCommand({ id: 'db-insert-library', name: 'ChemEdit DB: Insert Compound Library', editorCallback: (editor: Editor) => editor.replaceSelection(`\`\`\`chem-db\ntype: library\npath: Library/\nlayout: table\n\`\`\`\n`) });
@@ -377,6 +388,22 @@ export default class ChemEditPlugin extends Plugin {
                 id: 'analytical-insert-calibration', name: 'ChemEdit Analytics: Insert Calibration Curve (Linear Reg.)', 
                 editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`analytical-eln\ntype: calibration\ntitle: HPLC Quantification of Caffeine\nsmiles: CN1C=NC2=C1C(=O)N(C(=O)N2C)C\nunits: "µg/mL"\n\nstandards:\n  - name: Std 1\n    conc: 5\n    area: 12500\n  - name: Std 2\n    conc: 10\n    area: 25400\n  - name: Std 3\n    conc: 50\n    area: 126000\n  - name: Std 4\n    conc: 100\n    area: 258000\n\nsamples:\n  - name: Energy Drink A\n    dilution_factor: 10\n    area: 45000\n\`\`\`\n`); }
             });
+            this.addCommand({
+                id: 'analytical-insert-acid-base', name: 'ChemEdit Analytics: Insert Acid & Base Prep Calculator', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`analytical-eln\ntype: acid_base_prep\ntitle: 1M HCl Preparation\nreagent: Hydrochloric Acid (HCl)\n\ndensity: 1.19\nmw: 36.46\nw_w_percent: 37\n\ntarget_volume_ml: 1000\ntarget_molarity: 1.0\n\`\`\`\n`); }
+            });
+            this.addCommand({
+                id: 'analytical-insert-std-addition', name: 'ChemEdit Analytics: Insert Standard Addition Calculator', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`analytical-eln\ntype: standard_addition\ntitle: Lead (Pb) in Water via AAS\nunits: "ppb"\nunknown_volume_ml: 10\n\nstandards:\n  - added_conc: 0\n    area: 0.150\n  - added_conc: 5\n    area: 0.280\n  - added_conc: 10\n    area: 0.410\n\`\`\`\n`); }
+            });
+            this.addCommand({
+                id: 'analytical-insert-dilution', name: 'ChemEdit Analytics: Insert Serial Dilution Calculator', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`analytical-eln\ntype: serial_dilution\ntitle: Standard Prep\nstock_conc: 1000\nstock_units: "mg/L"\ndiluent: "Methanol"\n\ntargets:\n  - target_conc: 100\n    target_vol: 1000\n  - target_conc: 50\n    target_vol: 1000\n  - target_conc: 10\n    target_vol: 1000\n\`\`\`\n`); }
+            });
+            this.addCommand({
+                id: 'analytical-insert-hplc-method', name: 'ChemEdit Analytics: Insert HPLC/GC Method Parameters', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`analytical-eln\ntype: hplc_method\ntitle: Method A (Purity)\ninstrument: Agilent 1260\ncolumn: "C18, 50x2.1mm, 1.8µm"\nflow_rate: "0.5 mL/min"\ntemp: "40 °C"\ndetection: "UV 254 nm"\nsolvent_a: "Water + 0.1% FA"\nsolvent_b: "Acetonitrile + 0.1% FA"\n\ngradient:\n  - time: 0.0\n    b_percent: 5\n  - time: 5.0\n    b_percent: 95\n  - time: 6.0\n    b_percent: 95\n  - time: 6.1\n    b_percent: 5\n\`\`\`\n`); }
+            });
 
             // --- ORGANIC CHEM HELPERS ---
             this.addCommand({
@@ -391,212 +418,28 @@ export default class ChemEditPlugin extends Plugin {
                 id: 'org-insert-nmr-yield', name: 'ChemEdit Org: Insert NMR Yield Calculator', 
                 editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`org-helpers\ntype: nmr_yield\ntitle: NMR Yield (vs Mesitylene)\n\ntheory_mmol: 0.2\nproduct_mw: 250.2\nproduct_protons: 2\nproduct_integral: 1.0\n\nstandard_name: Mesitylene\nstandard_mw: 120.19\nstandard_mass_mg: 12.0\nstandard_protons: 3\nstandard_integral: 0.85\n\`\`\`\n`); }
             });
-			
-			this.addCommand({
-            id: 'org-insert-titration', 
-            name: 'ChemEdit Org: Insert Organometallic Titration Calculator', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`org-helpers
-type: titration
-title: n-BuLi Titration
-
-standard_name: Diphenylacetic Acid
-standard_mw: 212.25
-standard_mass_mg: 200
-
-titrant_name: n-BuLi
-titrant_vol_ml: 0.65
-stoichiometry_ratio: 1
-\`\`\`\n`);
-            }
-        });
-
-        this.addCommand({
-            id: 'org-insert-chromatography', 
-            name: 'ChemEdit Org: Insert Chromatography (Column) Calculator', 
-            editorCallback: (editor: Editor) => {
-                editor.replaceSelection(`\`\`\`org-helpers
-type: chromatography
-title: Column Separation Planning
-
-rf_product: 0.35
-rf_impurity: 0.45
-
-column_diameter_cm: 2.0
-silica_height_cm: 15.0
-\`\`\`\n`);
-            }
-        });
-
-
-            // --- HTE / DOE MATRIX ---
             this.addCommand({
-                id: 'org-insert-matrix', 
-                name: 'ChemEdit Org: Insert High-Throughput Experimentation Matrix', 
-                editorCallback: (editor: Editor) => {
-                    editor.replaceSelection(`\`\`\`matrix-eln
-title: Ni-Catalyzed Deaminative Cross-Coupling Screen
-strategy: Catalyst & Ligand Screen
-scale_mmol: 0.1
-vol_per_vial_ul: 500
-overage_percent: 10
-
-fixed_components:
-  - name: Katritzky Salt
-    mw: 350.2
-    eq: 1.0
-  - name: Aryl Bromide
-    mw: 157.01
-    eq: 1.5
-
-variables:
-  Catalyst:
-    - name: NiCl2(dme)
-      mw: 219.66
-      eq: 0.1
-    - name: NiBr2(diglyme)
-      mw: 351.6
-      eq: 0.1
-  Ligand:
-    - name: dtbbpy
-      mw: 268.4
-      eq: 0.12
-    - name: terpy
-      mw: 233.3
-      eq: 0.12
-  Reductant:
-    - name: Mn dust
-      mw: 54.9
-      eq: 2.0
-    - name: Zn dust
-      mw: 65.4
-      eq: 2.0
-  Solvent:
-    - DMA
-    - NMP
-\`\`\`\n`);
-                }
-            });
-
-            // --- ORGANIC CHEM HELPERS ---
-            this.addCommand({
-                id: 'org-insert-faradaic', 
-                name: 'ChemEdit Org: Insert Faradaic Efficiency Calculator', 
-                editorCallback: (editor: Editor) => {
-                    editor.replaceSelection(`\`\`\`org-helpers
-type: faradaic_efficiency
-title: Ni-Catalyzed Electroreduction
-
-product_mmol: 0.376
-electrons_z: 2
-current_mA: 10
-time_hours: 5
-\`\`\`\n`);
-                }
+                id: 'org-insert-titration', name: 'ChemEdit Org: Insert Organometallic Titration Calculator', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`org-helpers\ntype: titration\ntitle: n-BuLi Titration\n\nstandard_name: Diphenylacetic Acid\nstandard_mw: 212.25\nstandard_mass_mg: 200\n\ntitrant_name: n-BuLi\ntitrant_vol_ml: 0.65\nstoichiometry_ratio: 1\n\`\`\`\n`); }
             });
             this.addCommand({
-                id: 'org-insert-catalyst', 
-                name: 'ChemEdit Org: Insert Catalyst TON/TOF Metrics', 
-                editorCallback: (editor: Editor) => {
-                    editor.replaceSelection(`\`\`\`org-helpers
-type: catalyst_metrics
-title: Catalyst Performance
-
-product_mmol: 0.376
-catalyst_mmol: 0.04
-time_hours: 5
-\`\`\`\n`);
-                }
+                id: 'org-insert-chromatography', name: 'ChemEdit Org: Insert Chromatography (Column) Calculator', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`org-helpers\ntype: chromatography\ntitle: Column Separation Planning\n\nrf_product: 0.35\nrf_impurity: 0.45\n\ncolumn_diameter_cm: 2.0\nsilica_height_cm: 15.0\n\`\`\`\n`); }
             });
             this.addCommand({
-                id: 'org-insert-nmr-yield', 
-                name: 'ChemEdit Org: Insert NMR Yield Calculator', 
-                editorCallback: (editor: Editor) => {
-                    editor.replaceSelection(`\`\`\`org-helpers
-type: nmr_yield
-title: NMR Yield (vs Mesitylene)
-
-theory_mmol: 0.2
-product_mw: 250.2
-product_protons: 2
-product_integral: 1.0
-
-standard_name: Mesitylene
-standard_mw: 120.19
-standard_mass_mg: 12.0
-standard_protons: 3
-standard_integral: 0.85
-\`\`\`\n`);
-                }
+                id: 'org-insert-green-metrics', name: 'ChemEdit Org: Insert Green Chemistry Metrics (PMI / E-Factor)', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`org-helpers\ntype: green_metrics\ntitle: Sustainability Metrics\n\ntotal_reagents_mass_g: 1.5\ntotal_solvent_mass_g: 25.0\nproduct_mass_g: 0.8\n\ntarget_product_mw: 250.0\ntotal_reactants_mw: 320.0\n\`\`\`\n`); }
             });
             this.addCommand({
-                id: 'org-insert-titration', 
-                name: 'ChemEdit Org: Insert Organometallic Titration Calculator', 
-                editorCallback: (editor: Editor) => {
-                    editor.replaceSelection(`\`\`\`org-helpers
-type: titration
-title: n-BuLi Titration
-
-standard_name: Diphenylacetic Acid
-standard_mw: 212.25
-standard_mass_mg: 200
-
-titrant_name: n-BuLi
-titrant_vol_ml: 0.65
-stoichiometry_ratio: 1
-\`\`\`\n`);
-                }
+                id: 'org-insert-recrystallization', name: 'ChemEdit Org: Insert Recrystallization Recovery', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`org-helpers\ntype: recrystallization\ntitle: Product Purification\n\ncrude_mass_mg: 1500\nsolvent_name: "EtOH / H2O"\nsolvent_vol_ml: 15.0\n\nrecovered_mass_mg: 1150\n\`\`\`\n`); }
             });
+
+            // --- HTE / MATRIX COMMANDS ---
             this.addCommand({
-                id: 'org-insert-chromatography', 
-                name: 'ChemEdit Org: Insert Chromatography (Column) Calculator', 
-                editorCallback: (editor: Editor) => {
-                    editor.replaceSelection(`\`\`\`org-helpers
-type: chromatography
-title: Column Separation Planning
-
-rf_product: 0.35
-rf_impurity: 0.45
-
-column_diameter_cm: 2.0
-silica_height_cm: 15.0
-\`\`\`\n`);
-                }
+                id: 'org-insert-matrix', name: 'ChemEdit Org: Insert High-Throughput Experimentation Matrix', 
+                editorCallback: (editor: Editor) => { editor.replaceSelection(`\`\`\`matrix-eln\ntitle: Ni-Catalyzed Deaminative Cross-Coupling Screen\nstrategy: Catalyst & Ligand Screen\nscale_mmol: 0.1\nvol_per_vial_ul: 500\noverage_percent: 10\n\nfixed_components:\n  - name: Katritzky Salt\n    mw: 350.2\n    eq: 1.0\n  - name: Aryl Bromide\n    mw: 157.01\n    eq: 1.5\n\nvariables:\n  Catalyst:\n    - name: NiCl2(dme)\n      mw: 219.66\n      eq: 0.1\n    - name: NiBr2(diglyme)\n      mw: 351.6\n      eq: 0.1\n  Ligand:\n    - name: dtbbpy\n      mw: 268.4\n      eq: 0.12\n    - name: terpy\n      mw: 233.3\n      eq: 0.12\n  Reductant:\n    - name: Mn dust\n      mw: 54.9\n      eq: 2.0\n    - name: Zn dust\n      mw: 65.4\n      eq: 2.0\n  Solvent:\n    - DMA\n    - NMP\n\`\`\`\n`); }
             });
-            this.addCommand({
-                id: 'org-insert-green-metrics', 
-                name: 'ChemEdit Org: Insert Green Chemistry Metrics (PMI / E-Factor)', 
-                editorCallback: (editor: Editor) => {
-                    editor.replaceSelection(`\`\`\`org-helpers
-type: green_metrics
-title: Sustainability Metrics
-
-total_reagents_mass_g: 1.5
-total_solvent_mass_g: 25.0
-product_mass_g: 0.8
-
-target_product_mw: 250.0
-total_reactants_mw: 320.0
-\`\`\`\n`);
-                }
-            });
-            this.addCommand({
-                id: 'org-insert-recrystallization', 
-                name: 'ChemEdit Org: Insert Recrystallization Recovery', 
-                editorCallback: (editor: Editor) => {
-                    editor.replaceSelection(`\`\`\`org-helpers
-type: recrystallization
-title: Product Purification
-
-crude_mass_mg: 1500
-solvent_name: "EtOH / H2O"
-solvent_vol_ml: 15.0
-
-recovered_mass_mg: 1150
-\`\`\`\n`);
-                }
-            });
-
         }
 
         if (this.settings.enablePathways) {
@@ -877,6 +720,7 @@ recovered_mass_mg: 1150
         const wrapper = document.createElement("div"); wrapper.style.cursor = "pointer"; wrapper.style.border = "1px solid var(--background-modifier-border)"; wrapper.style.borderRadius = "8px"; wrapper.style.padding = "10px"; wrapper.style.textAlign = "center"; wrapper.style.display = "block"; wrapper.style.margin = "10px 0"; wrapper.style.backgroundColor = "var(--background-primary)"; wrapper.title = titleText; wrapper.innerHTML = `<span class="color-text-muted">Loading preview...</span>`; return wrapper;
     }
 
+    // --- MEMORY OPTIMIZATION ---
     destroyHeadlessKetcher() {
         this.isProcessingHeadless = false;
         if (this.hiddenKetcherContainer) {
@@ -1007,15 +851,34 @@ recovered_mass_mg: 1150
                     }
                 }
             } else if (['mol', 'cdxml', 'sdf', 'rxn', 'rdf', 'cml', 'ket', 'inchi', 'smarts', 'fasta', 'sequence', 'idt', 'helm', 'biln'].includes(normalizedFormat)) {
-                return new Promise((resolve) => { this.headlessQueue.push({ data: cleanData, isInline, resolve, w, h }); this.processHeadlessQueue(); });
+                return new Promise((resolve) => { 
+                    this.headlessQueue.push({ data: cleanData, isInline, resolve, w, h }); 
+                    this.processHeadlessQueue(); // Boot logic is handled here now
+                });
             } return null;
         } catch (e) { return null; }
     }
 
     async processHeadlessQueue() {
-        if (this.isProcessingHeadless || !this.headlessKetcher || this.headlessQueue.length === 0) return;
-        this.isProcessingHeadless = true; const task = this.headlessQueue.shift(); if (!task) { this.isProcessingHeadless = false; return; }
-        let isResolved = false; const timeoutId = window.setTimeout(() => { if (isResolved) return; isResolved = true; task.resolve(this.createErrorCard("Preview timed out")); this.rebootHeadlessKetcher(); }, 12000); 
+        if (this.headlessTimeout) { clearTimeout(this.headlessTimeout); this.headlessTimeout = null; }
+        
+        if (!this.headlessKetcher) {
+            this.bootHeadlessKetcher();
+            return; // boot process will call processHeadlessQueue again once ready
+        }
+
+        if (this.headlessQueue.length === 0) {
+            // Auto-Garbage Collection: Shut down Ketcher after 30 seconds of idle time to save memory
+            this.headlessTimeout = setTimeout(() => { this.destroyHeadlessKetcher(); }, 30000);
+            return;
+        }
+
+        if (this.isProcessingHeadless) return;
+        this.isProcessingHeadless = true; 
+        const task = this.headlessQueue.shift(); if (!task) { this.isProcessingHeadless = false; return; }
+        
+        let isResolved = false; 
+        const timeoutId = window.setTimeout(() => { if (isResolved) return; isResolved = true; task.resolve(this.createErrorCard("Preview timed out")); this.rebootHeadlessKetcher(); }, 12000); 
 
         try {
             let img;
@@ -1131,7 +994,7 @@ recovered_mass_mg: 1150
 
 class ChemFileView extends TextFileView {
     plugin: ChemEditPlugin; constructor(leaf: WorkspaceLeaf, plugin: ChemEditPlugin) { super(leaf); this.plugin = plugin; }
-    getViewType() { return "chem-file-view"; } getDisplayText() { return this.file ? this.file.name : "Molecule View"; } getIcon() { return "hexagon"; } getViewData() { return this.data; }
+    getViewType() { return CHEM_FILE_VIEW_TYPE; } getDisplayText() { return this.file ? this.file.name : "Molecule View"; } getIcon() { return "hexagon"; } getViewData() { return this.data; }
     async setViewData(data: string, clear: boolean) {
         this.data = data; const container = this.contentEl; container.empty();
         const wrapper = container.createDiv(); wrapper.style.display = "flex"; wrapper.style.alignItems = "center"; wrapper.style.justifyContent = "center"; wrapper.style.width = "100%"; wrapper.style.height = "100%"; wrapper.style.cursor = "pointer"; wrapper.title = "Double-click to edit"; wrapper.innerHTML = `<div class="color-text-muted">Loading preview...</div>`;
@@ -1277,7 +1140,7 @@ class KetcherModal extends Modal {
         try { const editor = this.ketcherInstance?.editor; if (editor) { if (editor.events) { editor.events = { on: () => {}, off: () => {}, emit: () => {} }; } if (editor.shortcuts && typeof editor.shortcuts.disable === 'function') { editor.shortcuts.disable(); } } } catch (e) { }
         const container = this.contentEl.querySelector("div");
         if (container) { if (this.reactRoot) { this.reactRoot.unmount(); this.reactRoot = null; } else { ReactDOM.unmountComponentAtNode(container); } }
-        this.contentEl.empty(); this.plugin.bootHeadlessKetcher();
+        this.contentEl.empty(); this.plugin.bootHeadlessKetcher(); // Will be ignored because of lazy load mechanism
     }
 }
 
