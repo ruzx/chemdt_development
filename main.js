@@ -67644,9 +67644,9 @@ function parametrizeUrl(url2, params) {
   });
 }
 function request(method, url2, data, headers, responseHandler) {
-  var requestUrl6 = url2;
-  if (data && method === "GET") requestUrl6 = parametrizeUrl(url2, data);
-  var response = fetch(requestUrl6, {
+  var requestUrl8 = url2;
+  if (data && method === "GET") requestUrl8 = parametrizeUrl(url2, data);
+  var response = fetch(requestUrl8, {
     method,
     headers: _objectSpread$g({
       Accept: "application/json"
@@ -537162,6 +537162,222 @@ var init_dist4 = __esm({
   }
 });
 
+// SharedMedia.ts
+async function saveMediaFile(app, arrayBuffer, savePath, filename) {
+  let path2 = savePath;
+  if (path2 === "/") path2 = "";
+  if (path2 && !path2.endsWith("/")) path2 += "/";
+  const fullPath = `${path2}${filename}`;
+  if (path2) {
+    const folderExists = app.vault.getAbstractFileByPath(path2.slice(0, -1));
+    if (!folderExists) await app.vault.createFolder(path2.slice(0, -1));
+  }
+  await app.vault.createBinary(fullPath, arrayBuffer);
+  return fullPath;
+}
+function takeStandardPhoto(callback) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.capture = "environment";
+  input.onchange = async (e6) => {
+    const file = e6.target.files[0];
+    if (!file) return;
+    const buffer = await file.arrayBuffer();
+    const ext = file.type.split("/")[1] || "jpeg";
+    callback(buffer, ext);
+  };
+  input.click();
+}
+var import_obsidian, TlcModal;
+var init_SharedMedia = __esm({
+  "SharedMedia.ts"() {
+    import_obsidian = require("obsidian");
+    TlcModal = class extends import_obsidian.Modal {
+      constructor(app, onSave) {
+        super(app);
+        __publicField(this, "onSave");
+        __publicField(this, "canvas");
+        __publicField(this, "ctx");
+        __publicField(this, "img", null);
+        __publicField(this, "baselineY", 0);
+        __publicField(this, "frontY", 0);
+        __publicField(this, "spots", []);
+        __publicField(this, "draggingTarget", null);
+        this.onSave = onSave;
+      }
+      onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        if (import_obsidian.Platform.isMobile) {
+          this.modalEl.style.width = "100vw";
+          this.modalEl.style.height = "100vh";
+        }
+        contentEl.createEl("h3", { text: "Digital TLC Calculator", attr: { style: "margin-top: 0; margin-bottom: 10px;" } });
+        const controls = contentEl.createDiv({ attr: { style: "margin-bottom: 15px; display: flex; gap: 8px; align-items:center;" } });
+        const fileInput = controls.createEl("input", { type: "file", attr: { accept: "image/*", capture: "environment", style: "display:none;" } });
+        const uploadBtn = controls.createEl("button", { text: "\u{1F4F7} Upload", cls: "mod-cta", attr: { style: "padding: 4px 12px;" } });
+        uploadBtn.onclick = () => fileInput.click();
+        const clearBtn = controls.createEl("button", { text: "Clear", attr: { style: "padding: 4px 12px;" } });
+        clearBtn.onclick = () => {
+          this.spots = [];
+          this.draw();
+        };
+        const saveBtn = controls.createEl("button", { text: "Save", cls: "mod-cta", attr: { style: "margin-left:auto; padding: 4px 16px;" } });
+        saveBtn.style.display = "none";
+        saveBtn.onclick = () => this.exportAndSave();
+        const instructions = contentEl.createDiv({ cls: "color-text-muted", attr: { style: "font-size:12px; margin-bottom:10px; line-height: 1.3;" } });
+        instructions.innerHTML = "Upload an image. Drag the <b style='color:#4488ff'>Baseline</b> and <b style='color:#ff4444'>Solvent Front</b>. Click anywhere to add a spot.";
+        const canvasWrapper = contentEl.createDiv({ attr: { style: "width:100%; height:65vh; overflow:hidden; position:relative; background:#1e1e1e; border-radius:8px;" } });
+        this.canvas = canvasWrapper.createEl("canvas");
+        this.canvas.style.width = "100%";
+        this.canvas.style.height = "100%";
+        this.canvas.style.objectFit = "contain";
+        this.canvas.style.touchAction = "none";
+        this.ctx = this.canvas.getContext("2d");
+        fileInput.onchange = (e6) => {
+          const file = e6.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            var _a;
+            this.img = new Image();
+            this.img.onload = () => {
+              let w7 = this.img.width;
+              let h5 = this.img.height;
+              const MAX_DIM = 1600;
+              if (w7 > MAX_DIM || h5 > MAX_DIM) {
+                const ratio = Math.min(MAX_DIM / w7, MAX_DIM / h5);
+                w7 = w7 * ratio;
+                h5 = h5 * ratio;
+              }
+              this.canvas.width = w7;
+              this.canvas.height = h5;
+              this.baselineY = this.canvas.height * 0.85;
+              this.frontY = this.canvas.height * 0.15;
+              this.spots = [];
+              saveBtn.style.display = "block";
+              this.draw();
+            };
+            this.img.src = (_a = event.target) == null ? void 0 : _a.result;
+          };
+          reader.readAsDataURL(file);
+        };
+        this.setupInteractions();
+      }
+      setupInteractions() {
+        const getCoords = (e6) => {
+          const rect = this.canvas.getBoundingClientRect();
+          const scale = Math.min(rect.width / this.canvas.width, rect.height / this.canvas.height);
+          const x25 = (e6.clientX - rect.left - (rect.width - this.canvas.width * scale) / 2) / scale;
+          const y9 = (e6.clientY - rect.top - (rect.height - this.canvas.height * scale) / 2) / scale;
+          return { x: x25, y: y9 };
+        };
+        this.canvas.addEventListener("pointerdown", (e6) => {
+          if (!this.img) return;
+          e6.preventDefault();
+          const { x: x25, y: y9 } = getCoords(e6);
+          const hitRadius = Math.max(50, this.canvas.width / 15);
+          for (let i8 = 0; i8 < this.spots.length; i8++) {
+            if (Math.hypot(this.spots[i8].x - x25, this.spots[i8].y - y9) < hitRadius) {
+              this.draggingTarget = i8;
+              return;
+            }
+          }
+          if (Math.abs(this.baselineY - y9) < hitRadius) {
+            this.draggingTarget = "baseline";
+            return;
+          }
+          if (Math.abs(this.frontY - y9) < hitRadius) {
+            this.draggingTarget = "front";
+            return;
+          }
+          this.spots.push({ x: x25, y: y9, rf: this.calcRf(y9) });
+          this.draggingTarget = this.spots.length - 1;
+          this.draw();
+        });
+        this.canvas.addEventListener("pointermove", (e6) => {
+          if (this.draggingTarget === null || !this.img) return;
+          e6.preventDefault();
+          const { x: x25, y: y9 } = getCoords(e6);
+          if (this.draggingTarget === "baseline") this.baselineY = y9;
+          else if (this.draggingTarget === "front") this.frontY = y9;
+          else if (typeof this.draggingTarget === "number") {
+            this.spots[this.draggingTarget].x = x25;
+            this.spots[this.draggingTarget].y = y9;
+          }
+          this.recalcSpots();
+          this.draw();
+        });
+        this.canvas.addEventListener("pointerup", () => this.draggingTarget = null);
+        this.canvas.addEventListener("pointercancel", () => this.draggingTarget = null);
+      }
+      calcRf(spotY) {
+        return Math.max(0, Math.min(1, (this.baselineY - spotY) / (this.baselineY - this.frontY)));
+      }
+      recalcSpots() {
+        this.spots.forEach((s8) => s8.rf = this.calcRf(s8.y));
+      }
+      draw() {
+        if (!this.img) return;
+        const w7 = this.canvas.width;
+        const h5 = this.canvas.height;
+        this.ctx.clearRect(0, 0, w7, h5);
+        this.ctx.drawImage(this.img, 0, 0, w7, h5);
+        const scale = w7 / 800;
+        const lineW = Math.max(4, 6 * scale);
+        const fontSz = Math.max(20, 28 * scale);
+        const spotR = Math.max(15, 20 * scale);
+        const drawLine = (y9, color5, label) => {
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, y9);
+          this.ctx.lineTo(w7, y9);
+          this.ctx.strokeStyle = color5;
+          this.ctx.lineWidth = lineW;
+          this.ctx.setLineDash([20 * scale, 15 * scale]);
+          this.ctx.stroke();
+          this.ctx.setLineDash([]);
+          this.ctx.fillStyle = color5;
+          this.ctx.font = `bold ${fontSz}px Arial`;
+          this.ctx.fillText(label, 20 * scale, y9 - 10 * scale);
+        };
+        drawLine(this.frontY, "#ff4444", "Solvent Front");
+        drawLine(this.baselineY, "#4488ff", "Baseline");
+        this.spots.forEach((s8, i8) => {
+          this.ctx.beginPath();
+          this.ctx.arc(s8.x, s8.y, spotR, 0, 2 * Math.PI);
+          this.ctx.fillStyle = "rgba(0,255,0,0.5)";
+          this.ctx.fill();
+          this.ctx.strokeStyle = "#00ff00";
+          this.ctx.lineWidth = Math.max(3, 4 * scale);
+          this.ctx.stroke();
+          this.ctx.fillStyle = "white";
+          this.ctx.font = `bold ${fontSz}px Arial`;
+          this.ctx.shadowColor = "black";
+          this.ctx.shadowBlur = 6 * scale;
+          this.ctx.fillText(`${i8 + 1} (Rf: ${s8.rf.toFixed(2)})`, s8.x + spotR + 10 * scale, s8.y + 10 * scale);
+          this.ctx.shadowBlur = 0;
+        });
+      }
+      exportAndSave() {
+        if (!this.img) return;
+        this.canvas.toBlob((blob) => {
+          if (!blob) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            this.onSave(reader.result, this.spots);
+            this.close();
+          };
+          reader.readAsArrayBuffer(blob);
+        }, "image/png");
+      }
+      onClose() {
+        this.contentEl.empty();
+      }
+    };
+  }
+});
+
 // node_modules/openchemlib/dist/openchemlib.js
 var openchemlib_exports = {};
 __export(openchemlib_exports, {
@@ -559709,222 +559925,6 @@ var init_ChemDataEngine = __esm({
   }
 });
 
-// SharedMedia.ts
-async function saveMediaFile(app, arrayBuffer, savePath, filename) {
-  let path2 = savePath;
-  if (path2 === "/") path2 = "";
-  if (path2 && !path2.endsWith("/")) path2 += "/";
-  const fullPath = `${path2}${filename}`;
-  if (path2) {
-    const folderExists = app.vault.getAbstractFileByPath(path2.slice(0, -1));
-    if (!folderExists) await app.vault.createFolder(path2.slice(0, -1));
-  }
-  await app.vault.createBinary(fullPath, arrayBuffer);
-  return fullPath;
-}
-function takeStandardPhoto(callback) {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = "image/*";
-  input.capture = "environment";
-  input.onchange = async (e6) => {
-    const file = e6.target.files[0];
-    if (!file) return;
-    const buffer = await file.arrayBuffer();
-    const ext = file.type.split("/")[1] || "jpeg";
-    callback(buffer, ext);
-  };
-  input.click();
-}
-var import_obsidian2, TlcModal;
-var init_SharedMedia = __esm({
-  "SharedMedia.ts"() {
-    import_obsidian2 = require("obsidian");
-    TlcModal = class extends import_obsidian2.Modal {
-      constructor(app, onSave) {
-        super(app);
-        __publicField(this, "onSave");
-        __publicField(this, "canvas");
-        __publicField(this, "ctx");
-        __publicField(this, "img", null);
-        __publicField(this, "baselineY", 0);
-        __publicField(this, "frontY", 0);
-        __publicField(this, "spots", []);
-        __publicField(this, "draggingTarget", null);
-        this.onSave = onSave;
-      }
-      onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-        if (import_obsidian2.Platform.isMobile) {
-          this.modalEl.style.width = "100vw";
-          this.modalEl.style.height = "100vh";
-        }
-        contentEl.createEl("h3", { text: "Digital TLC Calculator", attr: { style: "margin-top: 0; margin-bottom: 10px;" } });
-        const controls = contentEl.createDiv({ attr: { style: "margin-bottom: 15px; display: flex; gap: 8px; align-items:center;" } });
-        const fileInput = controls.createEl("input", { type: "file", attr: { accept: "image/*", capture: "environment", style: "display:none;" } });
-        const uploadBtn = controls.createEl("button", { text: "\u{1F4F7} Upload", cls: "mod-cta", attr: { style: "padding: 4px 12px;" } });
-        uploadBtn.onclick = () => fileInput.click();
-        const clearBtn = controls.createEl("button", { text: "Clear", attr: { style: "padding: 4px 12px;" } });
-        clearBtn.onclick = () => {
-          this.spots = [];
-          this.draw();
-        };
-        const saveBtn = controls.createEl("button", { text: "Save", cls: "mod-cta", attr: { style: "margin-left:auto; padding: 4px 16px;" } });
-        saveBtn.style.display = "none";
-        saveBtn.onclick = () => this.exportAndSave();
-        const instructions = contentEl.createDiv({ cls: "color-text-muted", attr: { style: "font-size:12px; margin-bottom:10px; line-height: 1.3;" } });
-        instructions.innerHTML = "Upload an image. Drag the <b style='color:#4488ff'>Baseline</b> and <b style='color:#ff4444'>Solvent Front</b>. Click anywhere to add a spot.";
-        const canvasWrapper = contentEl.createDiv({ attr: { style: "width:100%; height:65vh; overflow:hidden; position:relative; background:#1e1e1e; border-radius:8px;" } });
-        this.canvas = canvasWrapper.createEl("canvas");
-        this.canvas.style.width = "100%";
-        this.canvas.style.height = "100%";
-        this.canvas.style.objectFit = "contain";
-        this.canvas.style.touchAction = "none";
-        this.ctx = this.canvas.getContext("2d");
-        fileInput.onchange = (e6) => {
-          const file = e6.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            var _a;
-            this.img = new Image();
-            this.img.onload = () => {
-              let w7 = this.img.width;
-              let h5 = this.img.height;
-              const MAX_DIM = 1600;
-              if (w7 > MAX_DIM || h5 > MAX_DIM) {
-                const ratio = Math.min(MAX_DIM / w7, MAX_DIM / h5);
-                w7 = w7 * ratio;
-                h5 = h5 * ratio;
-              }
-              this.canvas.width = w7;
-              this.canvas.height = h5;
-              this.baselineY = this.canvas.height * 0.85;
-              this.frontY = this.canvas.height * 0.15;
-              this.spots = [];
-              saveBtn.style.display = "block";
-              this.draw();
-            };
-            this.img.src = (_a = event.target) == null ? void 0 : _a.result;
-          };
-          reader.readAsDataURL(file);
-        };
-        this.setupInteractions();
-      }
-      setupInteractions() {
-        const getCoords = (e6) => {
-          const rect = this.canvas.getBoundingClientRect();
-          const scale = Math.min(rect.width / this.canvas.width, rect.height / this.canvas.height);
-          const x25 = (e6.clientX - rect.left - (rect.width - this.canvas.width * scale) / 2) / scale;
-          const y9 = (e6.clientY - rect.top - (rect.height - this.canvas.height * scale) / 2) / scale;
-          return { x: x25, y: y9 };
-        };
-        this.canvas.addEventListener("pointerdown", (e6) => {
-          if (!this.img) return;
-          e6.preventDefault();
-          const { x: x25, y: y9 } = getCoords(e6);
-          const hitRadius = Math.max(50, this.canvas.width / 15);
-          for (let i8 = 0; i8 < this.spots.length; i8++) {
-            if (Math.hypot(this.spots[i8].x - x25, this.spots[i8].y - y9) < hitRadius) {
-              this.draggingTarget = i8;
-              return;
-            }
-          }
-          if (Math.abs(this.baselineY - y9) < hitRadius) {
-            this.draggingTarget = "baseline";
-            return;
-          }
-          if (Math.abs(this.frontY - y9) < hitRadius) {
-            this.draggingTarget = "front";
-            return;
-          }
-          this.spots.push({ x: x25, y: y9, rf: this.calcRf(y9) });
-          this.draggingTarget = this.spots.length - 1;
-          this.draw();
-        });
-        this.canvas.addEventListener("pointermove", (e6) => {
-          if (this.draggingTarget === null || !this.img) return;
-          e6.preventDefault();
-          const { x: x25, y: y9 } = getCoords(e6);
-          if (this.draggingTarget === "baseline") this.baselineY = y9;
-          else if (this.draggingTarget === "front") this.frontY = y9;
-          else if (typeof this.draggingTarget === "number") {
-            this.spots[this.draggingTarget].x = x25;
-            this.spots[this.draggingTarget].y = y9;
-          }
-          this.recalcSpots();
-          this.draw();
-        });
-        this.canvas.addEventListener("pointerup", () => this.draggingTarget = null);
-        this.canvas.addEventListener("pointercancel", () => this.draggingTarget = null);
-      }
-      calcRf(spotY) {
-        return Math.max(0, Math.min(1, (this.baselineY - spotY) / (this.baselineY - this.frontY)));
-      }
-      recalcSpots() {
-        this.spots.forEach((s8) => s8.rf = this.calcRf(s8.y));
-      }
-      draw() {
-        if (!this.img) return;
-        const w7 = this.canvas.width;
-        const h5 = this.canvas.height;
-        this.ctx.clearRect(0, 0, w7, h5);
-        this.ctx.drawImage(this.img, 0, 0, w7, h5);
-        const scale = w7 / 800;
-        const lineW = Math.max(4, 6 * scale);
-        const fontSz = Math.max(20, 28 * scale);
-        const spotR = Math.max(15, 20 * scale);
-        const drawLine = (y9, color5, label) => {
-          this.ctx.beginPath();
-          this.ctx.moveTo(0, y9);
-          this.ctx.lineTo(w7, y9);
-          this.ctx.strokeStyle = color5;
-          this.ctx.lineWidth = lineW;
-          this.ctx.setLineDash([20 * scale, 15 * scale]);
-          this.ctx.stroke();
-          this.ctx.setLineDash([]);
-          this.ctx.fillStyle = color5;
-          this.ctx.font = `bold ${fontSz}px Arial`;
-          this.ctx.fillText(label, 20 * scale, y9 - 10 * scale);
-        };
-        drawLine(this.frontY, "#ff4444", "Solvent Front");
-        drawLine(this.baselineY, "#4488ff", "Baseline");
-        this.spots.forEach((s8, i8) => {
-          this.ctx.beginPath();
-          this.ctx.arc(s8.x, s8.y, spotR, 0, 2 * Math.PI);
-          this.ctx.fillStyle = "rgba(0,255,0,0.5)";
-          this.ctx.fill();
-          this.ctx.strokeStyle = "#00ff00";
-          this.ctx.lineWidth = Math.max(3, 4 * scale);
-          this.ctx.stroke();
-          this.ctx.fillStyle = "white";
-          this.ctx.font = `bold ${fontSz}px Arial`;
-          this.ctx.shadowColor = "black";
-          this.ctx.shadowBlur = 6 * scale;
-          this.ctx.fillText(`${i8 + 1} (Rf: ${s8.rf.toFixed(2)})`, s8.x + spotR + 10 * scale, s8.y + 10 * scale);
-          this.ctx.shadowBlur = 0;
-        });
-      }
-      exportAndSave() {
-        if (!this.img) return;
-        this.canvas.toBlob((blob) => {
-          if (!blob) return;
-          const reader = new FileReader();
-          reader.onload = () => {
-            this.onSave(reader.result, this.spots);
-            this.close();
-          };
-          reader.readAsArrayBuffer(blob);
-        }, "image/png");
-      }
-      onClose() {
-        this.contentEl.empty();
-      }
-    };
-  }
-});
-
 // SharedBase.ts
 function addCompoundToLibrary(app, plugin, folder, onComplete, initialData = "") {
   plugin.openKetcherModal(initialData, "smiles", async (smi) => {
@@ -559937,7 +559937,7 @@ function addCompoundToLibrary(app, plugin, folder, onComplete, initialData = "")
         mw = chemData.mw;
         formula = chemData.formula;
       }
-      const res = await (0, import_obsidian3.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smi)}/property/Title/JSON`);
+      const res = await (0, import_obsidian2.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smi)}/property/Title/JSON`);
       if (res.status === 200) {
         const props2 = res.json.PropertyTable.Properties[0];
         name = props2.Title || name;
@@ -559959,7 +559959,7 @@ ${smi}
 `;
     if (!await app.vault.adapter.exists(folder)) await app.vault.createFolder(folder);
     await app.vault.create(`${folder}/${safeName}.md`, content4);
-    new import_obsidian3.Notice("Added to Library Database!");
+    new import_obsidian2.Notice("Added to Library Database!");
     onComplete();
   });
 }
@@ -559984,10 +559984,10 @@ function renderLimsNav(parent, activeTab, plugin) {
   if (s8.enableGalleryDashboard) makeNav("\u{1F5BC}\uFE0F Gallery", "gallery", () => plugin.activateGalleryDashboard());
   if (s8.enableCharacterizationDashboard) makeNav("\u{1F4CA} Data", "data", () => plugin.activateCharacterizationDashboard());
 }
-var import_obsidian3, ChemDatabaseRenderer, AddInventoryModal, QrCodeModal;
+var import_obsidian2, ChemDatabaseRenderer, AddInventoryModal, QrCodeModal;
 var init_SharedBase = __esm({
   "SharedBase.ts"() {
-    import_obsidian3 = require("obsidian");
+    import_obsidian2 = require("obsidian");
     init_SharedEln();
     init_ChemDataEngine();
     ChemDatabaseRenderer = class {
@@ -560018,7 +560018,7 @@ var init_SharedBase = __esm({
           const createBtn = errWrap.createEl("button", { text: "Create Folder", attr: { style: "padding: 2px 8px; font-size: 11px;" } });
           createBtn.onclick = async () => {
             await this.plugin.app.vault.createFolder(folderPath);
-            new import_obsidian3.Notice(`Created folder: ${folderPath}`);
+            new import_obsidian2.Notice(`Created folder: ${folderPath}`);
             this.renderDatabase(source, el2, ctx);
           };
           return;
@@ -560072,7 +560072,7 @@ var init_SharedBase = __esm({
           };
         }
         const addBtn = rightTools.createEl("button", { text: "\u2795 Add Item", cls: "mod-cta", attr: { style: "font-size: 12px; height: 28px;" } });
-        const files = folder.children.filter((f9) => f9 instanceof import_obsidian3.TFile && f9.extension === "md");
+        const files = folder.children.filter((f9) => f9 instanceof import_obsidian2.TFile && f9.extension === "md");
         if (layout === "grid" || layout === "cards") {
           const gridContainer = wrapper2.createDiv({ attr: { style: "display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; padding: 16px; max-height: 600px; overflow-y: auto; background: var(--background-primary-alt);" } });
           for (const file of files) {
@@ -560188,7 +560188,7 @@ var init_SharedBase = __esm({
                     await this.plugin.app.fileManager.processFrontMatter(file, (frontmatter) => {
                       frontmatter[yamlKey] = newVal;
                     });
-                    new import_obsidian3.Notice(`Updated ${yamlKey}`);
+                    new import_obsidian2.Notice(`Updated ${yamlKey}`);
                   }
                 };
                 input.onblur = () => saveVal();
@@ -560277,7 +560277,7 @@ var init_SharedBase = __esm({
               sCode.onclick = (e6) => {
                 e6.stopPropagation();
                 navigator.clipboard.writeText(rowSmiles);
-                new import_obsidian3.Notice("Copied SMILES!");
+                new import_obsidian2.Notice("Copied SMILES!");
               };
               searchableText += ` ${fm.name} ${fm.formula} ${rowSmiles}`;
             }
@@ -560323,7 +560323,7 @@ last_maintenance: "${window.moment().format("YYYY-MM-DD")}"
 `;
         if (!await this.plugin.app.vault.adapter.exists(folder)) await this.plugin.app.vault.createFolder(folder);
         await this.plugin.app.vault.create(`${folder}/${safeName}.md`, content4);
-        new import_obsidian3.Notice("Equipment added!");
+        new import_obsidian2.Notice("Equipment added!");
         onComplete();
       }
       extractSmilesFromContent(content4) {
@@ -560364,7 +560364,7 @@ last_maintenance: "${window.moment().format("YYYY-MM-DD")}"
         });
       }
     };
-    AddInventoryModal = class extends import_obsidian3.Modal {
+    AddInventoryModal = class extends import_obsidian2.Modal {
       constructor(app, plugin, folder, onComplete) {
         super(app);
         __publicField(this, "plugin");
@@ -560406,7 +560406,7 @@ last_maintenance: "${window.moment().format("YYYY-MM-DD")}"
         const save = botRow.createEl("button", { text: "Save Item", cls: "mod-cta" });
         save.onclick = async () => {
           if (!this.data.name) {
-            new import_obsidian3.Notice("Name required");
+            new import_obsidian2.Notice("Name required");
             return;
           }
           const safeName = this.data.name.replace(/[\\/:"*?<>|]/g, "_");
@@ -560434,19 +560434,19 @@ ${this.data.smiles || "C"}
           try {
             if (!await this.plugin.app.vault.adapter.exists(this.folder)) await this.plugin.app.vault.createFolder(this.folder);
             await this.plugin.app.vault.create(`${this.folder}/${safeName}.md`, content4);
-            new import_obsidian3.Notice("Item added to inventory!");
+            new import_obsidian2.Notice("Item added to inventory!");
             this.onComplete();
             this.close();
           } catch (e6) {
-            new import_obsidian3.Notice(`File creation failed: ${e6.message}`);
+            new import_obsidian2.Notice(`File creation failed: ${e6.message}`);
           }
         };
       }
       async autoFillFromName() {
         if (!this.data.name) return;
-        new import_obsidian3.Notice("Fetching data...");
+        new import_obsidian2.Notice("Fetching data...");
         try {
-          const res = await (0, import_obsidian3.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(this.data.name)}/property/IsomericSMILES,MolecularWeight,MolecularFormula/JSON`);
+          const res = await (0, import_obsidian2.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(this.data.name)}/property/IsomericSMILES,MolecularWeight,MolecularFormula/JSON`);
           if (res.status === 200) {
             const props2 = res.json.PropertyTable.Properties[0];
             this.data.smiles = props2.IsomericSMILES || "";
@@ -560454,17 +560454,17 @@ ${this.data.smiles || "C"}
             this.data.formula = props2.MolecularFormula;
             this.contentEl.empty();
             this.onOpen();
-            new import_obsidian3.Notice("Auto-fill successful!");
+            new import_obsidian2.Notice("Auto-fill successful!");
           }
         } catch (e6) {
-          new import_obsidian3.Notice("Could not find chemical data.");
+          new import_obsidian2.Notice("Could not find chemical data.");
         }
       }
       onClose() {
         this.contentEl.empty();
       }
     };
-    QrCodeModal = class extends import_obsidian3.Modal {
+    QrCodeModal = class extends import_obsidian2.Modal {
       constructor(app, file) {
         super(app);
         __publicField(this, "file");
@@ -560488,7 +560488,7 @@ ${this.data.smiles || "C"}
         const printBtn = contentEl.createEl("button", { text: "Print Label", cls: "mod-cta", attr: { style: "width: 100%;" } });
         printBtn.onclick = () => {
           if (!this.qrDataUrl) {
-            new import_obsidian3.Notice("QR code not generated yet.");
+            new import_obsidian2.Notice("QR code not generated yet.");
             return;
           }
           const printWindow = window.open("", "_blank");
@@ -560538,7 +560538,7 @@ function populateChemicalMenu(menu, plugin, smiles) {
   menu.addItem((item) => {
     item.setTitle("Copy SMILES").setIcon("copy").onClick(async () => {
       await navigator.clipboard.writeText(smiles);
-      new import_obsidian4.Notice("SMILES copied to clipboard!");
+      new import_obsidian3.Notice("SMILES copied to clipboard!");
     });
   });
   menu.addItem((item) => {
@@ -560551,30 +560551,30 @@ function populateChemicalMenu(menu, plugin, smiles) {
           const molBlock = await ketcher.getMolfile();
           if (molBlock) {
             await navigator.clipboard.writeText(molBlock);
-            new import_obsidian4.Notice("MOL Block copied to clipboard!");
+            new import_obsidian3.Notice("MOL Block copied to clipboard!");
           }
         } else {
-          new import_obsidian4.Notice("Ketcher engine loading, try again in a second.");
+          new import_obsidian3.Notice("Ketcher engine loading, try again in a second.");
         }
       } catch (err) {
-        new import_obsidian4.Notice("Error generating MOL Block.");
+        new import_obsidian3.Notice("Error generating MOL Block.");
       }
     });
   });
   menu.addItem((item) => {
     item.setTitle("Copy IUPAC Name (Web)").setIcon("whole-word").onClick(async () => {
       try {
-        new import_obsidian4.Notice("Fetching IUPAC name...");
-        const res = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smiles)}/property/IUPACName/JSON`);
+        new import_obsidian3.Notice("Fetching IUPAC name...");
+        const res = await (0, import_obsidian3.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smiles)}/property/IUPACName/JSON`);
         if (res.status === 200) {
           const iupac = res.json.PropertyTable.Properties[0].IUPACName;
           await navigator.clipboard.writeText(iupac);
-          new import_obsidian4.Notice("IUPAC Name copied!");
+          new import_obsidian3.Notice("IUPAC Name copied!");
         } else {
-          new import_obsidian4.Notice("Failed to fetch IUPAC Name.");
+          new import_obsidian3.Notice("Failed to fetch IUPAC Name.");
         }
       } catch (err) {
-        new import_obsidian4.Notice("Error fetching IUPAC Name.");
+        new import_obsidian3.Notice("Error fetching IUPAC Name.");
       }
     });
   });
@@ -560584,26 +560584,26 @@ function populateChemicalMenu(menu, plugin, smiles) {
         const offlineProps = ChemDataEngine.getPropertiesFromSmiles(smiles);
         if (offlineProps && offlineProps.mw > 0) {
           await navigator.clipboard.writeText(`Formula: ${offlineProps.formula}, MW: ${offlineProps.mw.toFixed(2)}`);
-          new import_obsidian4.Notice("Properties copied (Offline)!");
+          new import_obsidian3.Notice("Properties copied (Offline)!");
         } else {
-          new import_obsidian4.Notice("Fetching from Web...");
-          const res = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smiles)}/property/MolecularWeight,MolecularFormula/JSON`);
+          new import_obsidian3.Notice("Fetching from Web...");
+          const res = await (0, import_obsidian3.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smiles)}/property/MolecularWeight,MolecularFormula/JSON`);
           if (res.status === 200) {
             const p7 = res.json.PropertyTable.Properties[0];
             await navigator.clipboard.writeText(`Formula: ${p7.MolecularFormula}, MW: ${p7.MolecularWeight}`);
-            new import_obsidian4.Notice("Properties copied (Web)!");
+            new import_obsidian3.Notice("Properties copied (Web)!");
           } else {
             const props2 = await calculateMwOffline(smiles, plugin);
             if (props2 && props2.mw > 0) {
               await navigator.clipboard.writeText(`Formula: ${props2.formula}, MW: ${props2.mw.toFixed(2)}`);
-              new import_obsidian4.Notice(`Copied: Formula: ${props2.formula}, MW: ${props2.mw.toFixed(2)}`);
+              new import_obsidian3.Notice(`Copied: Formula: ${props2.formula}, MW: ${props2.mw.toFixed(2)}`);
             } else {
-              new import_obsidian4.Notice("Properties not found.");
+              new import_obsidian3.Notice("Properties not found.");
             }
           }
         }
       } catch (err) {
-        new import_obsidian4.Notice("Error fetching properties.");
+        new import_obsidian3.Notice("Error fetching properties.");
       }
     });
   });
@@ -560625,14 +560625,14 @@ function populateChemicalMenu(menu, plugin, smiles) {
 }
 function showChemicalContextMenu(plugin, e6, smiles) {
   e6.preventDefault();
-  const menu = new import_obsidian4.Menu();
+  const menu = new import_obsidian3.Menu();
   populateChemicalMenu(menu, plugin, smiles);
   menu.showAtMouseEvent(e6);
 }
-var import_obsidian4;
+var import_obsidian3;
 var init_SharedContextMenu = __esm({
   "SharedContextMenu.ts"() {
-    import_obsidian4 = require("obsidian");
+    import_obsidian3 = require("obsidian");
     init_SharedEln();
     init_SharedBase();
     init_ChemDataEngine();
@@ -560692,15 +560692,15 @@ async function calculateMwOffline(smiles, plugin) {
       return { mw: props2.mw, formula: props2.formula };
     }
     try {
-      const mwRes = await (0, import_obsidian5.requestUrl)(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(sForMw)}/mw`);
-      const formulaRes = await (0, import_obsidian5.requestUrl)(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(sForMw)}/formula`);
+      const mwRes = await (0, import_obsidian4.requestUrl)(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(sForMw)}/mw`);
+      const formulaRes = await (0, import_obsidian4.requestUrl)(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(sForMw)}/formula`);
       if (mwRes.status === 200 && formulaRes.status === 200) {
         return { mw: parseFloat(mwRes.text), formula: formulaRes.text.trim() };
       }
     } catch (e6) {
     }
     try {
-      const res = await (0, import_obsidian5.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(sForMw)}/property/MolecularWeight,MolecularFormula/JSON`);
+      const res = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(sForMw)}/property/MolecularWeight,MolecularFormula/JSON`);
       if (res.status === 200) {
         const p7 = res.json.PropertyTable.Properties[0];
         return { mw: parseFloat(p7.MolecularWeight), formula: p7.MolecularFormula };
@@ -560752,7 +560752,7 @@ async function getCompoundLibrary(plugin) {
   const path2 = (_a = plugin.settings) == null ? void 0 : _a.libraryFilePath;
   if (!path2) return DEFAULT_LIBRARY;
   const file = plugin.app.vault.getAbstractFileByPath(path2);
-  if (file instanceof import_obsidian5.TFile) {
+  if (file instanceof import_obsidian4.TFile) {
     try {
       const content4 = await plugin.app.vault.read(file);
       const results = [];
@@ -560786,18 +560786,18 @@ async function addCompoundToLibrary2(plugin, name, smiles) {
 `;
       file = await plugin.app.vault.create(path2, header);
     }
-    if (file instanceof import_obsidian5.TFile) {
+    if (file instanceof import_obsidian4.TFile) {
       const content4 = await plugin.app.vault.read(file);
       const newEntry = `| ${name} | ${smiles} |`;
       await plugin.app.vault.modify(file, content4 + (content4.endsWith("\n") ? "" : "\n") + newEntry + "\n");
-      new import_obsidian5.Notice(`${name} added to library file!`);
+      new import_obsidian4.Notice(`${name} added to library file!`);
       return;
     }
   }
   if (!plugin.settings.compoundLibrary) plugin.settings.compoundLibrary = [];
   plugin.settings.compoundLibrary.push({ name, smiles });
   await plugin.saveSettings();
-  new import_obsidian5.Notice(`${name} added to internal library!`);
+  new import_obsidian4.Notice(`${name} added to internal library!`);
 }
 async function createNewElnExperiment(app, code, folderPath = "", sectionsString = "TLC, LCMS, NMR") {
   const { stringifyYaml } = require("obsidian");
@@ -560846,15 +560846,15 @@ ${analyticalDataStr}`;
   try {
     const newFile = await app.vault.create(finalPath, template);
     app.workspace.getLeaf(false).openFile(newFile);
-    new import_obsidian5.Notice(`Created new experiment: ${newFile.basename}`);
+    new import_obsidian4.Notice(`Created new experiment: ${newFile.basename}`);
   } catch (e6) {
-    new import_obsidian5.Notice(`Error creating experiment: ${e6.message}`);
+    new import_obsidian4.Notice(`Error creating experiment: ${e6.message}`);
   }
 }
-var import_obsidian5, DEFAULT_LIBRARY, CompoundSuggestModal, AddToLibraryModal, ElnCalculator, SharedElnRenderer, ElnGalleryRenderer, CreateExperimentModal, CloneExperimentModal, ElnMetaEditorModal;
+var import_obsidian4, DEFAULT_LIBRARY, CompoundSuggestModal, AddToLibraryModal, ElnCalculator, SharedElnRenderer, ElnGalleryRenderer, CreateExperimentModal, CloneExperimentModal, ElnMetaEditorModal;
 var init_SharedEln = __esm({
   "SharedEln.ts"() {
-    import_obsidian5 = require("obsidian");
+    import_obsidian4 = require("obsidian");
     init_SharedMedia();
     init_ChemDataEngine();
     DEFAULT_LIBRARY = [
@@ -560874,7 +560874,7 @@ var init_SharedEln = __esm({
       { name: "Na2SO4 (Sodium Sulfate)", smiles: "[Na+].[Na+].[O-]S(=O)(=O)[O-]" },
       { name: "MgSO4 (Magnesium Sulfate)", smiles: "[Mg+2].[O-]S(=O)(=O)[O-]" }
     ];
-    CompoundSuggestModal = class extends import_obsidian5.FuzzySuggestModal {
+    CompoundSuggestModal = class extends import_obsidian4.FuzzySuggestModal {
       constructor(app, library, onChoose) {
         super(app);
         __publicField(this, "library");
@@ -560893,7 +560893,7 @@ var init_SharedEln = __esm({
         this.onChoose(item);
       }
     };
-    AddToLibraryModal = class extends import_obsidian5.Modal {
+    AddToLibraryModal = class extends import_obsidian4.Modal {
       constructor(app, smiles, onSubmit) {
         super(app);
         __publicField(this, "name", "");
@@ -560916,7 +560916,7 @@ var init_SharedEln = __esm({
         const btn = btnRow.createEl("button", { text: "Add to Library", cls: "mod-cta" });
         btn.onclick = () => {
           if (!this.name.trim()) {
-            new import_obsidian5.Notice("Please enter a name.");
+            new import_obsidian4.Notice("Please enter a name.");
             return;
           }
           this.onSubmit(this.name.trim(), this.smiles);
@@ -561040,7 +561040,7 @@ var init_SharedEln = __esm({
             }
           }
           data = ElnCalculator.calculate(data);
-          const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
+          const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian4.MarkdownView);
           const currentFile = view ? view.file : null;
           const expCode = data.code || (currentFile ? currentFile.basename : "EXP");
           const filePrefix = expCode ? `${expCode.replace(/[/\\?%*:|"<>]/g, "-")}_` : "";
@@ -561211,7 +561211,7 @@ ${text2}
             }
             appendSmart(`> **Generated Experimental:**
 > ${exp}`, "Procedure");
-            new import_obsidian5.Notice("Experimental paragraph generated!");
+            new import_obsidian4.Notice("Experimental paragraph generated!");
           });
           createBtn("\u{1F331} Metrics", "Calculate Green Chemistry Metrics", () => {
             var _a2, _b2, _c2, _d2;
@@ -561241,11 +561241,11 @@ ${text2}
 `;
             }
             appendSmart(msg, "Analytical Data");
-            new import_obsidian5.Notice("Green metrics calculated!");
+            new import_obsidian4.Notice("Green metrics calculated!");
           });
           createBtn("\u2699\uFE0F Status", "Change Experiment Status", (e6) => {
             if (!e6) return;
-            const menu = new import_obsidian5.Menu();
+            const menu = new import_obsidian4.Menu();
             const updateYamlState = (mutate) => {
               if (!view) return;
               let info = ctx.getSectionInfo(el2);
@@ -561268,7 +561268,7 @@ ${text2}
           });
           createBtn("\u26A1 Macros", "Insert useful text snippets", (e6) => {
             if (!e6) return;
-            const menu = new import_obsidian5.Menu();
+            const menu = new import_obsidian4.Menu();
             menu.addItem((item) => item.setTitle("\u{1F552} Insert Current Time").setIcon("clock").onClick(() => {
               const time = window.moment().format("HH:mm");
               appendSmart(`**[${time}]:** `, "Procedure");
@@ -561288,7 +561288,7 @@ ${text2}
               appendSmart(`
 ![[${link}]]
 `, "Photo");
-              new import_obsidian5.Notice(`Added ${filename}`);
+              new import_obsidian4.Notice(`Added ${filename}`);
             });
           });
           createBtn("\u{1F9EA} TLC", "Add Digital TLC", () => {
@@ -561304,7 +561304,7 @@ ${text2}
               rfData.forEach((s8, i8) => md += `| ${i8 + 1} | **${s8.rf.toFixed(2)}** |
 `);
               appendSmart(md, "Analytical Data");
-              new import_obsidian5.Notice(`Added ${filename}`);
+              new import_obsidian4.Notice(`Added ${filename}`);
             }).open();
           });
           createBtn("\u{1F310} Share", "Create Web Link for Collaborators", () => {
@@ -561328,9 +561328,9 @@ ${text2}
               const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
               const viewerUrl = `https://ruzx.github.io/elnviewer.html#eln=${b64}`;
               navigator.clipboard.writeText(viewerUrl);
-              new import_obsidian5.Notice("\u{1F517} Web link copied to clipboard!");
+              new import_obsidian4.Notice("\u{1F517} Web link copied to clipboard!");
             } catch (e6) {
-              new import_obsidian5.Notice("Failed to generate share link.");
+              new import_obsidian4.Notice("Failed to generate share link.");
             }
           });
           createBtn("\u{1F4CB} Copy", "Copy Stoichiometry Table to Clipboard", () => {
@@ -561346,7 +561346,7 @@ ${text2}
 `;
             });
             navigator.clipboard.writeText(tsv);
-            new import_obsidian5.Notice("Table copied to clipboard! Paste into Excel.");
+            new import_obsidian4.Notice("Table copied to clipboard! Paste into Excel.");
           });
           createBtn("\u{1F5D0} Clone", "Duplicate this experiment into a new file", () => {
             new CloneExperimentModal(this.plugin.app, this.plugin, expCode, currentFile, data).open();
@@ -561367,9 +561367,9 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
                   const newPath = !folderPath || folderPath === "/" ? `${newName}.md` : `${folderPath}/${newName}.md`;
                   try {
                     await this.plugin.app.fileManager.renameFile(currentFile, newPath);
-                    new import_obsidian5.Notice(`File renamed to ${newName}.md`);
+                    new import_obsidian4.Notice(`File renamed to ${newName}.md`);
                   } catch (e6) {
-                    new import_obsidian5.Notice(`Note updated, but could not rename file.`);
+                    new import_obsidian4.Notice(`Note updated, but could not rename file.`);
                   }
                 }
               }).open();
@@ -561535,13 +561535,13 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
             });
             parent.addEventListener("dblclick", (e6) => {
               e6.stopPropagation();
-              const view2 = this.plugin.app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
+              const view2 = this.plugin.app.workspace.getActiveViewOfType(import_obsidian4.MarkdownView);
               let info = ctx.getSectionInfo(el2);
               if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
               if (!view2 || !info) return;
               this.plugin.api.ketcher.openEditor(smiles || "", "smiles", (newData, isFile, newFormat) => {
                 if (newFormat === "ket") {
-                  new import_obsidian5.Notice("ELN tables only support SMILES.");
+                  new import_obsidian4.Notice("ELN tables only support SMILES.");
                   return;
                 }
                 const { parseYaml: parseYaml2, stringifyYaml: stringifyYaml2 } = require("obsidian");
@@ -561554,7 +561554,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
                   const newYaml = stringifyYaml2(yamlObj);
                   view2.editor.replaceRange(newYaml, { line: info.lineStart + 1, ch: 0 }, { line: info.lineEnd, ch: 0 });
                 } catch (err) {
-                  new import_obsidian5.Notice("Error updating ELN YAML.");
+                  new import_obsidian4.Notice("Error updating ELN YAML.");
                 }
               });
             });
@@ -561572,7 +561572,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
             if (tableEl) attachStructure(tableEl, p7.smiles, "products", i8, 90, 90);
           });
           if (currentFile && currentFile.parent && data.reactants.length > 0 && data.products.length > 0) {
-            const folderFiles = currentFile.parent.children.filter((f9) => f9 instanceof import_obsidian5.TFile && f9.extension.toLowerCase() === "md" && f9.path !== currentFile.path);
+            const folderFiles = currentFile.parent.children.filter((f9) => f9 instanceof import_obsidian4.TFile && f9.extension.toLowerCase() === "md" && f9.path !== currentFile.path);
             const matchRows = [];
             const currReactantSmi = ((_a = data.reactants[0].smiles) == null ? void 0 : _a.trim()) || "A";
             const currProductSmi = ((_b = data.products[0].smiles) == null ? void 0 : _b.trim()) || "B";
@@ -561648,7 +561648,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
           el2.createEl("div", { text: `\u26A0\uFE0F Folder not found: ${folderPath}`, cls: "color-text-error" });
           return;
         }
-        const files = folder.children.filter((f9) => f9 instanceof import_obsidian5.TFile && f9.extension.toLowerCase() === "md");
+        const files = folder.children.filter((f9) => f9 instanceof import_obsidian4.TFile && f9.extension.toLowerCase() === "md");
         const header = el2.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;" } });
         const countLabel = header.createDiv({ text: `Loading...`, attr: { style: "font-size: 13px; color: var(--text-muted); font-weight: 500;" } });
         const searchInput = header.createEl("input", { type: "search", placeholder: "Search experiments...", attr: { style: "width: 250px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary);" } });
@@ -561770,7 +561770,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
           el2.createEl("div", { text: `\u26A0\uFE0F Folder not found`, cls: "color-text-error" });
           return;
         }
-        const files = folder.children.filter((f9) => f9 instanceof import_obsidian5.TFile && f9.extension.toLowerCase() === "md");
+        const files = folder.children.filter((f9) => f9 instanceof import_obsidian4.TFile && f9.extension.toLowerCase() === "md");
         const container = el2.createDiv({ cls: "chem-gallery-container" });
         container.style.display = "grid";
         container.style.gridTemplateColumns = "repeat(auto-fill, minmax(140px, 1fr))";
@@ -561827,7 +561827,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
         }
       }
     };
-    CreateExperimentModal = class extends import_obsidian5.Modal {
+    CreateExperimentModal = class extends import_obsidian4.Modal {
       constructor(app, plugin, defaultPrefix, folderPath, onSubmit) {
         super(app);
         __publicField(this, "plugin");
@@ -561862,7 +561862,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
         input.onchange = (e6) => this.code = e6.target.value;
         const attemptSubmit = () => {
           if (!this.code.trim()) {
-            new import_obsidian5.Notice("Please enter a code");
+            new import_obsidian4.Notice("Please enter a code");
             return;
           }
           this.onSubmit(this.code.trim());
@@ -561885,7 +561885,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
         this.contentEl.empty();
       }
     };
-    CloneExperimentModal = class extends import_obsidian5.Modal {
+    CloneExperimentModal = class extends import_obsidian4.Modal {
       constructor(app, plugin, currentCode, currentFile, sourceData) {
         super(app);
         __publicField(this, "plugin");
@@ -561961,9 +561961,9 @@ ${currentSections}`;
           try {
             const newFile = await this.plugin.app.vault.create(newPath, template);
             this.plugin.app.workspace.getLeaf(false).openFile(newFile);
-            new import_obsidian5.Notice(`Experiment cloned to ${newFile.basename}`);
+            new import_obsidian4.Notice(`Experiment cloned to ${newFile.basename}`);
           } catch (e6) {
-            new import_obsidian5.Notice(`Error cloning: ${e6.message}`);
+            new import_obsidian4.Notice(`Error cloning: ${e6.message}`);
           }
           this.close();
         };
@@ -561977,7 +561977,7 @@ ${currentSections}`;
         this.contentEl.empty();
       }
     };
-    ElnMetaEditorModal = class extends import_obsidian5.Modal {
+    ElnMetaEditorModal = class extends import_obsidian4.Modal {
       constructor(app, plugin, yamlObj, onSave) {
         super(app);
         __publicField(this, "plugin");
@@ -561994,17 +561994,17 @@ ${currentSections}`;
       }
       async fetchSmilesFromName(name) {
         try {
-          const opsin = await (0, import_obsidian5.requestUrl)(`https://opsin.ch.cam.ac.uk/opsin/${encodeURIComponent(name)}.smi`);
+          const opsin = await (0, import_obsidian4.requestUrl)(`https://opsin.ch.cam.ac.uk/opsin/${encodeURIComponent(name)}.smi`);
           if (opsin.status === 200) return opsin.text.trim();
         } catch (e6) {
         }
         try {
-          const cactus = await (0, import_obsidian5.requestUrl)(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(name)}/smiles`);
+          const cactus = await (0, import_obsidian4.requestUrl)(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(name)}/smiles`);
           if (cactus.status === 200) return cactus.text.trim();
         } catch (e6) {
         }
         try {
-          const pubchem = await (0, import_obsidian5.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(name)}/property/IsomericSMILES/JSON`);
+          const pubchem = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(name)}/property/IsomericSMILES/JSON`);
           if (pubchem.status === 200) return pubchem.json.PropertyTable.Properties[0].IsomericSMILES;
         } catch (e6) {
         }
@@ -562039,7 +562039,7 @@ ${currentSections}`;
         this.data.reactants = newReactants;
         this.data.products = newProducts;
         this.render();
-        new import_obsidian5.Notice("Reaction successfully parsed and calculated!");
+        new import_obsidian4.Notice("Reaction successfully parsed and calculated!");
       }
       render() {
         const { contentEl } = this;
@@ -562054,7 +562054,7 @@ ${currentSections}`;
           const rxnStr = currentR && currentP ? `${currentR}>>${currentP}` : "";
           this.plugin.api.ketcher.openEditor(rxnStr, "smiles", (smi) => {
             if (smi.includes(">")) this.processReactionSmiles(smi);
-            else new import_obsidian5.Notice("Please draw a reaction arrow to split reactants and products.");
+            else new import_obsidian4.Notice("Please draw a reaction arrow to split reactants and products.");
           });
         };
         const saveBtn = hActions.createEl("button", { text: "Save", cls: "mod-cta" });
@@ -562124,24 +562124,24 @@ ${currentSections}`;
           const fetchSmilesBtn = actionRow.createEl("button", { text: "\u{1F9EA} N \u2192 S (Web)", attr: { style: "font-size:11px; padding: 4px 8px;", title: "Name to Structure (Requires Internet)" } });
           fetchSmilesBtn.onclick = async () => {
             if (!item.name) {
-              new import_obsidian5.Notice("Enter a name first.");
+              new import_obsidian4.Notice("Enter a name first.");
               return;
             }
             fetchSmilesBtn.innerText = "\u23F3...";
             const smiles = await this.fetchSmilesFromName(item.name);
             if (smiles) {
               item.smiles = smiles;
-              new import_obsidian5.Notice(`Structure found for ${item.name}`);
+              new import_obsidian4.Notice(`Structure found for ${item.name}`);
               this.render();
             } else {
-              new import_obsidian5.Notice("Structure not found.");
+              new import_obsidian4.Notice("Structure not found.");
               fetchSmilesBtn.innerText = "\u{1F9EA} N \u2192 S (Web)";
             }
           };
           const fetchDataBtn = actionRow.createEl("button", { text: "\u{1F50D} S \u2192 D", attr: { style: "font-size:11px; padding: 4px 8px;", title: "Calculate Data from Structure (Offline)" } });
           fetchDataBtn.onclick = async () => {
             if (!item.smiles) {
-              new import_obsidian5.Notice("Draw a structure first.");
+              new import_obsidian4.Notice("Draw a structure first.");
               return;
             }
             fetchDataBtn.innerText = "\u23F3...";
@@ -562150,16 +562150,16 @@ ${currentSections}`;
             if (d10.formula) item.formula = d10.formula;
             if (!item.name) {
               try {
-                const res = await (0, import_obsidian5.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(item.smiles)}/property/Title/JSON`);
+                const res = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(item.smiles)}/property/Title/JSON`);
                 if (res.status === 200) item.name = res.json.PropertyTable.Properties[0].Title;
               } catch (e6) {
               }
             }
             try {
-              const cidRes = await (0, import_obsidian5.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(item.smiles)}/cids/JSON`);
+              const cidRes = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(item.smiles)}/cids/JSON`);
               if (cidRes.status === 200) {
                 const cid = cidRes.json.IdentifierList.CID[0];
-                const ghsRes = await (0, import_obsidian5.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/${cid}/JSON?heading=GHS+Classification`);
+                const ghsRes = await (0, import_obsidian4.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/${cid}/JSON?heading=GHS+Classification`);
                 const str = JSON.stringify(ghsRes.json);
                 const emojis = [];
                 if (str.includes("GHS01")) emojis.push("\u{1F4A3}");
@@ -562174,7 +562174,7 @@ ${currentSections}`;
             } catch (e6) {
             }
             nameInp.value = item.name || "";
-            new import_obsidian5.Notice(`Calculated offline MW for ${item.name || "Structure"}`);
+            new import_obsidian4.Notice(`Calculated offline MW for ${item.name || "Structure"}`);
             fetchDataBtn.innerText = "\u{1F50D} S \u2192 D";
             this.render();
           };
@@ -562246,11 +562246,11 @@ var main_exports = {};
 __export(main_exports, {
   CHEM_FILE_VIEW_TYPE: () => CHEM_FILE_VIEW_TYPE,
   default: () => ChemEditPlugin,
-  embedDataInSvg: () => embedDataInSvg,
+  embedDataInSvg: () => embedDataInSvg3,
   extractDataFromSvg: () => extractDataFromSvg
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian22 = require("obsidian");
+var import_obsidian24 = require("obsidian");
 var import_react25 = __toESM(require_react());
 var import_react_dom6 = __toESM(require_react_dom());
 
@@ -568183,8 +568183,522 @@ var KetcherReact_default = KetcherReact;
 var import_state = require("@codemirror/state");
 var import_view = require("@codemirror/view");
 
+// ExcalidrawBridge.ts
+var import_obsidian5 = require("obsidian");
+init_SharedEln();
+function initExcalidrawBridge(plugin) {
+  plugin.registerEvent(plugin.app.workspace.on("layout-change", () => injectExcalidrawUI(plugin)));
+  plugin.registerEvent(plugin.app.workspace.on("active-leaf-change", () => injectExcalidrawUI(plugin)));
+  setTimeout(() => injectExcalidrawUI(plugin), 1e3);
+}
+function injectExcalidrawUI(plugin) {
+  const view = plugin.app.workspace.getActiveViewOfType(import_obsidian5.ItemView);
+  if (!view || view.getViewType() !== "excalidraw") return;
+  const container = view.containerEl;
+  const excalidrawUI = container.querySelector(".excalidraw");
+  if (!excalidrawUI) return;
+  let toolsContainer = container.querySelector(".chemedit-excalidraw-tools");
+  if (!toolsContainer) {
+    toolsContainer = document.createElement("div");
+    toolsContainer.className = "chemedit-excalidraw-tools";
+    Object.assign(toolsContainer.style, {
+      position: "absolute",
+      top: "80px",
+      left: "16px",
+      zIndex: "100",
+      display: "flex",
+      flexDirection: "column",
+      gap: "8px",
+      padding: "6px",
+      backgroundColor: "var(--background-primary)",
+      borderRadius: "8px",
+      border: "1px solid var(--background-modifier-border)",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+    });
+    excalidrawUI.appendChild(toolsContainer);
+    const createBtn = (iconName, title, isMain, onClick) => {
+      const btn = document.createElement("button");
+      btn.title = title;
+      (0, import_obsidian5.setIcon)(btn, iconName);
+      const size = isMain ? "38px" : "32px";
+      const iconColor = isMain ? "var(--text-normal)" : "var(--text-muted)";
+      const bgColor = isMain ? "var(--background-modifier-active-hover)" : "transparent";
+      Object.assign(btn.style, {
+        width: size,
+        height: size,
+        padding: "6px",
+        borderRadius: "6px",
+        backgroundColor: bgColor,
+        color: iconColor,
+        border: "1px solid transparent",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transition: "all 0.2s"
+      });
+      btn.onmouseover = () => {
+        btn.style.color = "var(--text-normal)";
+        btn.style.backgroundColor = "var(--background-modifier-hover)";
+        btn.style.borderColor = "var(--background-modifier-border)";
+      };
+      btn.onmouseout = () => {
+        btn.style.color = iconColor;
+        btn.style.backgroundColor = bgColor;
+        btn.style.borderColor = "transparent";
+      };
+      btn.onclick = (e6) => {
+        e6.preventDefault();
+        e6.stopPropagation();
+        onClick();
+      };
+      toolsContainer.appendChild(btn);
+    };
+    createBtn("hexagon", "Draw Structure (Select text like 'Aspirin' first to auto-convert)", true, () => handleAction(plugin, view, "draw"));
+    createBtn("info", "Extract Properties & IUPAC Name", false, () => handleAction(plugin, view, "props"));
+    createBtn("copy", "Copy SMILES to Clipboard", false, () => handleAction(plugin, view, "copy"));
+    createBtn("globe", "Search molecule on PubChem", false, () => handleAction(plugin, view, "web"));
+  }
+  if (!container.dataset.chemeditDblClick) {
+    container.dataset.chemeditDblClick = "true";
+    container.addEventListener("dblclick", (e6) => {
+      var _a;
+      const ea = (_a = plugin.app.plugins.plugins["obsidian-excalidraw-plugin"]) == null ? void 0 : _a.ea;
+      if (!ea) return;
+      ea.setView(view);
+      setTimeout(() => {
+        const selected6 = ea.getViewSelectedElements();
+        if (selected6.length === 1 && selected6[0].type === "image") {
+          handleAction(plugin, view, "draw", true, selected6[0]);
+        }
+      }, 50);
+    }, true);
+  }
+}
+async function handleAction(plugin, view, actionType, isDblClick = false, targetEl = null) {
+  var _a;
+  const ea = (_a = plugin.app.plugins.plugins["obsidian-excalidraw-plugin"]) == null ? void 0 : _a.ea;
+  if (!ea) {
+    new import_obsidian5.Notice("Excalidraw API not found.");
+    return;
+  }
+  ea.setView(view);
+  const selected6 = ea.getViewSelectedElements();
+  let initialData = "";
+  let tfile = null;
+  let elementToUpdate = targetEl;
+  let isEdit = isDblClick;
+  if (!isDblClick && selected6.length === 1) {
+    const sel = selected6[0];
+    if (sel.type === "text" && actionType === "draw") {
+      const textVal = sel.text.trim();
+      new import_obsidian5.Notice("Resolving Structure from Web...");
+      let smi = textVal;
+      if (!/^[A-Za-z0-9@+\-\[\]\(\)\\\/=#%]+$/.test(textVal) || !/[CNOcno]/.test(textVal)) {
+        try {
+          const opsin = await (0, import_obsidian5.requestUrl)(`https://opsin.ch.cam.ac.uk/opsin/${encodeURIComponent(textVal)}.smi`);
+          if (opsin.status === 200) smi = opsin.text.trim();
+        } catch (e6) {
+        }
+      }
+      initialData = smi;
+    } else if (sel.type === "image") {
+      elementToUpdate = sel;
+      isEdit = true;
+    }
+  }
+  if (isEdit && elementToUpdate) {
+    const excalidrawFile = view.excalidrawData.getFile(elementToUpdate.fileId);
+    if (excalidrawFile && excalidrawFile.file) {
+      tfile = excalidrawFile.file;
+      if (["svg", "mol", "cdxml"].includes(tfile.extension.toLowerCase())) {
+        initialData = await plugin.app.vault.read(tfile);
+        if (tfile.extension.toLowerCase() === "svg") {
+          const ex = extractDataFromSvg(initialData);
+          if (ex) initialData = ex.data;
+          else {
+            if (actionType !== "draw") new import_obsidian5.Notice("No chemical metadata found.");
+            return;
+          }
+        }
+      } else return;
+    } else return;
+  }
+  if (actionType !== "draw" && !initialData) {
+    new import_obsidian5.Notice("Please select a valid chemical structure first.");
+    return;
+  }
+  let smilesData = initialData;
+  if (actionType === "copy" || actionType === "web" || actionType === "props") {
+    new import_obsidian5.Notice("Processing structure...", 1e3);
+    try {
+      smilesData = await plugin.api.ketcher.convertFormat(initialData, "smiles");
+    } catch (e6) {
+      new import_obsidian5.Notice("Failed to convert structure.");
+      return;
+    }
+  }
+  if (actionType === "copy") {
+    navigator.clipboard.writeText(smilesData);
+    new import_obsidian5.Notice("SMILES Copied!");
+    return;
+  }
+  if (actionType === "web") {
+    window.open(`https://pubchem.ncbi.nlm.nih.gov/#query=${encodeURIComponent(smilesData)}`, "_blank");
+    return;
+  }
+  if (actionType === "props") {
+    new import_obsidian5.Notice("Calculating Properties...");
+    const props2 = await calculateMwOffline(smilesData, plugin);
+    let iupac = "";
+    try {
+      const res = await (0, import_obsidian5.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smilesData)}/property/IUPACName/JSON`);
+      if (res.status === 200) iupac = res.json.PropertyTable.Properties[0].IUPACName;
+    } catch (e6) {
+    }
+    if (props2 && props2.mw > 0) {
+      ea.clear();
+      const text2 = `${iupac ? `**Name:** ${iupac}
+` : ""}**Formula:** ${props2.formula}
+**MW:** ${props2.mw.toFixed(2)}`;
+      ea.addText(elementToUpdate.x + elementToUpdate.width / 2, elementToUpdate.y + elementToUpdate.height + 15, text2, { textAlign: "center", fontSize: 16, strokeColor: "var(--text-muted)" });
+      await ea.addElementsToView(false, false);
+    } else {
+      new import_obsidian5.Notice("Failed to calculate properties.");
+    }
+    return;
+  }
+  if (actionType === "draw") {
+    plugin.api.ketcher.openEditor(initialData, "svg", async (newData, isFile) => {
+      if (isFile) {
+        new import_obsidian5.Notice("Cannot 'Save as file' from Canvas mode.");
+        return;
+      }
+      let newWidth = 300, newHeight = 300;
+      const matchW = newData.match(/width="([^"]+)"/);
+      const matchH = newData.match(/height="([^"]+)"/);
+      const matchVB = newData.match(/viewBox="[^"]*\s[^"]*\s([^"]+)\s([^"]+)"/);
+      if (matchW && matchH) {
+        newWidth = parseFloat(matchW[1]);
+        newHeight = parseFloat(matchH[1]);
+      } else if (matchVB) {
+        newWidth = parseFloat(matchVB[1]);
+        newHeight = parseFloat(matchVB[2]);
+      }
+      const excalidrawAPI = ea.getExcalidrawAPI();
+      if (isEdit && tfile && elementToUpdate) {
+        await plugin.app.vault.modify(tfile, newData);
+        const mimeType = "image/svg+xml";
+        const dataURL = `data:${mimeType};base64,${btoa(unescape(encodeURIComponent(newData)))}`;
+        excalidrawAPI.addFiles([{
+          id: elementToUpdate.fileId,
+          dataURL,
+          mimeType,
+          created: Date.now()
+        }]);
+        const elements = ea.getViewElements();
+        const el2 = elements.find((e6) => e6.id === elementToUpdate.id);
+        if (el2) {
+          el2.width = newWidth;
+          el2.height = newHeight;
+          el2.version++;
+          el2.versionNonce = Math.floor(Math.random() * 1e8);
+        }
+        excalidrawAPI.updateScene({ elements });
+        new import_obsidian5.Notice("Structure Updated");
+      } else {
+        new import_obsidian5.Notice("Generating structure...");
+        let savePath = plugin.settings.mediaSavePath || "Assets/";
+        if (savePath && !savePath.endsWith("/")) savePath += "/";
+        if (savePath && !plugin.app.vault.getAbstractFileByPath(savePath.slice(0, -1))) await plugin.app.vault.createFolder(savePath.slice(0, -1));
+        const filename = `${savePath}Structure_${window.moment().format("YYYYMMDD_HHmmss")}.svg`;
+        const fileToEmbed = await plugin.app.vault.create(filename, newData);
+        ea.clear();
+        if (selected6.length === 1 && selected6[0].type === "text") {
+          const sel = selected6[0];
+          await ea.addImage(sel.x, sel.y, fileToEmbed);
+          ea.deleteViewElements([sel]);
+          await ea.addElementsToView(false, false);
+        } else {
+          await ea.addImage(0, 0, fileToEmbed);
+          await ea.addElementsToView(true, false);
+        }
+        setTimeout(() => {
+          const elements = ea.getViewElements();
+          const el2 = elements[elements.length - 1];
+          if (el2 && el2.type === "image") {
+            el2.width = newWidth;
+            el2.height = newHeight;
+            el2.version++;
+            excalidrawAPI.updateScene({ elements });
+          }
+        }, 100);
+      }
+    });
+  }
+}
+
+// CanvasBridge.ts
+var import_obsidian6 = require("obsidian");
+init_SharedEln();
+function initCanvasBridge(plugin) {
+  plugin.registerEvent(plugin.app.workspace.on("layout-change", () => injectCanvasUI(plugin)));
+  plugin.registerEvent(plugin.app.workspace.on("active-leaf-change", () => injectCanvasUI(plugin)));
+  setTimeout(() => injectCanvasUI(plugin), 1e3);
+}
+function injectCanvasUI(plugin) {
+  const view = plugin.app.workspace.getActiveViewOfType(import_obsidian6.ItemView);
+  if (!view || view.getViewType() !== "canvas") return;
+  const container = view.containerEl;
+  const canvasUI = container.querySelector(".canvas-wrapper") || container;
+  if (!canvasUI) return;
+  let toolsContainer = container.querySelector(".chemedit-canvas-tools");
+  if (!toolsContainer) {
+    toolsContainer = document.createElement("div");
+    toolsContainer.className = "chemedit-canvas-tools";
+    Object.assign(toolsContainer.style, {
+      position: "absolute",
+      top: "70px",
+      left: "16px",
+      zIndex: "100",
+      display: "flex",
+      flexDirection: "column",
+      gap: "8px",
+      padding: "6px",
+      backgroundColor: "var(--background-primary)",
+      borderRadius: "8px",
+      border: "1px solid var(--background-modifier-border)",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+    });
+    canvasUI.appendChild(toolsContainer);
+    const createBtn = (iconName, title, isMain, onClick) => {
+      const btn = document.createElement("button");
+      btn.title = title;
+      (0, import_obsidian6.setIcon)(btn, iconName);
+      const size = isMain ? "38px" : "32px";
+      const iconColor = isMain ? "var(--text-normal)" : "var(--text-muted)";
+      const bgColor = isMain ? "var(--background-modifier-active-hover)" : "transparent";
+      Object.assign(btn.style, {
+        width: size,
+        height: size,
+        padding: "6px",
+        borderRadius: "6px",
+        backgroundColor: bgColor,
+        color: iconColor,
+        border: "1px solid transparent",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transition: "all 0.2s"
+      });
+      btn.onmouseover = () => {
+        btn.style.color = "var(--text-normal)";
+        btn.style.backgroundColor = "var(--background-modifier-hover)";
+        btn.style.borderColor = "var(--background-modifier-border)";
+      };
+      btn.onmouseout = () => {
+        btn.style.color = iconColor;
+        btn.style.backgroundColor = bgColor;
+        btn.style.borderColor = "transparent";
+      };
+      btn.onclick = (e6) => {
+        e6.preventDefault();
+        e6.stopPropagation();
+        onClick();
+      };
+      toolsContainer.appendChild(btn);
+    };
+    createBtn("hexagon", "Draw Structure (Select text like 'Aspirin' first to auto-convert)", true, () => handleCanvasAction(plugin, view, "draw"));
+    createBtn("info", "Extract Properties & IUPAC Name", false, () => handleCanvasAction(plugin, view, "props"));
+    createBtn("copy", "Copy SMILES to Clipboard", false, () => handleCanvasAction(plugin, view, "copy"));
+    createBtn("globe", "Search molecule on PubChem", false, () => handleCanvasAction(plugin, view, "web"));
+  }
+  if (!container.dataset.chemeditDblClick) {
+    container.dataset.chemeditDblClick = "true";
+    container.addEventListener("dblclick", (e6) => {
+      const canvas = view.canvas;
+      if (!canvas) return;
+      setTimeout(() => {
+        const selectedNodes = Array.from(canvas.selection);
+        if (selectedNodes.length === 1) {
+          const node2 = selectedNodes[0];
+          if (node2.file) handleCanvasAction(plugin, view, "draw", true, node2);
+        }
+      }, 50);
+    }, true);
+  }
+}
+function applyChemDrawStyle(svg) {
+  let polished = svg.replace(/font-family="[^"]*"/g, 'font-family="Arial, Helvetica, sans-serif"');
+  polished = polished.replace(/(stroke|fill)="#333333"/gi, '$1="#000000"');
+  return polished;
+}
+async function handleCanvasAction(plugin, view, actionType, isDblClick = false, targetNode = null) {
+  const canvas = view.canvas;
+  if (!canvas) {
+    new import_obsidian6.Notice("Canvas API not found.");
+    return;
+  }
+  const selectedNodes = Array.from(canvas.selection);
+  let initialData = "";
+  let tfile = null;
+  let nodeToUpdate = targetNode;
+  let isEdit = isDblClick;
+  if (!isDblClick && selectedNodes.length === 1) {
+    const node2 = selectedNodes[0];
+    if (node2.text !== void 0 && actionType === "draw") {
+      const textVal = node2.text.trim();
+      new import_obsidian6.Notice("Resolving Structure from Web...");
+      let smi = textVal;
+      if (!/^[A-Za-z0-9@+\-\[\]\(\)\\\/=#%]+$/.test(textVal) || !/[CNOcno]/.test(textVal)) {
+        try {
+          const opsin = await (0, import_obsidian6.requestUrl)(`https://opsin.ch.cam.ac.uk/opsin/${encodeURIComponent(textVal)}.smi`);
+          if (opsin.status === 200) smi = opsin.text.trim();
+        } catch (e6) {
+        }
+      }
+      initialData = smi;
+      nodeToUpdate = node2;
+    } else if (node2.file) {
+      nodeToUpdate = node2;
+      isEdit = true;
+    }
+  }
+  if (isEdit && nodeToUpdate && nodeToUpdate.file) {
+    tfile = nodeToUpdate.file;
+    if (["svg", "mol", "cdxml"].includes(tfile.extension.toLowerCase())) {
+      initialData = await plugin.app.vault.read(tfile);
+      if (tfile.extension.toLowerCase() === "svg") {
+        const ex = extractDataFromSvg(initialData);
+        if (ex) initialData = ex.data;
+        else {
+          if (actionType !== "draw") new import_obsidian6.Notice("No chemical metadata found.");
+          return;
+        }
+      }
+    } else return;
+  }
+  if (actionType !== "draw" && !initialData) {
+    new import_obsidian6.Notice("Please select a valid chemical structure first.");
+    return;
+  }
+  let smilesData = initialData;
+  if (actionType === "copy" || actionType === "web" || actionType === "props") {
+    new import_obsidian6.Notice("Processing structure...", 1e3);
+    try {
+      smilesData = await plugin.api.ketcher.convertFormat(initialData, "smiles");
+    } catch (e6) {
+      new import_obsidian6.Notice("Failed to convert structure.");
+      return;
+    }
+  }
+  if (actionType === "copy") {
+    navigator.clipboard.writeText(smilesData);
+    new import_obsidian6.Notice("SMILES Copied!");
+    return;
+  }
+  if (actionType === "web") {
+    window.open(`https://pubchem.ncbi.nlm.nih.gov/#query=${encodeURIComponent(smilesData)}`, "_blank");
+    return;
+  }
+  if (actionType === "props") {
+    new import_obsidian6.Notice("Calculating Properties...");
+    const props2 = await calculateMwOffline(smilesData, plugin);
+    let iupac = "";
+    try {
+      const res = await (0, import_obsidian6.requestUrl)(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smilesData)}/property/IUPACName/JSON`);
+      if (res.status === 200) iupac = res.json.PropertyTable.Properties[0].IUPACName;
+    } catch (e6) {
+    }
+    if (props2 && props2.mw > 0) {
+      const text2 = `${iupac ? `**Name:** ${iupac}
+` : ""}**Formula:** ${props2.formula}
+**MW:** ${props2.mw.toFixed(2)}`;
+      canvas.createTextNode({
+        pos: { x: nodeToUpdate.x, y: nodeToUpdate.y + nodeToUpdate.height + 20 },
+        size: { width: Math.max(nodeToUpdate.width, 200), height: 100 },
+        text: text2,
+        save: true
+      });
+      canvas.requestSave();
+    } else {
+      new import_obsidian6.Notice("Failed to calculate properties.");
+    }
+    return;
+  }
+  if (actionType === "draw") {
+    plugin.api.ketcher.openEditor(initialData, "svg", async (newData, isFile) => {
+      if (isFile) {
+        new import_obsidian6.Notice("Cannot 'Save as file' from Canvas mode.");
+        return;
+      }
+      newData = applyChemDrawStyle(newData);
+      let newWidth = 300, newHeight = 300;
+      const matchW = newData.match(/width="([^"]+)"/);
+      const matchH = newData.match(/height="([^"]+)"/);
+      const matchVB = newData.match(/viewBox="[^"]*\s[^"]*\s([^"]+)\s([^"]+)"/);
+      if (matchW && matchH) {
+        newWidth = parseFloat(matchW[1].replace("px", ""));
+        newHeight = parseFloat(matchH[1].replace("px", ""));
+      } else if (matchVB) {
+        newWidth = parseFloat(matchVB[1]);
+        newHeight = parseFloat(matchVB[2]);
+      }
+      if (isEdit && tfile && nodeToUpdate) {
+        await plugin.app.vault.modify(tfile, newData);
+        if (typeof nodeToUpdate.moveAndResize === "function") {
+          nodeToUpdate.moveAndResize({ x: nodeToUpdate.x, y: nodeToUpdate.y, width: newWidth, height: newHeight });
+        } else {
+          nodeToUpdate.width = newWidth;
+          nodeToUpdate.height = newHeight;
+        }
+        setTimeout(() => {
+          if (nodeToUpdate.nodeEl) {
+            const imgEls = nodeToUpdate.nodeEl.querySelectorAll("img");
+            imgEls.forEach((img) => {
+              const currentSrc = img.getAttribute("src");
+              if (currentSrc) {
+                img.setAttribute("src", currentSrc.split("?")[0] + "?_t=" + Date.now());
+              }
+            });
+          }
+          if (typeof nodeToUpdate.render === "function") nodeToUpdate.render();
+          canvas.requestSave();
+        }, 150);
+        new import_obsidian6.Notice("Structure Updated");
+      } else {
+        new import_obsidian6.Notice("Generating structure...");
+        let savePath = plugin.settings.mediaSavePath || "Assets/";
+        if (savePath && !savePath.endsWith("/")) savePath += "/";
+        if (savePath && !plugin.app.vault.getAbstractFileByPath(savePath.slice(0, -1))) await plugin.app.vault.createFolder(savePath.slice(0, -1));
+        const filename = `${savePath}Structure_${window.moment().format("YYYYMMDD_HHmmss")}.svg`;
+        const fileToEmbed = await plugin.app.vault.create(filename, newData);
+        await new Promise((r12) => setTimeout(r12, 200));
+        if (nodeToUpdate && nodeToUpdate.text !== void 0) {
+          const posX = nodeToUpdate.x;
+          const posY = nodeToUpdate.y;
+          canvas.removeNode(nodeToUpdate);
+          canvas.createFileNode({ file: fileToEmbed, pos: { x: posX, y: posY }, size: { width: newWidth, height: newHeight }, save: true });
+        } else {
+          const zoom2 = canvas.zoom || 1;
+          const dropX = (window.innerWidth / 2 - (canvas.x || 0)) / zoom2 - newWidth / 2;
+          const dropY = (window.innerHeight / 2 - (canvas.y || 0)) / zoom2 - newHeight / 2;
+          canvas.createFileNode({
+            file: fileToEmbed,
+            pos: { x: dropX, y: dropY },
+            size: { width: newWidth, height: newHeight },
+            save: true
+          });
+        }
+        canvas.requestSave();
+      }
+    });
+  }
+}
+
 // Settings.ts
-var import_obsidian = require("obsidian");
+var import_obsidian7 = require("obsidian");
 var DEFAULT_SETTINGS = {
   enableEln: true,
   enableNavigator: true,
@@ -568234,7 +568748,7 @@ var DEFAULT_SETTINGS = {
   contextLayout: [],
   scriptsFolder: "ChemEdit/Scripts"
 };
-var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
+var ChemEditSettingTab = class extends import_obsidian7.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     __publicField(this, "plugin");
@@ -568263,47 +568777,47 @@ var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
             </ul>
         `;
     const genSec = this.createAccordion(containerEl, "General & File Paths", "\u{1F4C2}", true);
-    new import_obsidian.Setting(genSec).setName("Default ELN Directory").setDesc("Folder where new ELN experiments will be saved.").addText((text2) => text2.setPlaceholder("Experiments/").setValue(this.plugin.settings.elnDirectory).onChange(async (v8) => {
+    new import_obsidian7.Setting(genSec).setName("Default ELN Directory").setDesc("Folder where new ELN experiments will be saved.").addText((text2) => text2.setPlaceholder("Experiments/").setValue(this.plugin.settings.elnDirectory).onChange(async (v8) => {
       this.plugin.settings.elnDirectory = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(genSec).setName("Default Experiment Prefix").setDesc("Prefix for new ELN files (e.g., EXP, JH, CHEM).").addText((text2) => text2.setPlaceholder("EXP").setValue(this.plugin.settings.elnPrefix).onChange(async (v8) => {
+    new import_obsidian7.Setting(genSec).setName("Default Experiment Prefix").setDesc("Prefix for new ELN files (e.g., EXP, JH, CHEM).").addText((text2) => text2.setPlaceholder("EXP").setValue(this.plugin.settings.elnPrefix).onChange(async (v8) => {
       this.plugin.settings.elnPrefix = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(genSec).setName("Analytical Sections").setDesc("Comma-separated list of sections to auto-generate inside new experiments.").addText((text2) => text2.setPlaceholder("TLC, LCMS, NMR").setValue(this.plugin.settings.elnSections).onChange(async (v8) => {
+    new import_obsidian7.Setting(genSec).setName("Analytical Sections").setDesc("Comma-separated list of sections to auto-generate inside new experiments.").addText((text2) => text2.setPlaceholder("TLC, LCMS, NMR").setValue(this.plugin.settings.elnSections).onChange(async (v8) => {
       this.plugin.settings.elnSections = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(genSec).setName("Compound Library File Path").setDesc("Point to a .md file (e.g. Meta/Compounds.md) that contains markdown tables or lists of your common chemicals. Used for auto-filling.").addText((text2) => text2.setPlaceholder("Meta/Compounds.md").setValue(this.plugin.settings.libraryFilePath).onChange(async (v8) => {
+    new import_obsidian7.Setting(genSec).setName("Compound Library File Path").setDesc("Point to a .md file (e.g. Meta/Compounds.md) that contains markdown tables or lists of your common chemicals. Used for auto-filling.").addText((text2) => text2.setPlaceholder("Meta/Compounds.md").setValue(this.plugin.settings.libraryFilePath).onChange(async (v8) => {
       this.plugin.settings.libraryFilePath = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(genSec).setName("Media Images Save Path").setDesc("Folder where camera/TLC pictures will be stored (e.g. Assets/)").addText((text2) => text2.setPlaceholder("Assets/").setValue(this.plugin.settings.mediaSavePath).onChange(async (v8) => {
+    new import_obsidian7.Setting(genSec).setName("Media Images Save Path").setDesc("Folder where camera/TLC pictures will be stored (e.g. Assets/)").addText((text2) => text2.setPlaceholder("Assets/").setValue(this.plugin.settings.mediaSavePath).onChange(async (v8) => {
       this.plugin.settings.mediaSavePath = v8;
       await this.plugin.saveSettings();
     }));
     const modSec = this.createAccordion(containerEl, "Active Modules & Dashboards", "\u{1F9E9}");
     modSec.createEl("p", { text: "Turn off features you don't use to save memory and declutter the command palette. (Restart Obsidian for changes to take effect).", cls: "setting-item-description" });
-    new import_obsidian.Setting(modSec).setName("Enable Core Dashboards & ELN").setDesc("Allows rendering of ```eln and enables the LIMS Dashboards.").addToggle((t8) => t8.setValue(this.plugin.settings.enableEln).onChange(async (v8) => {
+    new import_obsidian7.Setting(modSec).setName("Enable Core Dashboards & ELN").setDesc("Allows rendering of ```eln and enables the LIMS Dashboards.").addToggle((t8) => t8.setValue(this.plugin.settings.enableEln).onChange(async (v8) => {
       this.plugin.settings.enableEln = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(modSec).setName("Enable Chem Navigator").setDesc("Enables the interactive side-panel for contextual chemistry analysis.").addToggle((t8) => t8.setValue(this.plugin.settings.enableNavigator).onChange(async (v8) => {
+    new import_obsidian7.Setting(modSec).setName("Enable Chem Navigator").setDesc("Enables the interactive side-panel for contextual chemistry analysis.").addToggle((t8) => t8.setValue(this.plugin.settings.enableNavigator).onChange(async (v8) => {
       this.plugin.settings.enableNavigator = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(modSec).setName("Enable Synthesis Pathways").setDesc("Allows rendering of interactive ```chem-pathway and ```synthesis-plan blocks.").addToggle((t8) => t8.setValue(this.plugin.settings.enablePathways).onChange(async (v8) => {
+    new import_obsidian7.Setting(modSec).setName("Enable Synthesis Pathways").setDesc("Allows rendering of interactive ```chem-pathway and ```synthesis-plan blocks.").addToggle((t8) => t8.setValue(this.plugin.settings.enablePathways).onChange(async (v8) => {
       this.plugin.settings.enablePathways = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(modSec).setName("Enable Chemistry Context Menu").setDesc("Shows properties and copy options when you right-click a SMILES block.").addToggle((t8) => t8.setValue(this.plugin.settings.enableContextMenu).onChange(async (v8) => {
+    new import_obsidian7.Setting(modSec).setName("Enable Chemistry Context Menu").setDesc("Shows properties and copy options when you right-click a SMILES block.").addToggle((t8) => t8.setValue(this.plugin.settings.enableContextMenu).onChange(async (v8) => {
       this.plugin.settings.enableContextMenu = v8;
       await this.plugin.saveSettings();
     }));
     modSec.createEl("h4", { text: "Enable Specific Dashboards", attr: { style: "margin-top: 20px; margin-bottom: 10px; color: var(--text-normal); border-bottom: 1px solid var(--background-modifier-border); padding-bottom: 5px;" } });
     const makeDbToggle = (name, settingKey) => {
-      new import_obsidian.Setting(modSec).setName(name).addToggle((t8) => t8.setValue(this.plugin.settings[settingKey]).onChange(async (v8) => {
+      new import_obsidian7.Setting(modSec).setName(name).addToggle((t8) => t8.setValue(this.plugin.settings[settingKey]).onChange(async (v8) => {
         this.plugin.settings[settingKey] = v8;
         await this.plugin.saveSettings();
       }));
@@ -568318,40 +568832,40 @@ var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
     makeDbToggle("\u{1F4CA} Characterization Data", "enableCharacterizationDashboard");
     const linkSec = this.createAccordion(containerEl, "Context Menu Web Links", "\u{1F310}");
     linkSec.createEl("p", { text: "Customize the web searches available when you right-click a chemical structure. Use {{smiles}} to inject the SMILES string.", cls: "setting-item-description" });
-    new import_obsidian.Setting(linkSec).setName("Custom Link 1 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl1Name).onChange(async (v8) => {
+    new import_obsidian7.Setting(linkSec).setName("Custom Link 1 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl1Name).onChange(async (v8) => {
       this.plugin.settings.contextUrl1Name = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(linkSec).setName("Custom Link 1 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl1).onChange(async (v8) => {
+    new import_obsidian7.Setting(linkSec).setName("Custom Link 1 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl1).onChange(async (v8) => {
       this.plugin.settings.contextUrl1 = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(linkSec).setName("Custom Link 2 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl2Name).onChange(async (v8) => {
+    new import_obsidian7.Setting(linkSec).setName("Custom Link 2 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl2Name).onChange(async (v8) => {
       this.plugin.settings.contextUrl2Name = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(linkSec).setName("Custom Link 2 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl2).onChange(async (v8) => {
+    new import_obsidian7.Setting(linkSec).setName("Custom Link 2 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl2).onChange(async (v8) => {
       this.plugin.settings.contextUrl2 = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(linkSec).setName("Custom Link 3 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl3Name).onChange(async (v8) => {
+    new import_obsidian7.Setting(linkSec).setName("Custom Link 3 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl3Name).onChange(async (v8) => {
       this.plugin.settings.contextUrl3Name = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(linkSec).setName("Custom Link 3 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl3).onChange(async (v8) => {
+    new import_obsidian7.Setting(linkSec).setName("Custom Link 3 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl3).onChange(async (v8) => {
       this.plugin.settings.contextUrl3 = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(linkSec).setName("Custom Link 4 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4Name).onChange(async (v8) => {
+    new import_obsidian7.Setting(linkSec).setName("Custom Link 4 Name").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4Name).onChange(async (v8) => {
       this.plugin.settings.contextUrl4Name = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(linkSec).setName("Custom Link 4 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4).onChange(async (v8) => {
+    new import_obsidian7.Setting(linkSec).setName("Custom Link 4 URL").addText((text2) => text2.setValue(this.plugin.settings.contextUrl4).onChange(async (v8) => {
       this.plugin.settings.contextUrl4 = v8;
       await this.plugin.saveSettings();
     }));
     const scriptSec = this.createAccordion(containerEl, "Scripting Engine", "\u{1F4DC}");
-    new import_obsidian.Setting(scriptSec).setName("Enable Script Engine").setDesc("Turn off to save memory if you do not use custom JavaScript macros.").addToggle((t8) => t8.setValue(this.plugin.settings.enableScripting).onChange(async (v8) => {
+    new import_obsidian7.Setting(scriptSec).setName("Enable Script Engine").setDesc("Turn off to save memory if you do not use custom JavaScript macros.").addToggle((t8) => t8.setValue(this.plugin.settings.enableScripting).onChange(async (v8) => {
       this.plugin.settings.enableScripting = v8;
       await this.plugin.saveSettings();
       this.display();
@@ -568363,31 +568877,31 @@ var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
       storeText.createEl("div", { text: "Browse and install community macros.", attr: { style: "font-size: 12px; color: var(--text-muted); margin-top: 4px;" } });
       const openStoreBtn = storeWrap.createEl("button", { text: "Browse Scripts", cls: "mod-cta" });
       openStoreBtn.onclick = () => {
-        new import_obsidian.Notice("Script Store coming soon!");
+        new import_obsidian7.Notice("Script Store coming soon!");
       };
-      new import_obsidian.Setting(scriptSec).setName("Scripts Folder").setDesc("Folder containing custom .js scripts.").addText((text2) => text2.setPlaceholder("ChemEdit/Scripts").setValue(this.plugin.settings.scriptsFolder).onChange(async (v8) => {
+      new import_obsidian7.Setting(scriptSec).setName("Scripts Folder").setDesc("Folder containing custom .js scripts.").addText((text2) => text2.setPlaceholder("ChemEdit/Scripts").setValue(this.plugin.settings.scriptsFolder).onChange(async (v8) => {
         this.plugin.settings.scriptsFolder = v8;
         await this.plugin.saveSettings();
       }));
     }
     const renderSec = this.createAccordion(containerEl, "Rendering & Theming", "\u{1F3A8}");
-    new import_obsidian.Setting(renderSec).setName("Image Size (Block Embeds)").setDesc("Width and Height of the rendered structure blocks (pixels)").addText((text2) => text2.setPlaceholder("Width (300)").setValue(this.plugin.settings.width.toString()).onChange(async (v8) => {
+    new import_obsidian7.Setting(renderSec).setName("Image Size (Block Embeds)").setDesc("Width and Height of the rendered structure blocks (pixels)").addText((text2) => text2.setPlaceholder("Width (300)").setValue(this.plugin.settings.width.toString()).onChange(async (v8) => {
       this.plugin.settings.width = parseInt(v8) || 300;
       await this.plugin.saveSettings();
     })).addText((text2) => text2.setPlaceholder("Height (300)").setValue(this.plugin.settings.height.toString()).onChange(async (v8) => {
       this.plugin.settings.height = parseInt(v8) || 300;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(renderSec).setName("Render SMILES as SVG").setDesc("Uses SVG instead of High-DPI Canvas for SMILES blocks.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useSvgSmiles).onChange(async (value) => {
+    new import_obsidian7.Setting(renderSec).setName("Render SMILES as SVG").setDesc("Uses SVG instead of High-DPI Canvas for SMILES blocks.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useSvgSmiles).onChange(async (value) => {
       this.plugin.settings.useSvgSmiles = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(renderSec).setName("ChemDraw ACS 1996 Style (Ketcher)").setDesc("Applies the classic ACS Document 1996 drawing settings.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useAcsSettings).onChange(async (value) => {
+    new import_obsidian7.Setting(renderSec).setName("ChemDraw ACS 1996 Style (Ketcher)").setDesc("Applies the classic ACS Document 1996 drawing settings.").addToggle((toggle) => toggle.setValue(this.plugin.settings.useAcsSettings).onChange(async (value) => {
       this.plugin.settings.useAcsSettings = value;
       await this.plugin.saveSettings();
     }));
     const themeOptions = { "light": "Light", "dark": "Dark", "oldschool": "Oldschool (B&W)", "solarized": "Solarized Light", "solarized-dark": "Solarized Dark", "matrix": "Matrix", "cyberpunk": "Cyberpunk" };
-    new import_obsidian.Setting(renderSec).setName("Themes").setDesc("Light and Dark mode rendering themes.").addDropdown((dropdown) => dropdown.addOptions(themeOptions).setValue(this.plugin.settings.lightTheme).onChange(async (value) => {
+    new import_obsidian7.Setting(renderSec).setName("Themes").setDesc("Light and Dark mode rendering themes.").addDropdown((dropdown) => dropdown.addOptions(themeOptions).setValue(this.plugin.settings.lightTheme).onChange(async (value) => {
       this.plugin.settings.lightTheme = value;
       await this.plugin.saveSettings();
     })).addDropdown((dropdown) => dropdown.addOptions(themeOptions).setValue(this.plugin.settings.darkTheme).onChange(async (value) => {
@@ -568395,26 +568909,26 @@ var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
       await this.plugin.saveSettings();
     }));
     const pasteSec = this.createAccordion(containerEl, "Smart Paste & Inline Embeds", "\u{1F4CB}");
-    new import_obsidian.Setting(pasteSec).setName("Auto-format pasted SMILES").addToggle((toggle) => toggle.setValue(this.plugin.settings.smartPasteSmiles).onChange(async (value) => {
+    new import_obsidian7.Setting(pasteSec).setName("Auto-format pasted SMILES").addToggle((toggle) => toggle.setValue(this.plugin.settings.smartPasteSmiles).onChange(async (value) => {
       this.plugin.settings.smartPasteSmiles = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(pasteSec).setName("Auto-format pasted MOL text").addToggle((toggle) => toggle.setValue(this.plugin.settings.smartPasteMol).onChange(async (value) => {
+    new import_obsidian7.Setting(pasteSec).setName("Auto-format pasted MOL text").addToggle((toggle) => toggle.setValue(this.plugin.settings.smartPasteMol).onChange(async (value) => {
       this.plugin.settings.smartPasteMol = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(pasteSec).setName("Supported File Extensions").setDesc("Comma-separated list of extensions that render automatically via ![[file.ext]]").addText((text2) => text2.setPlaceholder("mol, cdxml, ket...").setValue(this.plugin.settings.supportedEmbedExtensions).onChange(async (v8) => {
+    new import_obsidian7.Setting(pasteSec).setName("Supported File Extensions").setDesc("Comma-separated list of extensions that render automatically via ![[file.ext]]").addText((text2) => text2.setPlaceholder("mol, cdxml, ket...").setValue(this.plugin.settings.supportedEmbedExtensions).onChange(async (v8) => {
       this.plugin.settings.supportedEmbedExtensions = v8;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(pasteSec).setName("Inline Image Size").setDesc("Max width/height for inline text structures.").addText((text2) => text2.setPlaceholder("Width (150)").setValue(this.plugin.settings.inlineWidth.toString()).onChange(async (v8) => {
+    new import_obsidian7.Setting(pasteSec).setName("Inline Image Size").setDesc("Max width/height for inline text structures.").addText((text2) => text2.setPlaceholder("Width (150)").setValue(this.plugin.settings.inlineWidth.toString()).onChange(async (v8) => {
       this.plugin.settings.inlineWidth = parseInt(v8) || 150;
       await this.plugin.saveSettings();
     })).addText((text2) => text2.setPlaceholder("Height (150)").setValue(this.plugin.settings.inlineHeight.toString()).onChange(async (v8) => {
       this.plugin.settings.inlineHeight = parseInt(v8) || 150;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(pasteSec).setName("Inline Prefixes").setDesc("Text prefixes used to trigger inline rendering.").addText((text2) => text2.setPlaceholder("SMILES ($smiles=)").setValue(this.plugin.settings.inlineSmilesPrefix).onChange(async (v8) => {
+    new import_obsidian7.Setting(pasteSec).setName("Inline Prefixes").setDesc("Text prefixes used to trigger inline rendering.").addText((text2) => text2.setPlaceholder("SMILES ($smiles=)").setValue(this.plugin.settings.inlineSmilesPrefix).onChange(async (v8) => {
       this.plugin.settings.inlineSmilesPrefix = v8;
       await this.plugin.saveSettings();
     })).addText((text2) => text2.setPlaceholder("Files ($mol=)").setValue(this.plugin.settings.inlineMolPrefix).onChange(async (v8) => {
@@ -568422,22 +568936,22 @@ var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
       await this.plugin.saveSettings();
     }));
     const iconSec = this.createAccordion(containerEl, "Sidebar Ribbon Icons", "\u{1F5C2}\uFE0F");
-    new import_obsidian.Setting(iconSec).setName("Show LIMS Dashboards Icon").addToggle((toggle) => toggle.setValue(this.plugin.settings.showDashboardRibbonIcon).onChange(async (value) => {
+    new import_obsidian7.Setting(iconSec).setName("Show LIMS Dashboards Icon").addToggle((toggle) => toggle.setValue(this.plugin.settings.showDashboardRibbonIcon).onChange(async (value) => {
       this.plugin.settings.showDashboardRibbonIcon = value;
       await this.plugin.saveSettings();
       this.plugin.refreshRibbonIcons();
     }));
-    new import_obsidian.Setting(iconSec).setName('Show "Create Blank ELN" Icon').addToggle((toggle) => toggle.setValue(this.plugin.settings.showElnRibbonIcon).onChange(async (value) => {
+    new import_obsidian7.Setting(iconSec).setName('Show "Create Blank ELN" Icon').addToggle((toggle) => toggle.setValue(this.plugin.settings.showElnRibbonIcon).onChange(async (value) => {
       this.plugin.settings.showElnRibbonIcon = value;
       await this.plugin.saveSettings();
       this.plugin.refreshRibbonIcons();
     }));
-    new import_obsidian.Setting(iconSec).setName('Show "Take Photo/TLC" Icons').addToggle((toggle) => toggle.setValue(this.plugin.settings.showMediaRibbonIcons).onChange(async (value) => {
+    new import_obsidian7.Setting(iconSec).setName('Show "Take Photo/TLC" Icons').addToggle((toggle) => toggle.setValue(this.plugin.settings.showMediaRibbonIcons).onChange(async (value) => {
       this.plugin.settings.showMediaRibbonIcons = value;
       await this.plugin.saveSettings();
       this.plugin.refreshRibbonIcons();
     }));
-    new import_obsidian.Setting(iconSec).setName("Show Chem Navigator Icon").addToggle((toggle) => toggle.setValue(this.plugin.settings.showNavigatorRibbonIcon).onChange(async (value) => {
+    new import_obsidian7.Setting(iconSec).setName("Show Chem Navigator Icon").addToggle((toggle) => toggle.setValue(this.plugin.settings.showNavigatorRibbonIcon).onChange(async (value) => {
       this.plugin.settings.showNavigatorRibbonIcon = value;
       await this.plugin.saveSettings();
       this.plugin.refreshRibbonIcons();
@@ -568449,7 +568963,7 @@ var ChemEditSettingTab = class extends import_obsidian.PluginSettingTab {
       if (confirm("Are you sure you want to reset all ChemEdit settings to their defaults? This cannot be undone.")) {
         this.plugin.settings = Object.assign({}, DEFAULT_SETTINGS);
         await this.plugin.saveSettings();
-        new import_obsidian.Notice("ChemEdit settings reset to defaults. Please restart Obsidian.");
+        new import_obsidian7.Notice("ChemEdit settings reset to defaults. Please restart Obsidian.");
         this.display();
       }
     };
@@ -568497,7 +569011,7 @@ function buildChemEditAPI(plugin) {
 }
 
 // ChemNavigator.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 init_SharedEln();
 init_ChemDataEngine();
 var CHEM_NAVIGATOR_VIEW_TYPE = "chem-navigator-view";
@@ -568509,7 +569023,7 @@ var DEFAULT_CONTEXT_LAYOUT = [
   { id: "weblinks", title: "\u{1F310} Web Search Links", visible: true },
   { id: "network", title: "\u{1F578}\uFE0F Sequence Map", visible: true }
 ];
-var ChemNavigatorView = class extends import_obsidian6.ItemView {
+var ChemNavigatorView = class extends import_obsidian8.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     __publicField(this, "plugin");
@@ -568545,10 +569059,10 @@ var ChemNavigatorView = class extends import_obsidian6.ItemView {
     this.headerPanel.createEl("h3", { text: "\u{1F9EA} Chem Navigator", attr: { style: "margin: 0; font-size: 15px; font-weight: 700; color: var(--text-normal);" } });
     const tools2 = this.headerPanel.createDiv({ attr: { style: "display: flex; gap: 5px;" } });
     const settingsBtn = tools2.createEl("button", { attr: { title: "Configure Context Layout", style: "background: transparent; border: none; box-shadow: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;" } });
-    (0, import_obsidian6.setIcon)(settingsBtn, "settings");
+    (0, import_obsidian8.setIcon)(settingsBtn, "settings");
     settingsBtn.onclick = () => this.toggleSettings();
     const refreshBtn = tools2.createEl("button", { attr: { title: "Refresh Data", style: "background: transparent; border: none; box-shadow: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center;" } });
-    (0, import_obsidian6.setIcon)(refreshBtn, "refresh-cw");
+    (0, import_obsidian8.setIcon)(refreshBtn, "refresh-cw");
     refreshBtn.onclick = () => this.renderActiveTab();
     this.tabBar = container.createDiv({ attr: { style: "display: flex; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border); padding: 0 10px; flex-shrink: 0; z-index: 2;" } });
     const tabs = [
@@ -568561,7 +569075,7 @@ var ChemNavigatorView = class extends import_obsidian6.ItemView {
     ];
     tabs.forEach((t8) => {
       const btn = this.tabBar.createEl("button", { attr: { title: t8.tooltip, style: `flex: 1; padding: 10px 0; background: transparent; border: none; border-bottom: 2px solid transparent; box-shadow: none; cursor: pointer; display: flex; justify-content: center; align-items: center; border-radius: 0; color: var(--text-muted); transition: 0.2s;` } });
-      (0, import_obsidian6.setIcon)(btn, t8.icon);
+      (0, import_obsidian8.setIcon)(btn, t8.icon);
       btn.id = `nav-tab-${t8.id}`;
       btn.onclick = () => {
         this.activeTab = t8.id;
@@ -568647,7 +569161,7 @@ var ChemNavigatorView = class extends import_obsidian6.ItemView {
     const header = this.settingsPanel.createDiv({ attr: { style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;" } });
     header.createEl("div", { text: "Context Panel Layout", attr: { style: "font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;" } });
     const closeBtn = header.createEl("button", { attr: { style: "background: transparent; border: none; padding: 0; box-shadow: none; cursor: pointer; height: 16px;" } });
-    (0, import_obsidian6.setIcon)(closeBtn, "x");
+    (0, import_obsidian8.setIcon)(closeBtn, "x");
     closeBtn.onclick = () => this.toggleSettings();
     this.contextLayout.forEach((w7, i8) => {
       const row = this.settingsPanel.createDiv({ attr: { style: "display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: var(--background-primary); border: 1px solid var(--background-modifier-border); border-radius: 6px; margin-bottom: 6px;" } });
@@ -568797,7 +569311,7 @@ var ChemNavigatorView = class extends import_obsidian6.ItemView {
       };
       makeBtn("\u{1F4CB} Copy SMILES", () => {
         navigator.clipboard.writeText(targetSmiles);
-        new import_obsidian6.Notice("Copied!");
+        new import_obsidian8.Notice("Copied!");
       });
       makeBtn("\u270F\uFE0F Edit Structure", () => {
         this.plugin.api.ketcher.openEditor(targetSmiles, "smiles", async (newData) => {
@@ -569075,7 +569589,7 @@ var ChemNavigatorView = class extends import_obsidian6.ItemView {
         const safeName = proj === "Unassigned" ? "All" : proj.replace(/[\\/:"*?<>|]/g, "_");
         const filePath = `${this.plugin.settings.elnDirectory || ""}/${safeName}_Dashboard.md`.replace(/^\//, "");
         if (this.app.vault.getAbstractFileByPath(filePath)) {
-          new import_obsidian6.Notice(`Dashboard already exists at ${filePath}`);
+          new import_obsidian8.Notice(`Dashboard already exists at ${filePath}`);
           this.app.workspace.getLeaf(false).openFile(this.app.vault.getAbstractFileByPath(filePath));
           return;
         }
@@ -569112,12 +569626,12 @@ project: ${proj === "Unassigned" ? "" : proj}
       var _a;
       const libPath = (_a = this.plugin.settings) == null ? void 0 : _a.libraryFilePath;
       if (!libPath) {
-        new import_obsidian6.Notice("Library file path not set in settings.");
+        new import_obsidian8.Notice("Library file path not set in settings.");
         return;
       }
       const file = this.app.vault.getAbstractFileByPath(libPath);
-      if (file instanceof import_obsidian6.TFile) this.app.workspace.getLeaf(false).openFile(file);
-      else new import_obsidian6.Notice("Library file not found.");
+      if (file instanceof import_obsidian8.TFile) this.app.workspace.getLeaf(false).openFile(file);
+      else new import_obsidian8.Notice("Library file not found.");
     };
     const searchInp = header.createEl("input", { type: "search", placeholder: "Search reagents...", attr: { style: "width: 100%; font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--background-modifier-border);" } });
     const grid2 = this.contentArea.createDiv({ attr: { style: "display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 15px; padding-bottom: 20px;" } });
@@ -569143,12 +569657,12 @@ project: ${proj === "Unassigned" ? "" : proj}
         e6.stopPropagation();
         const path2 = (_a = this.plugin.settings) == null ? void 0 : _a.libraryFilePath;
         const file = this.app.vault.getAbstractFileByPath(path2);
-        if (file instanceof import_obsidian6.TFile) {
+        if (file instanceof import_obsidian8.TFile) {
           const content4 = await this.app.vault.read(file);
           const lines = content4.split("\n");
           const newLines = lines.filter((l8) => !(l8.includes(c10.smiles) && l8.includes(c10.name)));
           await this.app.vault.modify(file, newLines.join("\n"));
-          new import_obsidian6.Notice(`Removed ${c10.name}`);
+          new import_obsidian8.Notice(`Removed ${c10.name}`);
           this.renderActiveTab();
         }
       };
@@ -569166,7 +569680,7 @@ project: ${proj === "Unassigned" ? "" : proj}
       card.createDiv({ text: c10.name, attr: { title: c10.name, style: "font-size: 11px; font-weight: 600; text-align: center; margin-top: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; color: var(--text-normal);" } });
       card.onclick = () => {
         navigator.clipboard.writeText(c10.smiles);
-        new import_obsidian6.Notice(`Copied ${c10.name} SMILES!`);
+        new import_obsidian8.Notice(`Copied ${c10.name} SMILES!`);
       };
       cards.push({ el: card, text: `${c10.name} ${c10.smiles}`.toLowerCase() });
     });
@@ -569314,7 +569828,7 @@ path: ${folder}
       try {
         let smi = "";
         const fetcher = async (url2) => {
-          const r12 = await (0, import_obsidian6.requestUrl)(url2);
+          const r12 = await (0, import_obsidian8.requestUrl)(url2);
           return r12.status === 200 ? r12 : null;
         };
         try {
@@ -569352,17 +569866,17 @@ path: ${folder}
           const cpyBtn = btns.createEl("button", { text: "\u{1F4CB} Copy SMILES", attr: { style: "flex: 1; height: 24px; font-size: 10px;" } });
           cpyBtn.onclick = () => {
             navigator.clipboard.writeText(smi);
-            new import_obsidian6.Notice("Copied!");
+            new import_obsidian8.Notice("Copied!");
           };
           const addBtn = btns.createEl("button", { text: "\u{1F4DA} Add to Lib", attr: { style: "flex: 1; height: 24px; font-size: 10px;" } });
           addBtn.onclick = () => {
             this.plugin.api.library.addCompound(name, smi);
           };
         } else {
-          new import_obsidian6.Notice("Not found.");
+          new import_obsidian8.Notice("Not found.");
         }
       } catch (e6) {
-        new import_obsidian6.Notice("Search failed.");
+        new import_obsidian8.Notice("Search failed.");
       }
       resolveBtn.innerText = "Search";
     };
@@ -569448,11 +569962,11 @@ path: ${folder}
 };
 
 // ElnDashboard.ts
-var import_obsidian7 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 init_SharedEln();
 init_SharedBase();
 var ELN_DASHBOARD_VIEW_TYPE = "chem-eln-dashboard";
-var ElnDashboardView = class extends import_obsidian7.ItemView {
+var ElnDashboardView = class extends import_obsidian9.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     __publicField(this, "plugin");
@@ -569560,7 +570074,7 @@ var ElnDashboardView = class extends import_obsidian7.ItemView {
     });
     this.tableBodyEl = table.createEl("tbody");
     await this.loadExperiments();
-    const requestRefresh = (0, import_obsidian7.debounce)(() => {
+    const requestRefresh = (0, import_obsidian9.debounce)(() => {
       this.loadExperiments();
     }, 2e3, true);
     this.registerEvent(this.app.vault.on("modify", requestRefresh));
@@ -569698,10 +570212,10 @@ var ElnDashboardView = class extends import_obsidian7.ItemView {
 };
 
 // InventoryDashboard.ts
-var import_obsidian8 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 init_SharedBase();
 var INVENTORY_DASHBOARD_VIEW_TYPE = "chem-inventory-dashboard";
-var InventoryDashboardView = class extends import_obsidian8.ItemView {
+var InventoryDashboardView = class extends import_obsidian10.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     __publicField(this, "plugin");
@@ -569805,7 +570319,7 @@ var InventoryDashboardView = class extends import_obsidian8.ItemView {
     });
     this.tableBodyEl = table.createEl("tbody");
     await this.loadInventory();
-    const requestRefresh = (0, import_obsidian8.debounce)(() => {
+    const requestRefresh = (0, import_obsidian10.debounce)(() => {
       this.loadInventory();
     }, 2e3, true);
     this.registerEvent(this.app.vault.on("modify", requestRefresh));
@@ -569913,7 +570427,7 @@ var InventoryDashboardView = class extends import_obsidian8.ItemView {
           fm.checked_out_by = user;
           fm.last_updated = window.moment().format("YYYY-MM-DD");
         });
-        new import_obsidian8.Notice(`${e6.name} is now ${newStatus}`);
+        new import_obsidian10.Notice(`${e6.name} is now ${newStatus}`);
       };
       const qrBtn = actContainer.createEl("button", { text: "\u{1F5A8}\uFE0F Label", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
       qrBtn.onclick = () => {
@@ -569940,10 +570454,10 @@ var InventoryDashboardView = class extends import_obsidian8.ItemView {
 };
 
 // EquipmentDashboard.ts
-var import_obsidian9 = require("obsidian");
+var import_obsidian11 = require("obsidian");
 init_SharedBase();
 var EQUIPMENT_DASHBOARD_VIEW_TYPE = "chem-equipment-dashboard";
-var EquipmentDashboardView = class extends import_obsidian9.ItemView {
+var EquipmentDashboardView = class extends import_obsidian11.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     __publicField(this, "plugin");
@@ -570013,7 +570527,7 @@ var EquipmentDashboardView = class extends import_obsidian9.ItemView {
     });
     this.tableBodyEl = table.createEl("tbody");
     await this.loadEquipment();
-    const requestRefresh = (0, import_obsidian9.debounce)(() => this.loadEquipment(), 2e3, true);
+    const requestRefresh = (0, import_obsidian11.debounce)(() => this.loadEquipment(), 2e3, true);
     this.registerEvent(this.app.vault.on("modify", requestRefresh));
     this.registerEvent(this.app.vault.on("create", requestRefresh));
     this.registerEvent(this.app.vault.on("delete", requestRefresh));
@@ -570055,7 +570569,7 @@ contact: ""
 `;
     const file = await this.app.vault.create(`${targetDir}/${name}.md`, content4);
     this.app.workspace.getLeaf(false).openFile(file);
-    new import_obsidian9.Notice(`Created ${name}`);
+    new import_obsidian11.Notice(`Created ${name}`);
   }
   async loadEquipment() {
     var _a;
@@ -570119,7 +570633,7 @@ contact: ""
           fm.status = newStatus;
           fm.booked_by = user;
         });
-        new import_obsidian9.Notice(`${e6.name} is now ${newStatus}.`);
+        new import_obsidian11.Notice(`${e6.name} is now ${newStatus}.`);
       };
       if (e6.status !== "Maintenance") {
         const maintBtn = actContainer.createEl("button", { text: "\u{1F527} Maint.", attr: { style: "font-size: 11px; padding: 4px; height: 26px; width: 100%;" } });
@@ -570128,7 +570642,7 @@ contact: ""
             fm.status = "Maintenance";
             fm.booked_by = "Service Team";
           });
-          new import_obsidian9.Notice(`${e6.name} set to Maintenance.`);
+          new import_obsidian11.Notice(`${e6.name} set to Maintenance.`);
         };
       }
     });
@@ -570146,10 +570660,10 @@ contact: ""
 };
 
 // OrdersDashboard.ts
-var import_obsidian10 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 init_SharedBase();
 var ORDERS_DASHBOARD_VIEW_TYPE = "chem-orders-dashboard";
-var OrdersDashboardView = class extends import_obsidian10.ItemView {
+var OrdersDashboardView = class extends import_obsidian12.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     __publicField(this, "plugin");
@@ -570230,7 +570744,7 @@ var OrdersDashboardView = class extends import_obsidian10.ItemView {
     });
     this.tableBodyEl = table.createEl("tbody");
     await this.loadOrders();
-    const requestRefresh = (0, import_obsidian10.debounce)(() => this.loadOrders(), 2e3, true);
+    const requestRefresh = (0, import_obsidian12.debounce)(() => this.loadOrders(), 2e3, true);
     this.registerEvent(this.app.vault.on("modify", requestRefresh));
     this.registerEvent(this.app.vault.on("create", requestRefresh));
     this.registerEvent(this.app.vault.on("delete", requestRefresh));
@@ -570348,7 +570862,7 @@ var OrdersDashboardView = class extends import_obsidian10.ItemView {
     });
   }
 };
-var CreateOrderModal = class extends import_obsidian10.Modal {
+var CreateOrderModal = class extends import_obsidian12.Modal {
   constructor(app, folder) {
     super(app);
     __publicField(this, "folder");
@@ -570358,15 +570872,15 @@ var CreateOrderModal = class extends import_obsidian10.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.createEl("h3", { text: "New Order Request" });
-    new import_obsidian10.Setting(contentEl).setName("Item Name").addText((t8) => t8.onChange((v8) => this.data.name = v8));
-    new import_obsidian10.Setting(contentEl).setName("Type").addDropdown((d10) => d10.addOption("Chemical", "\u{1F9EA} Chemical").addOption("Consumable", "\u{1F9E4} Consumable / Labware").addOption("Equipment", "\u{1F52C} Equipment").setValue("Chemical").onChange((v8) => this.data.type = v8));
-    new import_obsidian10.Setting(contentEl).setName("Supplier").addText((t8) => t8.onChange((v8) => this.data.supplier = v8));
-    new import_obsidian10.Setting(contentEl).setName("Catalog #").addText((t8) => t8.onChange((v8) => this.data.catalog = v8));
-    new import_obsidian10.Setting(contentEl).setName("Amount (e.g. 500g, 10pk)").addText((t8) => t8.onChange((v8) => this.data.amount = v8));
-    new import_obsidian10.Setting(contentEl).setName("Estimated Price").addText((t8) => t8.onChange((v8) => this.data.price = v8));
-    new import_obsidian10.Setting(contentEl).addButton((btn) => btn.setButtonText("Create Request").setCta().onClick(async () => {
+    new import_obsidian12.Setting(contentEl).setName("Item Name").addText((t8) => t8.onChange((v8) => this.data.name = v8));
+    new import_obsidian12.Setting(contentEl).setName("Type").addDropdown((d10) => d10.addOption("Chemical", "\u{1F9EA} Chemical").addOption("Consumable", "\u{1F9E4} Consumable / Labware").addOption("Equipment", "\u{1F52C} Equipment").setValue("Chemical").onChange((v8) => this.data.type = v8));
+    new import_obsidian12.Setting(contentEl).setName("Supplier").addText((t8) => t8.onChange((v8) => this.data.supplier = v8));
+    new import_obsidian12.Setting(contentEl).setName("Catalog #").addText((t8) => t8.onChange((v8) => this.data.catalog = v8));
+    new import_obsidian12.Setting(contentEl).setName("Amount (e.g. 500g, 10pk)").addText((t8) => t8.onChange((v8) => this.data.amount = v8));
+    new import_obsidian12.Setting(contentEl).setName("Estimated Price").addText((t8) => t8.onChange((v8) => this.data.price = v8));
+    new import_obsidian12.Setting(contentEl).addButton((btn) => btn.setButtonText("Create Request").setCta().onClick(async () => {
       if (!this.data.name.trim()) {
-        new import_obsidian10.Notice("Name is required");
+        new import_obsidian12.Notice("Name is required");
         return;
       }
       if (!await this.app.vault.adapter.exists(this.folder)) {
@@ -570396,7 +570910,7 @@ receive_date: ""
 `;
       const file = await this.app.vault.create(`${this.folder}/${safeName}.md`, content4);
       this.app.workspace.getLeaf(false).openFile(file);
-      new import_obsidian10.Notice("Order request created!");
+      new import_obsidian12.Notice("Order request created!");
       this.close();
     }));
   }
@@ -570406,11 +570920,11 @@ receive_date: ""
 };
 
 // LibraryDashboard.ts
-var import_obsidian11 = require("obsidian");
+var import_obsidian13 = require("obsidian");
 init_SharedBase();
 init_SharedEln();
 var LIBRARY_DASHBOARD_VIEW_TYPE = "chem-library-dashboard";
-var LibraryDashboardView = class extends import_obsidian11.ItemView {
+var LibraryDashboardView = class extends import_obsidian13.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     __publicField(this, "plugin");
@@ -570556,7 +571070,7 @@ ${smiles}
       const tdAct = tr2.createEl("td", { attr: { style: "padding: 16px 10px; border-bottom: 1px solid var(--background-modifier-border-hover);" } });
       tdAct.createEl("button", { text: "\u{1F4CB} Copy SMILES", attr: { style: "font-size: 11px; padding: 4px 12px; width: 100%; margin-bottom: 6px;" } }).onclick = () => {
         navigator.clipboard.writeText(e6.smiles);
-        new import_obsidian11.Notice("Copied!");
+        new import_obsidian13.Notice("Copied!");
       };
     });
   }
@@ -570566,10 +571080,10 @@ ${smiles}
 };
 
 // GalleryDashboard.ts
-var import_obsidian12 = require("obsidian");
+var import_obsidian14 = require("obsidian");
 init_SharedBase();
 var GALLERY_DASHBOARD_VIEW_TYPE = "chem-gallery-dashboard";
-var GalleryDashboardView = class extends import_obsidian12.ItemView {
+var GalleryDashboardView = class extends import_obsidian14.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     __publicField(this, "plugin");
@@ -570646,7 +571160,7 @@ var GalleryDashboardView = class extends import_obsidian12.ItemView {
     };
     this.gridContainer = container.createDiv({ attr: { style: "flex-grow: 1; overflow: auto; padding: 20px 30px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; align-content: start;" } });
     await this.loadDrawings();
-    const requestRefresh = (0, import_obsidian12.debounce)(() => this.loadDrawings(), 2e3, true);
+    const requestRefresh = (0, import_obsidian14.debounce)(() => this.loadDrawings(), 2e3, true);
     this.registerEvent(this.app.vault.on("modify", requestRefresh));
     this.registerEvent(this.app.vault.on("create", requestRefresh));
     this.registerEvent(this.app.vault.on("delete", requestRefresh));
@@ -570737,10 +571251,10 @@ var GalleryDashboardView = class extends import_obsidian12.ItemView {
 };
 
 // ProtocolsDashboard.ts
-var import_obsidian13 = require("obsidian");
+var import_obsidian15 = require("obsidian");
 init_SharedBase();
 var PROTOCOLS_DASHBOARD_VIEW_TYPE = "chem-protocols-dashboard";
-var ProtocolsDashboardView = class extends import_obsidian13.ItemView {
+var ProtocolsDashboardView = class extends import_obsidian15.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     __publicField(this, "plugin");
@@ -570805,7 +571319,7 @@ var ProtocolsDashboardView = class extends import_obsidian13.ItemView {
     });
     this.tableBodyEl = table.createEl("tbody");
     await this.loadProtocols();
-    const requestRefresh = (0, import_obsidian13.debounce)(() => this.loadProtocols(), 2e3, true);
+    const requestRefresh = (0, import_obsidian15.debounce)(() => this.loadProtocols(), 2e3, true);
     this.registerEvent(this.app.vault.on("modify", requestRefresh));
     this.registerEvent(this.app.vault.on("create", requestRefresh));
     this.registerEvent(this.app.vault.on("delete", requestRefresh));
@@ -570901,7 +571415,7 @@ last_reviewed: "${window.moment().format("YYYY-MM-DD")}"
           fm.last_reviewed = window.moment().format("YYYY-MM-DD");
           fm.status = "Approved";
         });
-        new import_obsidian13.Notice(`${e6.title} marked as Reviewed & Approved.`);
+        new import_obsidian15.Notice(`${e6.title} marked as Reviewed & Approved.`);
       };
     });
   }
@@ -570923,10 +571437,10 @@ last_reviewed: "${window.moment().format("YYYY-MM-DD")}"
 };
 
 // CharacterizationDashboard.ts
-var import_obsidian14 = require("obsidian");
+var import_obsidian16 = require("obsidian");
 init_SharedBase();
 var CHARACTERIZATION_DASHBOARD_VIEW_TYPE = "chem-characterization-dashboard";
-var CharacterizationDashboardView = class extends import_obsidian14.ItemView {
+var CharacterizationDashboardView = class extends import_obsidian16.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     __publicField(this, "plugin");
@@ -571011,7 +571525,7 @@ var CharacterizationDashboardView = class extends import_obsidian14.ItemView {
     this.tableHeadTr = thead.createEl("tr");
     this.tableBodyEl = table.createEl("tbody");
     await this.loadData();
-    const requestRefresh = (0, import_obsidian14.debounce)(() => this.loadData(), 2e3, true);
+    const requestRefresh = (0, import_obsidian16.debounce)(() => this.loadData(), 2e3, true);
     this.registerEvent(this.app.vault.on("modify", requestRefresh));
     this.registerEvent(this.app.vault.on("create", requestRefresh));
     this.registerEvent(this.app.vault.on("delete", requestRefresh));
@@ -571134,13 +571648,13 @@ ${metricsYaml}---
     const color5 = isDone ? isLink ? "var(--text-accent)" : "var(--text-success)" : "var(--text-faint)";
     const btn = td.createEl("button", { text: displayStr, attr: { title: val ? String(val) : "Missing", style: `background: ${isDone ? "var(--background-primary)" : "transparent"}; border: 1px solid ${isDone ? color5 : "transparent"}; border-radius: 6px; font-size: 14px; padding: 4px 8px; color: ${color5}; box-shadow: none; cursor: pointer;` } });
     btn.onclick = (e6) => {
-      const menu = new import_obsidian14.Menu();
+      const menu = new import_obsidian16.Menu();
       if (isLink) {
         menu.addItem((i8) => i8.setTitle(`Extract Link: ${val.replace(/[[\]]/g, "")}`).setIcon("link").onClick(() => {
           const cleanName = val.replace("[[", "").replace("]]", "");
           const targetFile = this.app.metadataCache.getFirstLinkpathDest(cleanName, file.path);
           if (targetFile) this.app.workspace.getLeaf(false).openFile(targetFile);
-          else new import_obsidian14.Notice("Linked file not found.");
+          else new import_obsidian16.Notice("Linked file not found.");
         }));
         menu.addSeparator();
       }
@@ -571165,7 +571679,7 @@ ${metricsYaml}---
     this.observer.disconnect();
   }
 };
-var DataPromptModal = class extends import_obsidian14.Modal {
+var DataPromptModal = class extends import_obsidian16.Modal {
   constructor(app, keyName, initialVal, onSubmit) {
     super(app);
     __publicField(this, "onSubmit");
@@ -571198,7 +571712,7 @@ var DataPromptModal = class extends import_obsidian14.Modal {
 };
 
 // SharedPathway.ts
-var import_obsidian15 = require("obsidian");
+var import_obsidian17 = require("obsidian");
 init_SharedEln();
 var PATH_COLORS = [
   "#4e79a7",
@@ -571235,7 +571749,7 @@ var SynthesisMapRenderer = class {
       el2.createEl("div", { text: `\u26A0\uFE0F Folder not found: ${folderPath || "Root Vault"}`, cls: "color-text-error" });
       return;
     }
-    const files = folder.children.filter((f9) => f9 instanceof import_obsidian15.TFile && f9.extension.toLowerCase() === "md");
+    const files = folder.children.filter((f9) => f9 instanceof import_obsidian17.TFile && f9.extension.toLowerCase() === "md");
     const mapTitle = targetProject ? `\u{1F5FA}\uFE0F Synthesis Map: ${targetProject}` : "\u{1F5FA}\uFE0F Synthesis Map";
     const wrapper2 = this.createBaseWrapper(el2, folderPath, mapTitle, false, ctx);
     const container = wrapper2.querySelector(".chem-pathway-grid");
@@ -571555,7 +572069,7 @@ ${node2.rawToken} -> ${txt}`);
         if (targetRawToken && node2.rawToken) {
           this.updateMarkdownBlock(ctx, el2, null, `
 ${node2.rawToken} -> ${targetRawToken}`);
-          new import_obsidian15.Notice("Connected!");
+          new import_obsidian17.Notice("Connected!");
         }
       }
     };
@@ -571575,7 +572089,7 @@ ${node2.rawToken} -> ${targetRawToken}`);
     });
   }
   updateMarkdownBlock(ctx, el2, oldText, newText) {
-    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
+    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian17.MarkdownView);
     if (!view) return;
     let info = ctx.getSectionInfo(el2);
     if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
@@ -571595,7 +572109,7 @@ ${node2.rawToken} -> ${targetRawToken}`);
     editor4.setValue(lines.join("\n"));
   }
   updateMarkdownNodeText(ctx, el2, oldToken, newToken) {
-    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian15.MarkdownView);
+    const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian17.MarkdownView);
     if (!view) return;
     let info = ctx.getSectionInfo(el2);
     if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
@@ -571742,12 +572256,12 @@ ${txt}`);
     const openBtn = overlay.createEl("button", { text: "\u{1F441}\uFE0F", attr: { title: "Open Note", style: "padding: 5px; background: transparent; border: none; cursor: pointer; font-size: 16px;" } });
     openBtn.onclick = () => {
       const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
-      if (file instanceof import_obsidian15.TFile) this.plugin.app.workspace.getLeaf(false).openFile(file);
+      if (file instanceof import_obsidian17.TFile) this.plugin.app.workspace.getLeaf(false).openFile(file);
     };
     const cloneBtn = overlay.createEl("button", { text: "\u{1F5D0}", attr: { title: "Clone Exp", style: "padding: 5px; background: transparent; border: none; cursor: pointer; font-size: 16px;" } });
     cloneBtn.onclick = () => {
       const file = this.plugin.app.vault.getAbstractFileByPath(filePath);
-      if (file instanceof import_obsidian15.TFile) new CloneExperimentModal(this.plugin.app, this.plugin, code, file, data).open();
+      if (file instanceof import_obsidian17.TFile) new CloneExperimentModal(this.plugin.app, this.plugin, code, file, data).open();
     };
   }
   attachSearchLogic(wrapper2) {
@@ -571795,7 +572309,7 @@ ${txt}`);
     return null;
   }
 };
-var TextPromptModal = class extends import_obsidian15.Modal {
+var TextPromptModal = class extends import_obsidian17.Modal {
   constructor(app, title, desc2, initialVal, onSubmit) {
     super(app);
     __publicField(this, "title");
@@ -571837,7 +572351,7 @@ var TextPromptModal = class extends import_obsidian15.Modal {
 init_SharedEln();
 
 // PolymerEln.ts
-var import_obsidian16 = require("obsidian");
+var import_obsidian18 = require("obsidian");
 init_SharedEln();
 var PolymerCalculator = class {
   static calculate(data) {
@@ -571959,7 +572473,7 @@ var PolymerElnRenderer = class {
       await fetchMws(data.agents);
       await fetchMws(data.components);
       data = PolymerCalculator.calculate(data);
-      const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian16.MarkdownView);
+      const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian18.MarkdownView);
       const currentFile = view ? view.file : null;
       const expCode = data.code || (currentFile ? currentFile.basename : "POLY");
       wrapper2.innerHTML = "";
@@ -572073,7 +572587,7 @@ var PolymerElnRenderer = class {
       };
       createBtn("\u2699\uFE0F Status", "Change Experiment Status", (e6) => {
         if (!e6) return;
-        const menu = new import_obsidian16.Menu();
+        const menu = new import_obsidian18.Menu();
         menu.addItem((item) => item.setTitle("Mark as Planned").setIcon("calendar").onClick(() => updateYamlState((y9) => y9.status = "Planned")));
         menu.addItem((item) => item.setTitle("Mark as Running").setIcon("play").onClick(() => updateYamlState((y9) => y9.status = "Running")));
         menu.addItem((item) => item.setTitle("Mark as Completed").setIcon("check").onClick(() => updateYamlState((y9) => y9.status = "Completed")));
@@ -572275,7 +572789,7 @@ ${newYaml}\`\`\``, { line: info.lineStart, ch: 0 }, { line: info.lineEnd, ch: vi
     }
   }
 };
-var PolymerMetaEditorModal = class extends import_obsidian16.Modal {
+var PolymerMetaEditorModal = class extends import_obsidian18.Modal {
   constructor(app, plugin, yamlObj, onSave) {
     super(app);
     __publicField(this, "plugin");
@@ -572387,7 +572901,7 @@ var PolymerMetaEditorModal = class extends import_obsidian16.Modal {
 };
 
 // BioEln.ts
-var import_obsidian17 = require("obsidian");
+var import_obsidian19 = require("obsidian");
 var BioCalculator = class {
   static calculate(data) {
     if (!data.type) data.type = "pcr";
@@ -572884,7 +573398,7 @@ var BioElnRenderer = class {
           input.focus();
           const finishEdit = () => {
             const newValStr = input.value.trim().replace(/,/g, ".");
-            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian17.MarkdownView);
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian19.MarkdownView);
             let info = ctx.getSectionInfo(el2);
             if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
             if (view && info) {
@@ -572934,7 +573448,7 @@ var BioElnRenderer = class {
             const elNode = stepNode;
             const idx = parseInt(elNode.dataset.idx || "0", 10);
             const currentState = elNode.dataset.state === "true";
-            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian17.MarkdownView);
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian19.MarkdownView);
             let info = ctx.getSectionInfo(el2);
             if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
             if (view && info) {
@@ -572981,7 +573495,7 @@ var BioElnRenderer = class {
         createActionBarBtn("\u{1F4C4} FASTA", () => {
           navigator.clipboard.writeText(`>${data.title || "Sequence"}
 ${data.sequence}`);
-          new import_obsidian17.Notice("Copied as FASTA format!");
+          new import_obsidian19.Notice("Copied as FASTA format!");
         });
       } else if (data.type === "pcr") {
         createActionBarBtn("\u{1F321}\uFE0F NEB Tm Calc", () => window.open(`https://tmcalculator.neb.com/`, "_blank"));
@@ -573023,7 +573537,7 @@ ${data.sequence}`);
 `);
         }
         navigator.clipboard.writeText(txt);
-        new import_obsidian17.Notice("Copied to clipboard!");
+        new import_obsidian19.Notice("Copied to clipboard!");
       });
       return wrapper2;
     } catch (err) {
@@ -573034,7 +573548,7 @@ ${data.sequence}`);
 };
 
 // AnalyticalEln.ts
-var import_obsidian18 = require("obsidian");
+var import_obsidian20 = require("obsidian");
 var AnalyticalCalculator = class {
   static calculate(data) {
     if (!data.type) data.type = "calibration";
@@ -573378,7 +573892,7 @@ var AnalyticalElnRenderer = class {
           input.focus();
           const finishEdit = () => {
             const newValStr = input.value.trim().replace(/,/g, ".");
-            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian18.MarkdownView);
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian20.MarkdownView);
             let info = ctx.getSectionInfo(el2);
             if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
             if (view && info) {
@@ -573427,7 +573941,7 @@ var AnalyticalElnRenderer = class {
           const elNode = node2;
           const idx = parseInt(elNode.dataset.idx || "0", 10);
           const currentState = elNode.dataset.state === "true";
-          const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian18.MarkdownView);
+          const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian20.MarkdownView);
           let info = ctx.getSectionInfo(el2);
           if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
           if (view && info) {
@@ -573452,7 +573966,7 @@ var AnalyticalElnRenderer = class {
 };
 
 // OrganicHelpers.ts
-var import_obsidian19 = require("obsidian");
+var import_obsidian21 = require("obsidian");
 var OrgHelperCalculator = class {
   static calculate(data) {
     if (!data.type) return data;
@@ -573889,7 +574403,7 @@ var OrganicHelpersRenderer = class {
           input.focus();
           const finishEdit = () => {
             const newValStr = input.value.trim().replace(/,/g, ".");
-            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian19.MarkdownView);
+            const view = this.plugin.app.workspace.getActiveViewOfType(import_obsidian21.MarkdownView);
             let info = ctx.getSectionInfo(el2);
             if (!info && el2.parentElement) info = ctx.getSectionInfo(el2.parentElement);
             if (view && info) {
@@ -574020,7 +574534,7 @@ Recovery (%)	${(_o2 = data.recovery_percent) == null ? void 0 : _o2.toFixed(1)}
           txt = JSON.stringify(data, null, 2);
         }
         navigator.clipboard.writeText(txt);
-        new import_obsidian19.Notice("Data copied to clipboard (Excel ready)!");
+        new import_obsidian21.Notice("Data copied to clipboard (Excel ready)!");
       });
       return wrapper2;
     } catch (err) {
@@ -574031,7 +574545,7 @@ Recovery (%)	${(_o2 = data.recovery_percent) == null ? void 0 : _o2.toFixed(1)}
 };
 
 // MatrixEln.ts
-var import_obsidian20 = require("obsidian");
+var import_obsidian22 = require("obsidian");
 var MatrixCalculator = class {
   static calculate(data) {
     if (!data.variables) data.variables = {};
@@ -574220,7 +574734,7 @@ var MatrixElnRenderer = class {
           csv += row + "\n";
         });
         navigator.clipboard.writeText(csv);
-        new import_obsidian20.Notice("Excel-ready Data copied to clipboard!");
+        new import_obsidian22.Notice("Excel-ready Data copied to clipboard!");
       });
       createBtn("\u{1F916} Export CSV (ML-Ready)", () => {
         let csv = `${varKeys.join(",")},Yield
@@ -574234,7 +574748,7 @@ var MatrixElnRenderer = class {
           csv += row.join(",") + "\n";
         });
         navigator.clipboard.writeText(csv);
-        new import_obsidian20.Notice("Machine-Learning ready CSV copied to clipboard!");
+        new import_obsidian22.Notice("Machine-Learning ready CSV copied to clipboard!");
       });
       const styleBlock = document.createElement("style");
       styleBlock.innerHTML = `.matrix-yield-cell:hover { background-color: rgba(99, 102, 241, 0.1); }`;
@@ -574298,7 +574812,7 @@ var MatrixElnRenderer = class {
 init_SharedMedia();
 
 // SharedGallery.ts
-var import_obsidian21 = require("obsidian");
+var import_obsidian23 = require("obsidian");
 var SharedGalleryRenderer = class {
   constructor(plugin) {
     __publicField(this, "plugin");
@@ -574317,7 +574831,7 @@ var SharedGalleryRenderer = class {
       return;
     }
     const validExts = ["mol", "cdxml", "sdf", "rxn", "ket", "smi", "smiles", "md"];
-    const files = folder.children.filter((f9) => f9 instanceof import_obsidian21.TFile && validExts.includes(f9.extension.toLowerCase()));
+    const files = folder.children.filter((f9) => f9 instanceof import_obsidian23.TFile && validExts.includes(f9.extension.toLowerCase()));
     if (files.length === 0) {
       el2.createEl("div", { text: "No supported files found in this folder.", cls: "color-text-muted" });
       return;
@@ -574458,7 +574972,7 @@ try {
 } catch (e6) {
   createRoot2 = null;
 }
-function embedDataInSvg(svgStr, data, format3) {
+function embedDataInSvg3(svgStr, data, format3) {
   try {
     const base64Data = btoa(unescape(encodeURIComponent(data)));
     const injection = `
@@ -574481,7 +574995,7 @@ function extractDataFromSvg(svgStr) {
   }
   return null;
 }
-var ChemEditPlugin = class extends import_obsidian22.Plugin {
+var ChemEditPlugin = class extends import_obsidian24.Plugin {
   constructor() {
     super(...arguments);
     __publicField(this, "settings");
@@ -574516,17 +575030,17 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
         openData = ex.data;
         openFormat = "svg";
       } else {
-        new import_obsidian22.Notice("Not a Ketcher SVG");
+        new import_obsidian24.Notice("Not a Ketcher SVG");
         return;
       }
     }
     new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
       if (isFile) {
-        new import_obsidian22.Notice(`Saved as new file: ${newData}. Please update the link.`);
+        new import_obsidian24.Notice(`Saved as new file: ${newData}. Please update the link.`);
         return;
       }
       if (newFormat && newFormat !== format3 && format3 !== "svg") {
-        new import_obsidian22.Notice(`Format upgraded to ${newFormat}. Remember to rename your file.`);
+        new import_obsidian24.Notice(`Format upgraded to ${newFormat}. Remember to rename your file.`);
       }
       await this.app.vault.modify(file, newData);
       wrapper2.innerHTML = `<span class="color-text-muted">Updating...</span>`;
@@ -574559,9 +575073,9 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
     if (this.settings.showMediaRibbonIcons) {
       if (!this.cameraRibbonEl) {
         this.cameraRibbonEl = this.addRibbonIcon("camera", "Take Lab Photo", () => {
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian24.MarkdownView);
           if (!view) {
-            new import_obsidian22.Notice("Place cursor in a Markdown file first.");
+            new import_obsidian24.Notice("Place cursor in a Markdown file first.");
             return;
           }
           takeStandardPhoto(async (buffer, ext) => {
@@ -574576,9 +575090,9 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
       }
       if (!this.tlcRibbonEl) {
         this.tlcRibbonEl = this.addRibbonIcon("image-file", "Add TLC Plate", () => {
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian24.MarkdownView);
           if (!view) {
-            new import_obsidian22.Notice("Place cursor in a Markdown file first.");
+            new import_obsidian24.Notice("Place cursor in a Markdown file first.");
             return;
           }
           new TlcModal(this.app, async (pngData, rfData) => {
@@ -574605,7 +575119,7 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
       if (!this.elnRibbonEl) {
         this.elnRibbonEl = this.addRibbonIcon("flask-round", "Create Blank ELN Experiment", () => {
           var _a, _b;
-          const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+          const view = this.app.workspace.getActiveViewOfType(import_obsidian24.MarkdownView);
           const currentFolder = this.settings.elnDirectory ? this.settings.elnDirectory : ((_b = (_a = view == null ? void 0 : view.file) == null ? void 0 : _a.parent) == null ? void 0 : _b.path) || "";
           new CreateExperimentModal(this.app, this, this.settings.elnPrefix, currentFolder, async (expCode) => {
             await createNewElnExperiment(this.app, expCode, currentFolder, this.settings.elnSections);
@@ -574641,12 +575155,12 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
     }
   }
   async onload() {
-    (0, import_obsidian22.addIcon)("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
+    (0, import_obsidian24.addIcon)("flask-round", `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><path fill="none" stroke="currentColor" stroke-width="5" d="M 42 35 L 42 55 A 18 18 0 1 0 58 55 L 58 35 Z" stroke-linejoin="round"/><line x1="36" y1="35" x2="64" y2="35" stroke="currentColor" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="65" x2="68" y2="65" stroke="currentColor" stroke-width="4" stroke-dasharray="4 4"/>`);
     const compassIcon = `<polygon fill="none" stroke="currentColor" stroke-width="6" points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,82 36,50" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><polygon points="50,18 64,50 50,50" fill="currentColor"/><polygon points="50,82 36,50 50,50" fill="currentColor"/>`;
-    (0, import_obsidian22.addIcon)("chem-navigator", compassIcon);
-    (0, import_obsidian22.addIcon)("flask-conical", compassIcon);
+    (0, import_obsidian24.addIcon)("chem-navigator", compassIcon);
+    (0, import_obsidian24.addIcon)("flask-conical", compassIcon);
     const dashboardIcon = `<path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 20 85 A 10 10 0 0 1 30 75 L 85 75" /><path fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" d="M 30 15 L 85 15 L 85 85 L 30 85 A 10 10 0 0 1 20 75 L 20 25 A 10 10 0 0 1 30 15 Z" /><polygon fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round" points="57,32 72,40 72,58 57,66 42,58 42,40" />`;
-    (0, import_obsidian22.addIcon)("chem-dashboard", dashboardIcon);
+    (0, import_obsidian24.addIcon)("chem-dashboard", dashboardIcon);
     await this.loadSettings();
     this.api = buildChemEditAPI(this);
     this.addSettingTab(new ChemEditSettingTab(this.app, this));
@@ -574671,7 +575185,7 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
     if (this.settings.enableContextMenu) {
       this.registerEvent(
         this.app.workspace.on("file-menu", (menu, file) => {
-          if (file instanceof import_obsidian22.TFile) {
+          if (file instanceof import_obsidian24.TFile) {
             const ext = file.extension.toLowerCase();
             if (ext === "svg") {
               menu.addItem((item) => {
@@ -574681,10 +575195,10 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
                   if (extracted) {
                     new KetcherModal(this, data, "svg", async (newData) => {
                       await this.app.vault.modify(file, newData);
-                      new import_obsidian22.Notice(`Saved ${file.name}`);
+                      new import_obsidian24.Notice(`Saved ${file.name}`);
                     }).open();
                   } else {
-                    new import_obsidian22.Notice("This SVG does not contain editable Ketcher metadata.");
+                    new import_obsidian24.Notice("This SVG does not contain editable Ketcher metadata.");
                   }
                 });
               });
@@ -574705,7 +575219,7 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
                   const data = await this.app.vault.read(file);
                   const smiles = ext === "mol" || ext === "sdf" ? ChemDataEngine.molToSmiles(data) : data.trim();
                   if (smiles) window.open(`https://www.nmrdb.org/simulator/?smiles=${encodeURIComponent(smiles)}`);
-                  else new import_obsidian22.Notice("Could not extract SMILES for NMR prediction.");
+                  else new import_obsidian24.Notice("Could not extract SMILES for NMR prediction.");
                 });
               });
             }
@@ -574726,12 +575240,12 @@ var ChemEditPlugin = class extends import_obsidian22.Plugin {
       this.addCommand({
         id: "reload-chemedit-scripts",
         name: "Reload Custom Scripts",
-        callback: () => new import_obsidian22.Notice("Script Engine coming soon!")
+        callback: () => new import_obsidian24.Notice("Script Engine coming soon!")
       });
       this.addCommand({
         id: "open-chemedit-script-store",
         name: "Open Script Store",
-        callback: () => new import_obsidian22.Notice("Script Store coming soon!")
+        callback: () => new import_obsidian24.Notice("Script Store coming soon!")
       });
     }
     if (this.settings.enableEln) {
@@ -575324,7 +575838,7 @@ variables:
             editor4.setCursor({ line: cursor2.line, ch: cursor2.ch + newData.length + 2 });
           } else {
             if (newFormat === "ket") {
-              new import_obsidian22.Notice("Cannot save inline reaction. Inserting as block.");
+              new import_obsidian24.Notice("Cannot save inline reaction. Inserting as block.");
               this.insertSmilesAtCursor(editor4, newData, "ket");
               return;
             }
@@ -575355,7 +575869,7 @@ variables:
                 return;
               }
               if (newFormat === "ket") {
-                new import_obsidian22.Notice("Inline reactions not supported. Replaced with codeblock.");
+                new import_obsidian24.Notice("Inline reactions not supported. Replaced with codeblock.");
                 editor4.replaceRange(`
 \`\`\`ket
 ${newData}
@@ -575368,7 +575882,7 @@ ${newData}
             return;
           }
         }
-        new import_obsidian22.Notice("Place your cursor inside an inline $smiles= string first!");
+        new import_obsidian24.Notice("Place your cursor inside an inline $smiles= string first!");
       }
     });
     this.registerMarkdownPostProcessor(async (el2, ctx) => {
@@ -575442,7 +575956,7 @@ ${cleanText}
       if (filenameToSearch) {
         const cleanLink = decodeURIComponent(filenameToSearch).split("#")[0].split("?")[0].trim();
         const file = this.app.metadataCache.getFirstLinkpathDest(cleanLink, ctx.sourcePath);
-        if (file && file instanceof import_obsidian22.TFile) {
+        if (file && file instanceof import_obsidian24.TFile) {
           const format3 = file.extension.toLowerCase();
           const fileData = await this.app.vault.read(file);
           if (format3 === "svg") {
@@ -575480,13 +575994,13 @@ ${cleanText}
                 openData = ex.data;
                 openFormat = "svg";
               } else {
-                new import_obsidian22.Notice("Not a Ketcher SVG");
+                new import_obsidian24.Notice("Not a Ketcher SVG");
                 return;
               }
             }
             new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
               if (isFile) {
-                new import_obsidian22.Notice(`Saved as new file: ${newData}. Please update the link.`);
+                new import_obsidian24.Notice(`Saved as new file: ${newData}. Please update the link.`);
                 return;
               }
               await this.app.vault.modify(file, newData);
@@ -575530,7 +576044,7 @@ ${cleanText}
       });
       wrapper2.addEventListener("dblclick", async (e6) => {
         e6.stopPropagation();
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+        const view = this.app.workspace.getActiveViewOfType(import_obsidian24.MarkdownView);
         if (!view) return;
         const info = ctx.getSectionInfo(el2);
         new KetcherModal(this, source, defaultFormat, (newData, isFile, newFormat) => {
@@ -575573,6 +576087,8 @@ ${newData}
         this.renderSmilesBlock(cleanSmiles, el2, ctx, false, this.settings.width, this.settings.height);
       }
     });
+    initExcalidrawBridge(this);
+    initCanvasBridge(this);
   }
   onunload() {
     this.destroyHeadlessKetcher();
@@ -575674,9 +576190,9 @@ ${newData}
     workspace.revealLeaf(leaf);
   }
   openNewDrawingModal() {
-    const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+    const view = this.app.workspace.getActiveViewOfType(import_obsidian24.MarkdownView);
     if (!view) {
-      new import_obsidian22.Notice("Please open a Markdown file first to insert a drawing.");
+      new import_obsidian24.Notice("Please open a Markdown file first to insert a drawing.");
       return;
     }
     new KetcherModal(this, "", "smiles", (newData, isFile, newFormat) => {
@@ -575761,10 +576277,10 @@ ${data}
     wrapper2.addEventListener("dblclick", (e6) => {
       e6.stopPropagation();
       if (isGridItem) {
-        new import_obsidian22.Notice("Cannot inline-edit grids yet. Edit code block manually.");
+        new import_obsidian24.Notice("Cannot inline-edit grids yet. Edit code block manually.");
         return;
       }
-      const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+      const view = this.app.workspace.getActiveViewOfType(import_obsidian24.MarkdownView);
       if (!view) return;
       const info = ctx.getSectionInfo(el2.parentElement || el2);
       new KetcherModal(this, smiles, "smiles", (newData, isFile, newFormat) => {
@@ -575922,7 +576438,7 @@ ${newData}
       });
       wrapper2.addEventListener("dblclick", (e6) => {
         e6.stopPropagation();
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian22.MarkdownView);
+        const view = this.app.workspace.getActiveViewOfType(import_obsidian24.MarkdownView);
         if (!view) return;
         new KetcherModal(this, rawData, "smiles", (newData, isFile, newFormat) => {
           const editor4 = view.editor;
@@ -575933,7 +576449,7 @@ ${newData}
             return;
           }
           if (newFormat === "ket") {
-            new import_obsidian22.Notice("Inline reactions not supported. Inserted as block.");
+            new import_obsidian24.Notice("Inline reactions not supported. Inserted as block.");
             const updatedContent2 = content4.replace(prefix2 + rawData, `
 \`\`\`ket
 ${newData}
@@ -575949,7 +576465,7 @@ ${newData}
     } else if (type3 === "file") {
       const cleanFileName = rawData.replace("[[", "").replace("]]", "");
       const file = this.app.metadataCache.getFirstLinkpathDest(cleanFileName, sourcePath);
-      if (file && file instanceof import_obsidian22.TFile) {
+      if (file && file instanceof import_obsidian24.TFile) {
         const format3 = file.extension.toLowerCase();
         const fileData = await this.app.vault.read(file);
         requestAnimationFrame(async () => {
@@ -575989,17 +576505,17 @@ ${newData}
               openData = ex.data;
               openFormat = "svg";
             } else {
-              new import_obsidian22.Notice("Not a Ketcher SVG");
+              new import_obsidian24.Notice("Not a Ketcher SVG");
               return;
             }
           }
           new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
             if (isFile) {
-              new import_obsidian22.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
+              new import_obsidian24.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
               return;
             }
             if (newFormat && newFormat !== format3 && format3 !== "svg") {
-              new import_obsidian22.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
+              new import_obsidian24.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
             }
             await this.app.vault.modify(file, newData);
             wrapper2.innerHTML = `\u23F3`;
@@ -576202,7 +576718,7 @@ ${newData}
   }
   async injectNativeEmbed(embed, src2, sourcePath) {
     const file = this.app.metadataCache.getFirstLinkpathDest(src2, sourcePath);
-    if (!(file instanceof import_obsidian22.TFile)) {
+    if (!(file instanceof import_obsidian24.TFile)) {
       embed.innerHTML = `<div class="chem-native-embed-wrapper color-red">File not found: ${src2}</div>`;
       return;
     }
@@ -576274,11 +576790,11 @@ ${newData}
       }
       new KetcherModal(this, openData, openFormat, async (newData, isFile, newFormat) => {
         if (isFile) {
-          new import_obsidian22.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
+          new import_obsidian24.Notice(`Saved as new file: ${newData}. Please manually update the link in your document.`);
           return;
         }
         if (newFormat && newFormat !== format3 && format3 !== "svg") {
-          new import_obsidian22.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
+          new import_obsidian24.Notice(`Format upgraded to ${newFormat}. Remember to rename your inline file.`);
         }
         await this.app.vault.modify(file, newData);
         wrapper2.innerHTML = `<div class="color-text-muted" style="padding:15px; border:1px solid var(--background-modifier-border); border-radius:8px;">\u23F3 Updating...</div>`;
@@ -576339,7 +576855,7 @@ ${newData}
           } else {
             const cleanName = this.data.replace("[[", "").replace("]]", "");
             const file = plugin.app.metadataCache.getFirstLinkpathDest(cleanName, "");
-            if (file && file instanceof import_obsidian22.TFile) {
+            if (file && file instanceof import_obsidian24.TFile) {
               const format3 = file.extension.toLowerCase();
               const fileData = await plugin.app.vault.read(file);
               if (format3 === "svg") {
@@ -576428,7 +576944,7 @@ ${newData}
     }, { decorations: (v8) => v8.decorations });
   }
 };
-var ChemFileView = class extends import_obsidian22.TextFileView {
+var ChemFileView = class extends import_obsidian24.TextFileView {
   constructor(leaf, plugin) {
     super(leaf);
     __publicField(this, "plugin");
@@ -576473,11 +576989,11 @@ var ChemFileView = class extends import_obsidian22.TextFileView {
     wrapper2.ondblclick = () => {
       new KetcherModal(this.plugin, this.data, format3, async (newData, isFile, newFormat) => {
         if (isFile) {
-          new import_obsidian22.Notice(`Saved as new file: ${newData}`);
+          new import_obsidian24.Notice(`Saved as new file: ${newData}`);
           return;
         }
         if (newFormat && newFormat !== format3) {
-          new import_obsidian22.Notice(`Format was upgraded to ${newFormat}. Please rename the file extension!`);
+          new import_obsidian24.Notice(`Format was upgraded to ${newFormat}. Please rename the file extension!`);
         }
         this.data = newData;
         this.requestSave();
@@ -576490,7 +577006,7 @@ var ChemFileView = class extends import_obsidian22.TextFileView {
     this.contentEl.empty();
   }
 };
-var KetcherModal = class extends import_obsidian22.Modal {
+var KetcherModal = class extends import_obsidian24.Modal {
   constructor(plugin, initialData, format3, onSave) {
     super(plugin.app);
     __publicField(this, "plugin");
@@ -576556,7 +577072,7 @@ var KetcherModal = class extends import_obsidian22.Modal {
     const cancelBtn = btnContainer.createEl("button", { text: "Cancel" });
     const doSave = async (formatToGet) => {
       if (!this.ketcherInstance || !this.ketcherInstance.editor && !this.ketcherInstance.server) {
-        new import_obsidian22.Notice("Ketcher is still initializing...");
+        new import_obsidian24.Notice("Ketcher is still initializing...");
         return;
       }
       try {
@@ -576575,7 +577091,7 @@ var KetcherModal = class extends import_obsidian22.Modal {
             } else if (img instanceof Blob) {
               svgText = await img.text();
             }
-            resultData = embedDataInSvg(svgText, ket, "ket");
+            resultData = embedDataInSvg3(svgText, ket, "ket");
             finalFormat = "svg";
           } else {
             const k7 = this.ketcherInstance;
@@ -576631,7 +577147,7 @@ var KetcherModal = class extends import_obsidian22.Modal {
           if (err.message && err.message.toLowerCase().includes("reaction")) {
             resultData = await this.ketcherInstance.getKet();
             finalFormat = "ket";
-            new import_obsidian22.Notice("Reactions cannot be saved in this format. Automatically upgraded to .KET format.");
+            new import_obsidian24.Notice("Reactions cannot be saved in this format. Automatically upgraded to .KET format.");
             if (this.isSavingAsFile) {
               this.isSavingAsFile = this.isSavingAsFile.replace(/\.[a-zA-Z0-9]+$/i, ".ket");
             }
@@ -576639,14 +577155,14 @@ var KetcherModal = class extends import_obsidian22.Modal {
             console.warn("Primary save failed, forcing fallback to .ket", err);
             resultData = await this.ketcherInstance.getKet();
             finalFormat = "ket";
-            new import_obsidian22.Notice(`Export to requested format failed. Saved as .ket instead to prevent data loss.`);
+            new import_obsidian24.Notice(`Export to requested format failed. Saved as .ket instead to prevent data loss.`);
             if (this.isSavingAsFile) {
               this.isSavingAsFile = this.isSavingAsFile.replace(/\.[a-zA-Z0-9]+$/i, ".ket");
             }
           }
         }
         if (!resultData) {
-          new import_obsidian22.Notice("Failed to generate structure data. Format may not be supported by this structure.");
+          new import_obsidian24.Notice("Failed to generate structure data. Format may not be supported by this structure.");
           return;
         }
         if (this.isSavingAsFile) {
@@ -576668,7 +577184,7 @@ var KetcherModal = class extends import_obsidian22.Modal {
         this.close();
       } catch (e6) {
         console.error(e6);
-        new import_obsidian22.Notice("Error saving from Ketcher: " + (e6.message || e6));
+        new import_obsidian24.Notice("Error saving from Ketcher: " + (e6.message || e6));
       }
     };
     saveBtn.onclick = () => doSave(this.format);
@@ -576714,7 +577230,7 @@ var KetcherModal = class extends import_obsidian22.Modal {
     this.plugin.bootHeadlessKetcher();
   }
 };
-var SaveFileModal = class extends import_obsidian22.Modal {
+var SaveFileModal = class extends import_obsidian24.Modal {
   constructor(app, onSubmit) {
     super(app);
     __publicField(this, "onSubmit");
@@ -576725,17 +577241,17 @@ var SaveFileModal = class extends import_obsidian22.Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.createEl("h3", { text: "Save as File..." });
-    new import_obsidian22.Setting(contentEl).setName("Filename").setDesc("Enter a name for the new chemical file.").addText((text2) => text2.setPlaceholder("molecule").onChange((value) => {
+    new import_obsidian24.Setting(contentEl).setName("Filename").setDesc("Enter a name for the new chemical file.").addText((text2) => text2.setPlaceholder("molecule").onChange((value) => {
       this.filename = value;
     }).inputEl.addEventListener("keypress", (e6) => {
       if (e6.key === "Enter" && this.filename) {
         this.submit();
       }
     }));
-    new import_obsidian22.Setting(contentEl).setName("Format").setDesc("Select the file format to save as.").addDropdown((drop) => drop.addOption("mol", ".mol (MDL Molfile)").addOption("cdxml", ".cdxml (ChemDraw)").addOption("ket", ".ket (Ketcher Native)").addOption("rxn", ".rxn (MDL Rxnfile)").addOption("sdf", ".sdf (Structure Data)").addOption("fasta", ".fasta (FASTA Sequence)").addOption("sequence", ".sequence (Raw Sequence)").addOption("idt", ".idt (IDT Sequence)").addOption("helm", ".helm (HELM Macromolecule)").addOption("biln", ".biln (BILN Macromolecule)").addOption("ketcher.svg", ".svg (Ketcher SVG)").setValue("mol").onChange((value) => {
+    new import_obsidian24.Setting(contentEl).setName("Format").setDesc("Select the file format to save as.").addDropdown((drop) => drop.addOption("mol", ".mol (MDL Molfile)").addOption("cdxml", ".cdxml (ChemDraw)").addOption("ket", ".ket (Ketcher Native)").addOption("rxn", ".rxn (MDL Rxnfile)").addOption("sdf", ".sdf (Structure Data)").addOption("fasta", ".fasta (FASTA Sequence)").addOption("sequence", ".sequence (Raw Sequence)").addOption("idt", ".idt (IDT Sequence)").addOption("helm", ".helm (HELM Macromolecule)").addOption("biln", ".biln (BILN Macromolecule)").addOption("ketcher.svg", ".svg (Ketcher SVG)").setValue("mol").onChange((value) => {
       this.format = value;
     }));
-    new import_obsidian22.Setting(contentEl).addButton((btn) => btn.setButtonText("Save File").setCta().onClick(() => this.submit()));
+    new import_obsidian24.Setting(contentEl).addButton((btn) => btn.setButtonText("Save File").setCta().onClick(() => this.submit()));
     setTimeout(() => {
       const input = contentEl.querySelector('input[type="text"]');
       if (input) input.focus();
@@ -576746,7 +577262,7 @@ var SaveFileModal = class extends import_obsidian22.Modal {
       this.onSubmit(this.filename, this.format);
       this.close();
     } else {
-      new import_obsidian22.Notice("Please enter a filename.");
+      new import_obsidian24.Notice("Please enter a filename.");
     }
   }
   onClose() {

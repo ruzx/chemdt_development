@@ -6,6 +6,8 @@ import SmiDrawer from 'smiles-drawer';
 import KetcherReact from './KetcherReact';
 import { RangeSetBuilder } from "@codemirror/state";
 import { EditorView, ViewPlugin, ViewUpdate, WidgetType, Decoration, DecorationSet } from "@codemirror/view";
+import { initExcalidrawBridge } from './ExcalidrawBridge';
+import { initCanvasBridge } from './CanvasBridge';
 
 // Modular Imports 
 import { ChemEditSettings, DEFAULT_SETTINGS, ChemEditSettingTab } from './Settings';
@@ -581,6 +583,9 @@ export default class ChemEditPlugin extends Plugin {
                 for (const line of lines) { const cell = grid.createDiv(); this.renderSmilesBlock(line, cell, ctx, true, 140, 140); }
             } else { this.renderSmilesBlock(cleanSmiles, el, ctx, false, this.settings.width, this.settings.height); }
         });
+		
+		initExcalidrawBridge(this);
+		initCanvasBridge(this);
     }
 
     onunload() {
