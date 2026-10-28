@@ -1,1 +1,0 @@
-Pull requests and issues are welcome! Please ensure you test local builds before submitting.
